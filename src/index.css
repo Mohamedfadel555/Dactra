@@ -1,0 +1,12 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
+@import "tailwindcss";
+
+@theme {
+  --font-arabic: "Tajawal", sans-serif;
+  --font-english: "Cairo", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
