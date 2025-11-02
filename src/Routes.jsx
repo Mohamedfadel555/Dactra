@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import AuthLayout from "./Layout/AuthLayout";
 import LoginPage from "./Pages/Auth/LoginPage";
+import SignupPage from "./Pages/Auth/SignupPage";
 import ForgotPasswordPage from "./Pages/Auth/ForgotPasswordPage";
 import OTPPage from "./Pages/Auth/OTPPage";
 import UpdatePasswordPage from "./Pages/Auth/UpdatePasswordPage";
@@ -18,6 +19,11 @@ export const route = createBrowserRouter([
         path: "Login",
         element: <LoginPage />,
       },
+      {
+        path: "Signup",
+        element: <SignupPage />,
+      },
+
       {
         path: "ForgotPassword",
         element: <ForgotPasswordPage />,

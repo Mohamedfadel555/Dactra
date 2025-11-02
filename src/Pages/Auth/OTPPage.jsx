@@ -1,10 +1,21 @@
-import mainImage from "../../assets/images/OTPImage.png";
-import Icon from "../../assets/images/icons/dactraIcon.png";
-import * as yup from "yup";
 import { Formik, Form } from "formik";
-import OTPInput from "react-otp-input";
+
+//importing image
+import mainImage from "../../assets/images/OTPImage.png";
+
+//importing hooks
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+//importing utils
+import { OTPInitialValues } from "../../utils/formInitialValues";
+import { OTPValidationDchema } from "../../utils/validationSchemas";
+
+//importing components
+import OTPInput from "react-otp-input";
+import BrandLogo from "./../../Components/Common/BrandLogo";
+import SubmitButton from "../../Components/Common/SubmitButton";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function OTPPage() {
   const [time, setTime] = useState(60);
@@ -19,19 +30,10 @@ export default function OTPPage() {
     return () => clearInterval(timer);
   }, [time]);
 
+  //in this function handle resent api
   function handleResent() {
     setTime(60);
   }
-
-  //initaial values for inputs
-  const initialValues = {
-    otp: "",
-  };
-
-  //validation schema
-  const validation = yup.object({
-    otp: yup.string().length(6, "OTP invalid").required("OTP invalild"),
-  });
 
   //submiting function for the form
   const submiting = (values) => {
@@ -43,23 +45,26 @@ export default function OTPPage() {
   return (
     <div className="w-full h-full flex-col  md:flex-row flex justify-center items-center gap-[30px] py-[10px] px-[40px] ">
       <div className=" flex justify-center items-center w-1/2 ">
-        <img
-          src={mainImage}
-          alt="LoginImage"
-          className="max-w-[90%] min-w-[250px]"
-        />
+        <AnimatePresence mode="wait">
+          <motion.img
+            key="login-image"
+            loading="eager"
+            src={mainImage}
+            alt="LoginImage"
+            className="max-w-[90%] min-w-[250px]"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3 }}
+          />
+        </AnimatePresence>
       </div>
       <div className="min-w-[280px] w-[95%] md:w-1/2 h-[90%] flex justify-center items-center">
-        <div className="w-full pb-[20px]  h-fit bg-[#FFFFFF] rounded-[25px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.1)] flex flex-col pt-[20px] items-center gap-[20px]">
-          <div className="flex justify-center items-center gap-[10px]">
-            <img src={Icon} alt="dactra Icon" className="size-[50px]" />
-            <p className="font-english font-[800] text-[30px] text-[#003465] ">
-              Dactra
-            </p>
-          </div>
+        <div className="w-full pb-[20px] md:my-[45px] lg:my-[60px] xl:my-[90px] h-fit bg-[#FFFFFF] rounded-[25px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.1)] flex flex-col pt-[20px] items-center gap-[20px]">
+          <BrandLogo />
           <Formik
-            initialValues={initialValues}
-            validationSchema={validation}
+            initialValues={OTPInitialValues}
+            validationSchema={OTPValidationDchema}
             onSubmit={submiting}
           >
             {({ values, setFieldValue, errors, submitCount }) => (
@@ -102,12 +107,7 @@ export default function OTPPage() {
                   )}
                 </div>
                 <div className="w-full flex flex-col gap-[5px] justify-center items-center">
-                  <button
-                    type="submit"
-                    className="text-[#FFFFFF] text-[18px] cursor-pointer  font-[600] font-english bg-[#3E69FE] w-full h-[40px] rounded-[5px] mb-[20px] "
-                  >
-                    Verify
-                  </button>
+                  <SubmitButton text="Verify" />
                 </div>
               </Form>
             )}
