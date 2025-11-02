@@ -128,10 +128,14 @@ export default function LoginPage() {
                   <img src={GIcon} alt="Google Icon" className="size-[30px]" />
                 </button>
                 {/* navigate to register page */}
-                <Link className="font-[300] text-[12px] text-[#003465]">
+                <Link className="font-[300] text-[12px] text-[#003465]" to="/auth/Signup">
                   Don't have an account yet?
                   <span className="font-[500]">Register</span>
                 </Link>
+                
+
+
+                
               </div>
             </Form>
           </Formik>
