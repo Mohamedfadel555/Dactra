@@ -104,7 +104,10 @@ export default function LoginPage() {
                           className="text-red-500 text-[12px] "
                         />
                       </div>
-                      <Link className="text-[12px] text-[#BCBEC0] self-end font-english">
+                      <Link
+                        to="../ForgotPassword"
+                        className="text-[12px] text-[#BCBEC0] self-end font-english"
+                      >
                         Forgot Password?
                       </Link>
                     </div>
