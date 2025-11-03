@@ -5,6 +5,7 @@ import SignupPage from "./Pages/Auth/SignupPage";
 import ForgotPasswordPage from "./Pages/Auth/ForgotPasswordPage";
 import OTPPage from "./Pages/Auth/OTPPage";
 import UpdatePasswordPage from "./Pages/Auth/UpdatePasswordPage";
+import CompleteSignupPage from "./Pages/Auth/CompleteSignupPage";
 
 export const route = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ export const route = createBrowserRouter([
       {
         path: "OTPVerify",
         element: <OTPPage />,
+      },
+      {
+        path: "CompleteSignup",
+        element: <CompleteSignupPage />,
       },
       {
         path: "UpdatePassword",

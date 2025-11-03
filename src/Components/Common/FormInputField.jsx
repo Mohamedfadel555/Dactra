@@ -9,6 +9,7 @@ export default function FormInputField({
   placeholder,
   icon: Icon,
   className = "",
+  options,
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = type === "password";
@@ -24,16 +25,34 @@ export default function FormInputField({
         {label}
       </label>
       <div className="relative">
-        {Icon && (
+        {!options && Icon && (
           <Icon className="absolute left-2 top-1/2 -translate-y-1/2 text-[#BCBEC0]" />
         )}
-        <Field
-          type={inputType}
-          id={name}
-          name={name}
-          placeholder={placeholder}
-          className={`w-full h-[32px] border placeholder:text-[#BCBEC0] placeholder:text-[15px] border-[#BCBEC0] rounded-[5px] pl-8 ${showPasswordToggle ? "pr-8" : ""} focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
-        />
+        {options ? (
+          <Field
+            as="select"
+            id={name}
+            name={name}
+            className={`w-full h-[32px] border text-[#003465] border-[#BCBEC0] rounded-[5px] px-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
+          >
+            <option value="" disabled>
+              {placeholder || "Select"}
+            </option>
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Field>
+        ) : (
+          <Field
+            type={inputType}
+            id={name}
+            name={name}
+            placeholder={placeholder}
+            className={`w-full h-[32px] border placeholder:text-[#BCBEC0] placeholder:text-[15px] border-[#BCBEC0] rounded-[5px] pl-8 ${showPasswordToggle ? "pr-8" : ""} focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
+          />
+        )}
         {showPasswordToggle && (
           <button
             type="button"

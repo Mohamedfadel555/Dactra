@@ -32,7 +32,9 @@ export default function SignupPage() {
       // Prepare data for backend
       const signupData = {
         userType,
-        fullName: values.fullName,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        gender: values.gender,
         email: values.email,
         password: values.password,
         phone: values.phone,
@@ -41,6 +43,11 @@ export default function SignupPage() {
       // Add license number if not patient
       if (userType !== "patient") {
         signupData.licenseNumber = values.licenseNumber;
+      }
+
+      if (userType === "scan" || userType === "lap") {
+        signupData.displayName = values.displayName;
+        signupData.address = values.address;
       }
 
       // TODO: Replace with actual backend endpoint when server is ready
@@ -60,13 +67,15 @@ export default function SignupPage() {
 
       // Show success message
       toast.success(
-        "Signup successful! Please check your email for verification."
+        "Signup successful!"
       );
 
-      // TODO: After backend is connected and verification endpoint is ready:
-      // 1. Navigate to verification page: navigate(`/auth/verify?email=${values.email}&userType=${userType}`);
-      // 2. Remove localStorage saving (data will be handled by backend)
-      // 3. Handle verification code sending from backend
+      // Navigate based on userType
+      if (userType === "patient" || userType === "doctor") {
+        navigate(`/auth/OTPVerify?email=${encodeURIComponent(values.email)}&userType=${userType}`);
+      } else {
+        navigate(`/auth/Login`);
+      }
     } catch (error) {
       console.error("Signup error:", error);
       toast.error(
@@ -117,19 +126,41 @@ export default function SignupPage() {
                 onSubmit={handleSubmit}
                 enableReinitialize
               >
-                {({ isSubmitting }) => (
+                {({ isSubmitting, isValid, dirty }) => (
                   <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
                     <div className="flex flex-col gap-[10px]">
-                      {/* Full Name */}
+                    {/* Names Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
                       <FormInputField
-                        name="fullName"
-                        label="Full Name"
+                        name="firstName"
+                        label="First Name"
                         type="text"
-                        placeholder="Enter Your Full Name"
+                        placeholder="Enter Your First Name"
                         icon={MdPerson}
                       />
+                      <FormInputField
+                        name="lastName"
+                        label="Last Name"
+                        type="text"
+                        placeholder="Enter Your Last Name"
+                        icon={MdPerson}
+                      />
+                    </div>
 
-                      {/* Email */}
+                    {/* Gender */}
+                    <FormInputField
+                      name="gender"
+                      label="Gender"
+                      type="select"
+                      placeholder="Select gender"
+                      options={[
+                        { value: "male", label: "Male" },
+                        { value: "female", label: "Female" },
+                        { value: "other", label: "Other" },
+                      ]}
+                    />
+
+                    {/* Email */}
                       <FormInputField
                         name="email"
                         label="Email"
@@ -165,8 +196,8 @@ export default function SignupPage() {
                         icon={RiPhoneLine}
                       />
 
-                      {/* License Number - Only for non-patient users */}
-                      {userType !== "patient" && (
+                    {/* License Number - Only for non-patient users */}
+                    {userType !== "patient" && (
                         <FormInputField
                           name="licenseNumber"
                           label="License Number"
@@ -175,14 +206,33 @@ export default function SignupPage() {
                           icon={FaIdCard}
                         />
                       )}
+
+                    {/* Scan/Lap extra fields in initial signup */}
+                    {(userType === "scan" || userType === "lap") && (
+                      <>
+                        <FormInputField
+                          name="displayName"
+                          label="Display Name"
+                          type="text"
+                          placeholder="Enter Display Name"
+                        />
+                        <FormInputField
+                          name="address"
+                          label="Address"
+                          type="text"
+                          placeholder="Enter Address"
+                        />
+                      </>
+                    )}
                     </div>
 
                     {/* Submit Button & Auth Link */}
                     <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
                       <SubmitButton
-                        text="Complete Sign Up"
+                        text={(userType === "scan" || userType === "lap") ? "Sign Up" : "Complete Sign Up"}
                         loadingText="Signing up..."
                         isLoading={isSubmitting}
+                        disabled={!isValid || !dirty}
                       />
 
                       <AuthLink

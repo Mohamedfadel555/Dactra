@@ -5,7 +5,7 @@ import mainImage from "../../assets/images/OTPImage.png";
 
 //importing hooks
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 //importing utils
 import { OTPInitialValues } from "../../utils/formInitialValues";
@@ -20,6 +20,9 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function OTPPage() {
   const [time, setTime] = useState(60);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const userType = searchParams.get("userType") || "";
+  const email = searchParams.get("email") || "";
 
   //resent timer
   useEffect(() => {
@@ -39,7 +42,14 @@ export default function OTPPage() {
   const submiting = (values) => {
     //send data here
     console.log(values);
-    navigate("../UpdatePassword");
+    if (userType === "patient" || userType === "doctor") {
+      navigate(`/auth/CompleteSignup?userType=${userType}&email=${encodeURIComponent(email)}`);
+    } else if (!userType) {
+      // keep Forgot Password flow as-is
+      navigate("../UpdatePassword");
+    } else {
+      navigate("/auth/Login");
+    }
   };
 
   return (
@@ -70,7 +80,7 @@ export default function OTPPage() {
             {({ values, setFieldValue, errors, submitCount }) => (
               <Form className="h-full w-[90%] md:w-2/3 flex flex-col justify-evenly gap-[20px] md:gap-[30px]">
                 <p className="font-english text-center text-[#003465] text-[14px]">
-                  Code has been send to your email Check your Email
+                  Code has been sent to your email. Check your email
                 </p>
                 <div className="flex flex-col gap-[10px] justify-center items-center">
                   <OTPInput

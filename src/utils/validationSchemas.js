@@ -3,10 +3,18 @@ import * as yup from "yup";
 // Base validation schema for signup
 export const getSignupValidationSchema = (userType) => {
   const baseSchema = {
-    fullName: yup
+    firstName: yup
       .string()
-      .min(3, "Full name must be at least 3 characters")
-      .required("Full name is required"),
+      .min(2, "First name must be at least 2 characters")
+      .required("First name is required"),
+    lastName: yup
+      .string()
+      .min(2, "Last name must be at least 2 characters")
+      .required("Last name is required"),
+    gender: yup
+      .string()
+      .oneOf(["male", "female", "other"], "Select a valid gender")
+      .required("Gender is required"),
     email: yup
       .string()
       .email("Invalid email address")
@@ -36,7 +44,61 @@ export const getSignupValidationSchema = (userType) => {
       .required("License number is required");
   }
 
+  if (userType === "scan" || userType === "lap") {
+    baseSchema.displayName = yup
+      .string()
+      .min(2, "Display name must be at least 2 characters")
+      .required("Display name is required");
+    baseSchema.address = yup
+      .string()
+      .min(5, "Address must be at least 5 characters")
+      .required("Address is required");
+  }
+
   return yup.object(baseSchema);
+};
+
+// Validation for the Complete Signup step (patient/doctor only)
+export const getCompleteSignupValidationSchema = (userType) => {
+  if (userType === "patient") {
+    return yup.object({
+      dateOfBirth: yup.string().required("Date of birth is required"),
+      height: yup
+        .number()
+        .typeError("Height must be a number")
+        .min(30, "Height too small")
+        .max(300, "Height too large")
+        .required("Height is required"),
+      weight: yup
+        .number()
+        .typeError("Weight must be a number")
+        .min(2, "Weight too small")
+        .max(500, "Weight too large")
+        .required("Weight is required"),
+      bloodType: yup
+        .string()
+        .oneOf(["A+","A-","B+","B-","AB+","AB-","O+","O-"], "Select a valid blood type")
+        .required("Blood type is required"),
+      smokingStatus: yup
+        .string()
+        .oneOf(["smoker","non-smoker","former"], "Select a valid smoking status")
+        .required("Smoking status is required"),
+      maritalStatus: yup
+        .string()
+        .oneOf(["single","married","divorced","widowed"], "Select a valid marital status")
+        .required("Marital status is required"),
+    });
+  }
+
+  // doctor
+  return yup.object({
+    dateOfBirth: yup.string().required("Date of birth is required"),
+    careerStartDate: yup.string().required("Career start date is required"),
+    clinicAddress: yup
+      .string()
+      .min(5, "Address must be at least 5 characters")
+      .required("Clinic address is required"),
+  });
 };
 
 // Login validation schema
