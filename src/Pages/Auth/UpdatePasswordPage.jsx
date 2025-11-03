@@ -53,7 +53,7 @@ export default function UpdatePasswordPage() {
             validationSchema={updatePasswordValidationSchema}
             onSubmit={submiting}
           >
-            {({ errors, touched }) => (
+            {({ isValid, dirty, isSubmitting }) => (
               <Form className="h-full w-[90%] md:w-2/3 flex flex-col gap-[20px] md:gap-[30px]">
                 <p className="font-english text-[#003465] text-[12px]">
                   Create a new password, ensure it different form your ,previous
@@ -78,13 +78,9 @@ export default function UpdatePasswordPage() {
                 <div className="w-full flex flex-col gap-[5px] justify-center items-center ">
                   <SubmitButton
                     text="Update Password"
-                    disabled={
-                      errors.password || errors.confirm_password
-                        ? true
-                        : !touched.password || !touched.confirm_password
-                        ? true
-                        : false
-                    }
+                    disabled={!isValid || !dirty}
+                    isLoading={isSubmitting}
+                    loadingText="Updating..."
                   />
                 </div>
               </Form>

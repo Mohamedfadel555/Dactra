@@ -52,7 +52,7 @@ export default function LoginPage() {
             validationSchema={loginValidationSchema}
             onSubmit={submiting}
           >
-            {({ errors, touched }) => (
+            {({ isValid, dirty, isSubmitting }) => (
               <Form className="h-full w-[90%] md:w-2/3 flex flex-col gap-[20px] ">
                 <div className="flex flex-col gap-[10px]">
                   <FormInputField
@@ -81,13 +81,9 @@ export default function LoginPage() {
                 <div className="w-full flex flex-col gap-[5px] lg:gap-[10px] justify-center items-center">
                   <SubmitButton
                     text="Login"
-                    disabled={
-                      errors.email || errors.password
-                        ? true
-                        : !touched.email || !touched.password
-                        ? true
-                        : false
-                    }
+                    disabled={!isValid || !dirty}
+                    isLoading={isSubmitting}
+                    loadingText="Signing in..."
                   />
                   <p className="text-[#003465] text-[12px] font-[400]">
                     or continue with

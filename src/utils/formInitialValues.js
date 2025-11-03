@@ -1,9 +1,6 @@
 // Get initial values for signup form based on user type
 export const getSignupInitialValues = (userType) => {
   const baseValues = {
-    firstName: "",
-    lastName: "",
-    gender: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -19,6 +16,12 @@ export const getSignupInitialValues = (userType) => {
   if (userType === "scan" || userType === "lap") {
     baseValues.displayName = ""; // public name
     baseValues.address = "";
+  }
+
+  if (userType !== "scan" && userType !== "lab") {
+    (baseValues.firstName = ""),
+      (baseValues.lastName = ""),
+      (baseValues.gender = "");
   }
 
   return baseValues;

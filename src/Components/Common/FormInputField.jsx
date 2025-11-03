@@ -15,19 +15,14 @@ export default function FormInputField({
   const isPasswordField = type === "password";
   const inputType = isPasswordField && showPassword ? "text" : type;
   const showPasswordToggle = isPasswordField;
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div className="flex flex-col gap-[5px]">
-      <label
-        htmlFor={name}
-        className="text-[#003465] font-[500] font-english"
-      >
+      <label htmlFor={name} className="text-[#003465] font-[500] font-english">
         {label}
       </label>
       <div className="relative">
-        {!options && Icon && (
-          <Icon className="absolute left-2 top-1/2 -translate-y-1/2 text-[#BCBEC0]" />
-        )}
         {options ? (
           <Field
             as="select"
@@ -49,9 +44,15 @@ export default function FormInputField({
             type={inputType}
             id={name}
             name={name}
+            max={type === "date" ? today : undefined}
             placeholder={placeholder}
-            className={`w-full h-[32px] border placeholder:text-[#BCBEC0] placeholder:text-[15px] border-[#BCBEC0] rounded-[5px] pl-8 ${showPasswordToggle ? "pr-8" : ""} focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
+            className={`w-full h-[32px] peer border placeholder:text-[#BCBEC0] placeholder:text-[15px] border-[#BCBEC0] rounded-[5px] pl-8 ${
+              showPasswordToggle ? "pr-8" : ""
+            } focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
           />
+        )}
+        {!options && Icon && (
+          <Icon className="absolute transition-all duration-300 peer-focus:text-blue-500 left-2 top-1/2 peer-[]: -translate-y-1/2 text-[#BCBEC0]" />
         )}
         {showPasswordToggle && (
           <button
@@ -75,4 +76,3 @@ export default function FormInputField({
     </div>
   );
 }
-

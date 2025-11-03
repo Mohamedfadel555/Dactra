@@ -47,7 +47,10 @@ export default function CompleteSignupPage() {
       {/* User Type Selection - hide for patient/doctor */}
       {(userType === "scan" || userType === "lap") && (
         <div className="w-full max-w-[1000px] px-[20px]">
-          <UserTypeSelector userType={userType} onUserTypeChange={setUserType} />
+          <UserTypeSelector
+            userType={userType}
+            onUserTypeChange={setUserType}
+          />
         </div>
       )}
       <div className="w-full flex-1 flex-col md:flex-row flex justify-center items-center gap-[30px]">
@@ -75,16 +78,35 @@ export default function CompleteSignupPage() {
 
             {/* Scrollable Form Container */}
             <div className="flex-1 w-[90%] md:w-2/3 overflow-y-auto overflow-x-hidden pr-[5px] custom-scrollbar min-h-0 pb-[20px]">
-              <Formik initialValues={initialValues} validationSchema={getCompleteSignupValidationSchema(userType)} onSubmit={handleSubmit} enableReinitialize>
+              <Formik
+                initialValues={initialValues}
+                validationSchema={getCompleteSignupValidationSchema(userType)}
+                onSubmit={handleSubmit}
+                enableReinitialize
+              >
                 {({ isSubmitting, isValid, dirty }) => (
                   <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
                     <div className="flex flex-col gap-[10px]">
                       {userType === "patient" ? (
                         <>
-                          <FormInputField name="dateOfBirth" label="Date of Birth" type="date" />
+                          <FormInputField
+                            name="dateOfBirth"
+                            label="Date of Birth"
+                            type="date"
+                          />
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
-                            <FormInputField name="height" label="Height (cm)" type="number" placeholder="Enter height" />
-                            <FormInputField name="weight" label="Weight (kg)" type="number" placeholder="Enter weight" />
+                            <FormInputField
+                              name="height"
+                              label="Height (cm)"
+                              type="number"
+                              placeholder="Enter height"
+                            />
+                            <FormInputField
+                              name="weight"
+                              label="Weight (kg)"
+                              type="number"
+                              placeholder="Enter weight"
+                            />
                           </div>
                           <FormInputField
                             name="bloodType"
@@ -128,16 +150,34 @@ export default function CompleteSignupPage() {
                         </>
                       ) : (
                         <>
-                          <FormInputField name="dateOfBirth" label="Date of Birth" type="date" />
-                          <FormInputField name="careerStartDate" label="Career Start Date" type="date" />
-                          <FormInputField name="clinicAddress" label="Clinic Address" type="text" placeholder="Enter clinic address" />
+                          <FormInputField
+                            name="dateOfBirth"
+                            label="Date of Birth"
+                            type="date"
+                          />
+                          <FormInputField
+                            name="careerStartDate"
+                            label="Career Start Date"
+                            type="date"
+                          />
+                          <FormInputField
+                            name="clinicAddress"
+                            label="Clinic Address"
+                            type="text"
+                            placeholder="Enter clinic address"
+                          />
                         </>
                       )}
                     </div>
 
                     {/* Submit */}
                     <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
-                      <SubmitButton text="Sign Up" loadingText="Saving..." isLoading={isSubmitting} disabled={!isValid || !dirty} />
+                      <SubmitButton
+                        text="Sign Up"
+                        loadingText="Saving..."
+                        isLoading={isSubmitting}
+                        disabled={!isValid || !dirty}
+                      />
                     </div>
                   </Form>
                 )}
@@ -149,6 +189,3 @@ export default function CompleteSignupPage() {
     </div>
   );
 }
-
-
-

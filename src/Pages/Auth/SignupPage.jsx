@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { MdEmail, MdPerson } from "react-icons/md";
 import { RiLock2Line, RiPhoneLine } from "react-icons/ri";
-import { FaIdCard } from "react-icons/fa";
+import { FaBuilding, FaIdCard, FaMapMarkerAlt } from "react-icons/fa";
 
 // Components
 import BrandLogo from "../../Components/Common/BrandLogo";
@@ -66,13 +66,15 @@ export default function SignupPage() {
       localStorage.setItem("signupData", JSON.stringify(existingData));
 
       // Show success message
-      toast.success(
-        "Signup successful!"
-      );
+      toast.success("Signup successful!");
 
       // Navigate based on userType
       if (userType === "patient" || userType === "doctor") {
-        navigate(`/auth/OTPVerify?email=${encodeURIComponent(values.email)}&userType=${userType}`);
+        navigate(
+          `/auth/OTPVerify?email=${encodeURIComponent(
+            values.email
+          )}&userType=${userType}`
+        );
       } else {
         navigate(`/auth/Login`);
       }
@@ -129,38 +131,41 @@ export default function SignupPage() {
                 {({ isSubmitting, isValid, dirty }) => (
                   <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
                     <div className="flex flex-col gap-[10px]">
-                    {/* Names Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
-                      <FormInputField
-                        name="firstName"
-                        label="First Name"
-                        type="text"
-                        placeholder="Enter Your First Name"
-                        icon={MdPerson}
-                      />
-                      <FormInputField
-                        name="lastName"
-                        label="Last Name"
-                        type="text"
-                        placeholder="Enter Your Last Name"
-                        icon={MdPerson}
-                      />
-                    </div>
+                      {userType !== "scan" && userType !== "lap" && (
+                        <>
+                          {/* Names Row */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
+                            <FormInputField
+                              name="firstName"
+                              label="First Name"
+                              type="text"
+                              placeholder="First Name"
+                              icon={MdPerson}
+                            />
+                            <FormInputField
+                              name="lastName"
+                              label="Last Name"
+                              type="text"
+                              placeholder="Last Name"
+                              icon={MdPerson}
+                            />
+                          </div>
 
-                    {/* Gender */}
-                    <FormInputField
-                      name="gender"
-                      label="Gender"
-                      type="select"
-                      placeholder="Select gender"
-                      options={[
-                        { value: "male", label: "Male" },
-                        { value: "female", label: "Female" },
-                        { value: "other", label: "Other" },
-                      ]}
-                    />
+                          {/* Gender */}
+                          <FormInputField
+                            name="gender"
+                            label="Gender"
+                            type="select"
+                            placeholder="Select gender"
+                            options={[
+                              { value: "male", label: "Male" },
+                              { value: "female", label: "Female" },
+                            ]}
+                          />
+                        </>
+                      )}
 
-                    {/* Email */}
+                      {/* Email */}
                       <FormInputField
                         name="email"
                         label="Email"
@@ -196,8 +201,8 @@ export default function SignupPage() {
                         icon={RiPhoneLine}
                       />
 
-                    {/* License Number - Only for non-patient users */}
-                    {userType !== "patient" && (
+                      {/* License Number - Only for non-patient users */}
+                      {userType !== "patient" && (
                         <FormInputField
                           name="licenseNumber"
                           label="License Number"
@@ -207,29 +212,35 @@ export default function SignupPage() {
                         />
                       )}
 
-                    {/* Scan/Lap extra fields in initial signup */}
-                    {(userType === "scan" || userType === "lap") && (
-                      <>
-                        <FormInputField
-                          name="displayName"
-                          label="Display Name"
-                          type="text"
-                          placeholder="Enter Display Name"
-                        />
-                        <FormInputField
-                          name="address"
-                          label="Address"
-                          type="text"
-                          placeholder="Enter Address"
-                        />
-                      </>
-                    )}
+                      {/* Scan/Lap extra fields in initial signup */}
+                      {(userType === "scan" || userType === "lap") && (
+                        <>
+                          <FormInputField
+                            name="displayName"
+                            label="Display Name"
+                            type="text"
+                            placeholder="Enter Display Name"
+                            icon={FaBuilding}
+                          />
+                          <FormInputField
+                            name="address"
+                            label="Address"
+                            type="text"
+                            placeholder="Enter Address"
+                            icon={FaMapMarkerAlt}
+                          />
+                        </>
+                      )}
                     </div>
 
                     {/* Submit Button & Auth Link */}
                     <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
                       <SubmitButton
-                        text={(userType === "scan" || userType === "lap") ? "Sign Up" : "Complete Sign Up"}
+                        text={
+                          userType === "scan" || userType === "lap"
+                            ? "Sign Up"
+                            : "Complete Sign Up"
+                        }
                         loadingText="Signing up..."
                         isLoading={isSubmitting}
                         disabled={!isValid || !dirty}

@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
             validationSchema={forgetPasswordValidationSchema}
             onSubmit={submiting}
           >
-            {({ errors, touched }) => (
+            {({ isValid, dirty, isSubmitting }) => (
               <Form className="h-full w-[90%] md:w-2/3 flex flex-col gap-[20px] md:gap-[30px]">
                 <p className="font-english text-[#003465] text-[15px]">
                   Please enter your email
@@ -69,9 +69,9 @@ export default function ForgotPasswordPage() {
                 <div className="w-full flex flex-col gap-[5px] justify-center items-center h-[100px] md:h-[150px] lg:h-[100px] ">
                   <SubmitButton
                     text="Forget Password"
-                    disabled={
-                      errors.email ? true : !touched.email ? true : false
-                    }
+                    disabled={!isValid || !dirty}
+                    isLoading={isSubmitting}
+                    loadingText="Send data..."
                   />
                 </div>
               </Form>
