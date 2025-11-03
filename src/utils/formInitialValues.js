@@ -24,3 +24,18 @@ export const loginInitialValues = {
   password: "",
 };
 
+//Initial values for Forget Password Form
+export const forgetPasswordInitialValues = {
+  email: "",
+};
+
+//Initial values for OTP
+export const OTPInitialValues = {
+  otp: "",
+};
+
+//Initial values for Update Password Form
+export const updatePasswordInitialValues = {
+  password: "",
+  confirm_password: "",
+};

@@ -15,7 +15,10 @@ import SubmitButton from "../../Components/Common/SubmitButton";
 import AuthLink from "../../Components/Common/AuthLink";
 
 // Constants & Utils
-import { USER_TYPE_IMAGES, DEFAULT_USER_TYPE } from "../../constants/authConstants";
+import {
+  USER_TYPE_IMAGES,
+  DEFAULT_USER_TYPE,
+} from "../../constants/authConstants";
 import { getSignupValidationSchema } from "../../utils/validationSchemas";
 import { getSignupInitialValues } from "../../utils/formInitialValues";
 
@@ -46,7 +49,9 @@ export default function SignupPage() {
       console.log("Signup data:", signupData);
 
       // Save to localStorage
-      const existingData = JSON.parse(localStorage.getItem("signupData") || "[]");
+      const existingData = JSON.parse(
+        localStorage.getItem("signupData") || "[]"
+      );
       existingData.push({
         ...signupData,
         timestamp: new Date().toISOString(),
@@ -54,7 +59,9 @@ export default function SignupPage() {
       localStorage.setItem("signupData", JSON.stringify(existingData));
 
       // Show success message
-      toast.success("Signup successful! Please check your email for verification.");
+      toast.success(
+        "Signup successful! Please check your email for verification."
+      );
 
       // TODO: After backend is connected and verification endpoint is ready:
       // 1. Navigate to verification page: navigate(`/auth/verify?email=${values.email}&userType=${userType}`);
@@ -74,10 +81,7 @@ export default function SignupPage() {
     <div className="w-full h-full flex flex-col justify-center items-center gap-[20px] py-[10px] px-[40px]">
       {/* User Type Selection - Above image and form */}
       <div className="w-full max-w-[1000px] px-[20px]">
-        <UserTypeSelector
-          userType={userType}
-          onUserTypeChange={setUserType}
-        />
+        <UserTypeSelector userType={userType} onUserTypeChange={setUserType} />
       </div>
 
       {/* Content Section - Image and Form */}
@@ -100,70 +104,69 @@ export default function SignupPage() {
 
         {/* Right Section - Form */}
         <div className="min-w-[280px] w-[95%] md:w-1/2 flex justify-center items-center">
-          <div className="w-full h-fit  md:h-[400px] l:h-[450px] xl:h-[500px] bg-[#FFFFFF] rounded-[25px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.1)] flex flex-col pt-[20px] items-center gap-[20px] overflow-hidden">
+          <div className="w-full h-fit md:h-[400px] lg:h-[450px] xl:h-[500px] bg-[#FFFFFF] rounded-[25px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.1)] flex flex-col pt-[20px] items-center gap-[20px] overflow-hidden">
             {/* Brand Logo */}
             <BrandLogo />
 
             {/* Scrollable Form Container */}
             <div className="flex-1 w-[90%] md:w-2/3 overflow-y-auto overflow-x-hidden pr-[5px] custom-scrollbar min-h-0 pb-[20px]">
-            <Formik
-              key={userType} // Reset form when user type changes
-              initialValues={getSignupInitialValues(userType)}
-              validationSchema={getSignupValidationSchema(userType)}
-              onSubmit={handleSubmit}
-              enableReinitialize
-            >
-              {({ isSubmitting }) => (
-                <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
-                  <div className="flex flex-col gap-[10px]">
-                    {/* Full Name */}
-                    <FormInputField
-                      name="fullName"
-                      label="Full Name"
-                      type="text"
-                      placeholder="Enter Your Full Name"
-                      icon={MdPerson}
-                    />
+              <Formik
+                key={userType} // Reset form when user type changes
+                initialValues={getSignupInitialValues(userType)}
+                validationSchema={getSignupValidationSchema(userType)}
+                onSubmit={handleSubmit}
+                enableReinitialize
+              >
+                {({ isSubmitting }) => (
+                  <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
+                    <div className="flex flex-col gap-[10px]">
+                      {/* Full Name */}
+                      <FormInputField
+                        name="fullName"
+                        label="Full Name"
+                        type="text"
+                        placeholder="Enter Your Full Name"
+                        icon={MdPerson}
+                      />
 
-                    {/* Email */}
-                    <FormInputField
-                      name="email"
-                      label="Email"
-                      type="email"
-                      placeholder="username@gmail.com"
-                      icon={MdEmail}
-                    />
+                      {/* Email */}
+                      <FormInputField
+                        name="email"
+                        label="Email"
+                        type="email"
+                        placeholder="username@gmail.com"
+                        icon={MdEmail}
+                      />
 
-                    {/* Password */}
-                    <FormInputField
-                      name="password"
-                      label="password"
-                      type="password"
-                      placeholder="Enter Your Password"
-                      icon={RiLock2Line}
-                    />
+                      {/* Password */}
+                      <FormInputField
+                        name="password"
+                        label="password"
+                        type="password"
+                        placeholder="Enter Your Password"
+                        icon={RiLock2Line}
+                      />
 
-                    {/* Confirm Password */}
-                    <FormInputField
-                      name="confirmPassword"
-                      label="Confirm Password"
-                      type="password"
-                      placeholder="Confirm Your Password"
-                      icon={RiLock2Line}
-                    />
+                      {/* Confirm Password */}
+                      <FormInputField
+                        name="confirmPassword"
+                        label="Confirm Password"
+                        type="password"
+                        placeholder="Confirm Your Password"
+                        icon={RiLock2Line}
+                      />
 
-                    {/* Phone */}
-                    <FormInputField
-                      name="phone"
-                      label="Phone"
-                      type="tel"
-                      placeholder="Enter Your Phone Number"
-                      icon={RiPhoneLine}
-                    />
+                      {/* Phone */}
+                      <FormInputField
+                        name="phone"
+                        label="Phone"
+                        type="tel"
+                        placeholder="Enter Your Phone Number"
+                        icon={RiPhoneLine}
+                      />
 
-                    {/* License Number - Only for non-patient users */}
-                    {userType !== "patient" && (
-                     
+                      {/* License Number - Only for non-patient users */}
+                      {userType !== "patient" && (
                         <FormInputField
                           name="licenseNumber"
                           label="License Number"
@@ -171,27 +174,26 @@ export default function SignupPage() {
                           placeholder="Enter Your License Number"
                           icon={FaIdCard}
                         />
-                      
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  {/* Submit Button & Auth Link */}
-                  <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
-                    <SubmitButton
-                      text="Complete Sign Up"
-                      loadingText="Signing up..."
-                      isLoading={isSubmitting}
-                    />
+                    {/* Submit Button & Auth Link */}
+                    <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
+                      <SubmitButton
+                        text="Complete Sign Up"
+                        loadingText="Signing up..."
+                        isLoading={isSubmitting}
+                      />
 
-                    <AuthLink
-                      to="/auth/Login"
-                      text="Do you have an account ?"
-                      linkText="log in"
-                    />
-                  </div>
-                </Form>
-              )}
-            </Formik>
+                      <AuthLink
+                        to="/auth/Login"
+                        text="Do you have an account ?"
+                        linkText="log in"
+                      />
+                    </div>
+                  </Form>
+                )}
+              </Formik>
             </div>
           </div>
         </div>

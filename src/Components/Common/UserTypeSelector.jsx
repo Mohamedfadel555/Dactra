@@ -2,7 +2,7 @@ export default function UserTypeSelector({ userType, onUserTypeChange }) {
   const userTypes = ["patient", "doctor", "scan", "lap"];
 
   return (
-    <div className="flex gap-[10px]  md:mt-0 md:gap-[20px] lg:gap-[25px] justify-center items-center">
+    <div className="flex gap-[10px]  md:mt-0 md:gap-[20px] lg:gap-[25px] justify-center items-center ">
       {userTypes.map((type) => (
         <button
           key={type}
@@ -20,4 +20,3 @@ export default function UserTypeSelector({ userType, onUserTypeChange }) {
     </div>
   );
 }
-

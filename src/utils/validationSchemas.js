@@ -48,3 +48,24 @@ export const loginValidationSchema = yup.object({
     .required("Password is required"),
 });
 
+//Forget Password validation schema
+export const forgetPasswordValidationSchema = yup.object({
+  email: yup.string().email("Invalid email").required("Email is required"),
+});
+
+//OTP validation schema
+export const OTPValidationDchema = yup.object({
+  otp: yup.string().length(6, "OTP invalid").required("OTP invalild"),
+});
+
+//Update Password Validation schema
+export const updatePasswordValidationSchema = yup.object({
+  password: yup
+    .string()
+    .min(8, "at least 8 chars")
+    .required("password is required"),
+  confirm_password: yup
+    .string()
+    .oneOf([yup.ref("password")], "passwords must match")
+    .required("Confirm is required"),
+});
