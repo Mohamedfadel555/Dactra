@@ -100,7 +100,7 @@ export default function SignupPage() {
 
         {/* Right Section - Form */}
         <div className="min-w-[280px] w-[95%] md:w-1/2 flex justify-center items-center">
-          <div className="w-full h-[500px] md:h-[550px] bg-[#FFFFFF] rounded-[25px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.1)] flex flex-col pt-[20px] items-center gap-[20px] overflow-hidden">
+          <div className="w-full h-fit  md:h-[400px] l:h-[450px] xl:h-[500px] bg-[#FFFFFF] rounded-[25px] shadow-[0px_4px_20px_0px_rgba(0,0,0,0.1)] flex flex-col pt-[20px] items-center gap-[20px] overflow-hidden">
             {/* Brand Logo */}
             <BrandLogo />
 
