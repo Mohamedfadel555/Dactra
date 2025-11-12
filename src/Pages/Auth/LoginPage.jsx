@@ -1,5 +1,8 @@
 import { Formik, Form } from "formik";
 
+//import Login hook to send data
+import { useLogin } from "../../hooks/useLogin";
+
 // importing imagesyy
 import mainImage from "../../assets/images/AllLoginImage.png";
 import GIcon from "../../assets/images/icons/googleIcon.png";
@@ -21,10 +24,17 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function LoginPage() {
+  const loginMutation = useLogin();
+
   //submiting function for the form
-  const submiting = (values) => {
-    //send data here
-    console.log(values);
+  const submiting = async (values, { setSubmitting }) => {
+    try {
+      await loginMutation.mutateAsync(values);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -83,7 +93,7 @@ export default function LoginPage() {
                     text="Login"
                     disabled={!isValid || !dirty}
                     isLoading={isSubmitting}
-                    loadingText="Signing in..."
+                    loadingText="Signing in"
                   />
                   <p className="text-[#003465] text-[12px] font-[400]">
                     or continue with

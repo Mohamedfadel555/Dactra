@@ -6,8 +6,11 @@ import ForgotPasswordPage from "./Pages/Auth/ForgotPasswordPage";
 import OTPPage from "./Pages/Auth/OTPPage";
 import UpdatePasswordPage from "./Pages/Auth/UpdatePasswordPage";
 import CompleteSignupPage from "./Pages/Auth/CompleteSignupPage";
+import ERR404 from "./Pages/Error/Error404";
+import ERR403 from "./Pages/Error/Error403";
 
 export const route = createBrowserRouter([
+  { path: "/*", element: <ERR404 /> },
   {
     path: "/auth",
     element: <AuthLayout />,

@@ -17,12 +17,25 @@ import BrandLogo from "./../../Components/Common/BrandLogo";
 import SubmitButton from "../../Components/Common/SubmitButton";
 import { motion, AnimatePresence } from "framer-motion";
 
+//importing apis hooks
+import { useVerifyOTP } from "../../hooks/useVerifyOTP";
+import { useReSendOTP } from "../../hooks/useReSendOTP";
+
 export default function OTPPage() {
-  const [time, setTime] = useState(60);
   const navigate = useNavigate();
+
+  //state of timer
+  const [time, setTime] = useState(60);
+
   const [searchParams] = useSearchParams();
   const userType = searchParams.get("userType") || "";
   const email = searchParams.get("email") || "";
+
+  //hook of verify otp
+  const verifyOTPMutation = useVerifyOTP();
+
+  //hook resend otp
+  const reSendOTPMutation = useReSendOTP();
 
   //resent timer
   useEffect(() => {
@@ -34,19 +47,60 @@ export default function OTPPage() {
   }, [time]);
 
   //in this function handle resent api
-  function handleResent() {
-    setTime(60);
+  async function handleResent() {
+    //the email that need to resend otp
+    const data = {
+      email: email,
+    };
+
+    try {
+      await reSendOTPMutation.mutateAsync(data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setTime(60);
+    }
   }
 
   //submiting function for the form
-  const submiting = (values) => {
-    //send data here
-    console.log(values);
+  const submiting = async (values, { setSubmitting }) => {
+    //object that will send to back
+    const FormData = {
+      email: email,
+      otp: values.otp,
+    };
+
+    //handle otp cases
+    //case one if the user is patient or doctor the the user need to complete his data so navigate to complete
     if (userType === "patient" || userType === "doctor") {
-      navigate(`/auth/CompleteSignup?userType=${userType}&email=${encodeURIComponent(email)}`);
+      try {
+        const res = await verifyOTPMutation.mutateAsync(FormData);
+        if (res.status === 200) {
+          navigate(
+            `/auth/CompleteSignup?userType=${userType}&email=${encodeURIComponent(
+              email
+            )}`
+          );
+        }
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setSubmitting(false);
+      }
+      //this case of update password
     } else if (!userType) {
       // keep Forgot Password flow as-is
-      navigate("../UpdatePassword");
+      try {
+        const res = await verifyOTPMutation.mutateAsync(FormData);
+        if (res.status === 200) {
+          navigate("../UpdatePassword");
+        }
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setSubmitting(false);
+      }
+      //case labs and scans we verifying the user's only then navigate to login
     } else {
       navigate("/auth/Login");
     }
@@ -77,7 +131,7 @@ export default function OTPPage() {
             validationSchema={OTPValidationDchema}
             onSubmit={submiting}
           >
-            {({ values, setFieldValue, errors, submitCount }) => (
+            {({ values, setFieldValue, isSubmitting, submitCount, errors }) => (
               <Form className="h-full w-[90%] md:w-2/3 flex flex-col justify-evenly gap-[20px] md:gap-[30px]">
                 <p className="font-english text-center text-[#003465] text-[14px]">
                   Code has been sent to your email. Check your email
@@ -117,7 +171,11 @@ export default function OTPPage() {
                   )}
                 </div>
                 <div className="w-full flex flex-col gap-[5px] justify-center items-center">
-                  <SubmitButton text="Verify" />
+                  <SubmitButton
+                    text="Verify"
+                    isLoading={isSubmitting}
+                    loadingText="Verifiying"
+                  />
                 </div>
               </Form>
             )}

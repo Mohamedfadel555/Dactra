@@ -16,15 +16,28 @@ import BrandLogo from "./../../Components/Common/BrandLogo";
 import FormInputField from "../../Components/Common/FormInputField";
 import SubmitButton from "../../Components/Common/SubmitButton";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSendOTP } from "../../hooks/useSendOTP";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
 
+  const sendOTPMutation = useSendOTP();
+
   //submiting function for the form
-  const submiting = (values) => {
+  const submiting = async (values, { setSubmitting }) => {
     //send data here
+    try {
+      const res = await sendOTPMutation.mutateAsync(values);
+      if (res.status === 200) {
+        navigate(`../OTPVerify?email=${encodeURIComponent(values.email)}`);
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setSubmitting(false);
+    }
     console.log(values);
-    navigate("../OTPverify");
+    // navigate("../OTPverify");
   };
 
   return (
@@ -71,7 +84,7 @@ export default function ForgotPasswordPage() {
                     text="Forget Password"
                     disabled={!isValid || !dirty}
                     isLoading={isSubmitting}
-                    loadingText="Send data..."
+                    loadingText="Send data"
                   />
                 </div>
               </Form>
