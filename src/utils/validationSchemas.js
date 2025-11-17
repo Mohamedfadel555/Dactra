@@ -9,12 +9,12 @@ export const getSignupValidationSchema = (userType) => {
       .required("Email is required"),
     password: yup
       .string()
+      .required("Password is required")
       .min(8, "Password must be at least 8 characters")
       .matches(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-      )
-      .required("Password is required"),
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
+        "Password must have upper, lower, number & symbol"
+      ),
     confirmPassword: yup
       .string()
       .oneOf([yup.ref("password")], "Passwords must match")
@@ -130,8 +130,12 @@ export const loginValidationSchema = yup.object({
   email: yup.string().email("Invalid email").required("Email is required"),
   password: yup
     .string()
-    .min(8, "At least 8 chars")
-    .required("Password is required"),
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
+      "Password must have upper, lower, number & symbol"
+    ),
 });
 
 //Forget Password validation schema
@@ -148,12 +152,12 @@ export const OTPValidationDchema = yup.object({
 export const updatePasswordValidationSchema = yup.object({
   password: yup
     .string()
+    .required("Password is required")
     .min(8, "Password must be at least 8 characters")
     .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-    )
-    .required("Password is required"),
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
+      "Password must have upper, lower, number & symbol"
+    ),
   confirm_password: yup
     .string()
     .oneOf([yup.ref("password")], "passwords must match")

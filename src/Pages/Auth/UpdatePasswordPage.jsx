@@ -18,13 +18,31 @@ import BrandLogo from "./../../Components/Common/BrandLogo";
 import FormInputField from "./../../Components/Common/FormInputField";
 import SubmitButton from "../../Components/Common/SubmitButton";
 import { motion, AnimatePresence } from "framer-motion";
+import { useResetPassword } from "../../hooks/useResetPassword";
 
 export default function UpdatePasswordPage() {
   const navigate = useNavigate();
 
+  const resetPasswordMutation = useResetPassword();
+
   //submiting function for the form
-  const submiting = (values) => {
+  const submiting = async (values, { setSubmitting }) => {
     //send data here
+    const FormData = {
+      refreshToken: localStorage.getItem("token"),
+      newPassword: values.password,
+      confirmPassword: values.confirm_password,
+    };
+    console.log(FormData);
+
+    try {
+      await resetPasswordMutation.mutateAsync(FormData);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setSubmitting(false);
+    }
+
     console.log(values);
   };
 

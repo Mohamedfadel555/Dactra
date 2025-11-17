@@ -24,10 +24,11 @@ export const useLogin = () => {
       //specifie the error message from status
       data.status === 401
         ? (message = "Email or password is invalid!")
-        : data.status === 404
+        : data.status === 400
         ? (message = "User Isn't Fonud")
         : (message = "Something went wrong. Please try again later.");
-
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      //not completed yet
       toast.error(message, {
         position: "top-center",
         closeOnClick: true,

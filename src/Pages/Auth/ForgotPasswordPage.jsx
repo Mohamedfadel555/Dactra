@@ -29,14 +29,15 @@ export default function ForgotPasswordPage() {
     try {
       const res = await sendOTPMutation.mutateAsync(values);
       if (res.status === 200) {
-        navigate(`../OTPVerify?email=${encodeURIComponent(values.email)}`);
+        navigate(`../OTPVerify`, {
+          state: { email: values.email, flag: true },
+        });
       }
     } catch (err) {
       console.log(err);
     } finally {
       setSubmitting(false);
     }
-    console.log(values);
     // navigate("../OTPverify");
   };
 

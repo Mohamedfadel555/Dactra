@@ -5,7 +5,7 @@ import mainImage from "../../assets/images/OTPImage.png";
 
 //importing hooks
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 //importing utils
 import { OTPInitialValues } from "../../utils/formInitialValues";
@@ -18,8 +18,9 @@ import SubmitButton from "../../Components/Common/SubmitButton";
 import { motion, AnimatePresence } from "framer-motion";
 
 //importing apis hooks
-import { useVerifyOTP } from "../../hooks/useVerifyOTP";
+import { useVerifyOTP_ForgetPassword } from "../../hooks/useVerifyOTP_ForgetPassword";
 import { useReSendOTP } from "../../hooks/useReSendOTP";
+import { useVerifyOTP } from "../../hooks/useVerifyOTP";
 
 export default function OTPPage() {
   const navigate = useNavigate();
@@ -29,10 +30,15 @@ export default function OTPPage() {
 
   const [searchParams] = useSearchParams();
   const userType = searchParams.get("userType") || "";
-  const email = searchParams.get("email") || "";
+  // const email = searchParams.get("email") || "";
+  //instead of the above do this
+  const { state } = useLocation();
 
   //hook of verify otp
   const verifyOTPMutation = useVerifyOTP();
+
+  //hook of verify otp of forget password
+  const verifyOTPForgetPasswordMutation = useVerifyOTP_ForgetPassword();
 
   //hook resend otp
   const reSendOTPMutation = useReSendOTP();
@@ -50,7 +56,7 @@ export default function OTPPage() {
   async function handleResent() {
     //the email that need to resend otp
     const data = {
-      email: email,
+      email: state.email,
     };
 
     try {
@@ -66,10 +72,10 @@ export default function OTPPage() {
   const submiting = async (values, { setSubmitting }) => {
     //object that will send to back
     const FormData = {
-      email: email,
+      email: state.email,
       otp: values.otp,
     };
-
+    console.log(FormData);
     //handle otp cases
     //case one if the user is patient or doctor the the user need to complete his data so navigate to complete
     if (userType === "patient" || userType === "doctor") {
@@ -89,12 +95,8 @@ export default function OTPPage() {
       }
       //this case of update password
     } else if (!userType) {
-      // keep Forgot Password flow as-is
       try {
-        const res = await verifyOTPMutation.mutateAsync(FormData);
-        if (res.status === 200) {
-          navigate("../UpdatePassword");
-        }
+        const res = await verifyOTPForgetPasswordMutation.mutateAsync(FormData);
       } catch (err) {
         console.log(err);
       } finally {

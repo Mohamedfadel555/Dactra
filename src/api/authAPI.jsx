@@ -20,8 +20,21 @@ export const ReSendOTP = async (Data) => {
   return res;
 };
 
+export const VerifyOTP_ForgetPassword = async (Data) => {
+  const res = await axios.post(
+    `${baseURL}account/verifyOTP_Forgetpassword`,
+    Data
+  );
+  return res;
+};
+
 export const VerifyOTP = async (Data) => {
   const res = await axios.post(`${baseURL}account/verifyOTP`, Data);
+  return res;
+};
+
+export const ResetPassword = async (Data) => {
+  const res = await axios.post(`${baseURL}account/reset-password`, Data);
   return res;
 };
 //write here all api function of Auth
