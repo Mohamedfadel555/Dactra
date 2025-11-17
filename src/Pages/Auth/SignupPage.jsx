@@ -2,10 +2,8 @@ import { useState } from "react";
 import { Formik, Form } from "formik";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-toastify";
-import { MdEmail, MdPerson } from "react-icons/md";
+import { MdEmail } from "react-icons/md";
 import { RiLock2Line, RiPhoneLine } from "react-icons/ri";
-import { FaBuilding, FaIdCard, FaMapMarkerAlt } from "react-icons/fa";
 
 // Components
 import BrandLogo from "../../Components/Common/BrandLogo";
@@ -21,68 +19,74 @@ import {
 } from "../../constants/authConstants";
 import { getSignupValidationSchema } from "../../utils/validationSchemas";
 import { getSignupInitialValues } from "../../utils/formInitialValues";
+import { useRegister } from "../../hooks/useRegister";
+import { useSendOTP } from "../../hooks/useSendOTP";
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const [userType, setUserType] = useState(DEFAULT_USER_TYPE);
-
+  const registerMutation = useRegister();
+  const sendOtpMutation = useSendOTP();
+  const capitalizeFirstLetter = (str) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      // Prepare data for backend
       const signupData = {
-        userType,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        gender: values.gender,
         email: values.email,
         password: values.password,
-        phone: values.phone,
+        confirmPassword: values.confirmPassword,
+        phoneNumber: values.phone,
+        role: capitalizeFirstLetter(userType),
       };
-
-      // Add license number if not patient
-      if (userType !== "patient") {
-        signupData.licenseNumber = values.licenseNumber;
-      }
-
-      if (userType === "scan" || userType === "lap") {
-        signupData.displayName = values.displayName;
-        signupData.address = values.address;
-      }
-
-      // TODO: Replace with actual backend endpoint when server is ready
-      // Example: const response = await axios.post('https://api.example.com/auth/signup', signupData);
-      // For now, just simulate API call
-      console.log("Signup data:", signupData);
-
-      // Save to localStorage
-      const existingData = JSON.parse(
-        localStorage.getItem("signupData") || "[]"
-      );
-      existingData.push({
-        ...signupData,
-        timestamp: new Date().toISOString(),
-      });
-      localStorage.setItem("signupData", JSON.stringify(existingData));
-
-      // Show success message
-      toast.success("Signup successful!");
-
-      // Navigate based on userType
-      if (userType === "patient" || userType === "doctor") {
-        navigate(
-          `/auth/OTPVerify?email=${encodeURIComponent(
-            values.email
-          )}&userType=${userType}`
-        );
-      } else {
-        navigate(`/auth/Login`);
+      console.log("Signup data being sent:", signupData);
+      
+      try {
+        await registerMutation.mutateAsync(signupData);
+        // New account created successfully
+        await sendOtpMutation.mutateAsync({ email: values.email });
+        navigate("/auth/OTPVerify", {
+          state: {
+            email: values.email,
+            userType,
+          },
+        });
+      } catch (registerError) {
+        // Check if email already exists (409 Conflict)
+        if (registerError?.response?.status === 409) {
+          // Email already exists - check if verified by trying to send OTP
+          try {
+            // Try to send OTP - if it succeeds, email exists but not verified
+            await sendOtpMutation.mutateAsync({ email: values.email });
+            // Email exists but not verified - go to OTP
+            navigate("/auth/OTPVerify", {
+              state: {
+                email: values.email,
+                userType,
+              },
+            });
+          } catch (otpError) {
+            // If sending OTP fails (e.g., email already verified), 
+            // navigate directly to CompleteSignup
+            console.log("Email appears to be verified, navigating to CompleteSignup");
+            navigate("/auth/CompleteSignup", {
+              state: {
+                email: values.email,
+                userType,
+              },
+            });
+          }
+        } else {
+          // Other errors - rethrow to be handled by the outer catch
+          throw registerError;
+        }
       }
     } catch (error) {
       console.error("Signup error:", error);
-      toast.error(
-        error.response?.data?.message || "Signup failed. Please try again."
-      );
+      console.error("Server response:", error.response?.data);
+      console.log("Role being sent:", userType);
     } finally {
       setSubmitting(false);
     }
@@ -123,48 +127,19 @@ export default function SignupPage() {
             <div className="flex-1 w-[90%] md:w-2/3 overflow-y-auto overflow-x-hidden pr-[5px] custom-scrollbar min-h-0 pb-[20px]">
               <Formik
                 key={userType} // Reset form when user type changes
-                initialValues={getSignupInitialValues(userType)}
-                validationSchema={getSignupValidationSchema(userType)}
+                initialValues={getSignupInitialValues()}
+                validationSchema={getSignupValidationSchema()}
                 onSubmit={handleSubmit}
                 enableReinitialize
               >
-                {({ isSubmitting, isValid, dirty }) => (
+                {({ isSubmitting, isValid, dirty }) => {
+                  const isLoading =
+                    isSubmitting ||
+                    registerMutation.isPending ||
+                    sendOtpMutation.isPending;
+                  return (
                   <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
                     <div className="flex flex-col gap-[10px]">
-                      {userType !== "scan" && userType !== "lap" && (
-                        <>
-                          {/* Names Row */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
-                            <FormInputField
-                              name="firstName"
-                              label="First Name"
-                              type="text"
-                              placeholder="First Name"
-                              icon={MdPerson}
-                            />
-                            <FormInputField
-                              name="lastName"
-                              label="Last Name"
-                              type="text"
-                              placeholder="Last Name"
-                              icon={MdPerson}
-                            />
-                          </div>
-
-                          {/* Gender */}
-                          <FormInputField
-                            name="gender"
-                            label="Gender"
-                            type="select"
-                            placeholder="Select gender"
-                            options={[
-                              { value: "male", label: "Male" },
-                              { value: "female", label: "Female" },
-                            ]}
-                          />
-                        </>
-                      )}
-
                       {/* Email */}
                       <FormInputField
                         name="email"
@@ -195,54 +170,19 @@ export default function SignupPage() {
                       {/* Phone */}
                       <FormInputField
                         name="phone"
-                        label="Phone"
+                        label="Phone Number"
                         type="tel"
                         placeholder="Enter Your Phone Number"
                         icon={RiPhoneLine}
                       />
-
-                      {/* License Number - Only for non-patient users */}
-                      {userType !== "patient" && (
-                        <FormInputField
-                          name="licenseNumber"
-                          label="License Number"
-                          type="text"
-                          placeholder="Enter Your License Number"
-                          icon={FaIdCard}
-                        />
-                      )}
-
-                      {/* Scan/Lap extra fields in initial signup */}
-                      {(userType === "scan" || userType === "lap") && (
-                        <>
-                          <FormInputField
-                            name="displayName"
-                            label="Display Name"
-                            type="text"
-                            placeholder="Enter Display Name"
-                            icon={FaBuilding}
-                          />
-                          <FormInputField
-                            name="address"
-                            label="Address"
-                            type="text"
-                            placeholder="Enter Address"
-                            icon={FaMapMarkerAlt}
-                          />
-                        </>
-                      )}
                     </div>
 
                     {/* Submit Button & Auth Link */}
                     <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
                       <SubmitButton
-                        text={
-                          userType === "scan" || userType === "lap"
-                            ? "Sign Up"
-                            : "Complete Sign Up"
-                        }
+                        text="Sign Up"
                         loadingText="Signing up..."
-                        isLoading={isSubmitting}
+                        isLoading={isLoading}
                         disabled={!isValid || !dirty}
                       />
 
@@ -252,8 +192,9 @@ export default function SignupPage() {
                         linkText="log in"
                       />
                     </div>
-                  </Form>
-                )}
+                    </Form>
+                  );
+                }}
               </Formik>
             </div>
           </div>

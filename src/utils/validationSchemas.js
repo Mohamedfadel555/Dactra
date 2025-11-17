@@ -1,8 +1,8 @@
 import * as yup from "yup";
 
 // Base validation schema for signup
-export const getSignupValidationSchema = (userType) => {
-  const baseSchema = {
+export const getSignupValidationSchema = () =>
+  yup.object({
     email: yup
       .string()
       .email("Invalid email address")
@@ -23,55 +23,32 @@ export const getSignupValidationSchema = (userType) => {
       .string()
       .matches(/^[0-9]{10,15}$/, "Phone number must be 10-15 digits")
       .required("Phone number is required"),
-  };
+  });
 
-  if (userType !== "patient") {
-    baseSchema.licenseNumber = yup
-      .string()
-      .min(5, "License number must be at least 5 characters")
-      .required("License number is required");
-  }
+const nameSchema = (label) =>
+  yup
+    .string()
+    .matches(/^[A-Za-z\s]+$/, "Letters only are allowed")
+    .min(2, `${label} must be at least 2 characters`)
+    .required(`${label} is required`);
 
-  if (userType === "scan" || userType === "lap") {
-    baseSchema.displayName = yup
-      .string()
-      .matches(/^[A-Za-z]+$/, "Letters only are allowed")
-      .min(2, "Display name must be at least 2 characters")
-      .required("Display name is required");
-    baseSchema.address = yup
-      .string()
-      .min(5, "Address must be at least 5 characters")
-      .required("Address is required");
-  }
-
-  if (userType === "patient" || userType === "doctor") {
-    (baseSchema.firstName = yup
-      .string()
-      .matches(/^[A-Za-z]+$/, "Letters only are allowed")
-      .min(2, "First name must be at least 2 characters")
-      .required("First name is required")),
-      (baseSchema.lastName = yup
-        .string()
-        .matches(/^[A-Za-z]+$/, "Letters only are allowed")
-        .min(2, "First name must be at least 2 characters")
-        .required("First name is required")),
-      (baseSchema.gender = yup
-        .string()
-        .oneOf(["male", "female"], "Select a valid gender")
-        .required("Gender is required"));
-  }
-
-  return yup.object(baseSchema);
-};
+const dateSchema = (label) =>
+  yup
+    .date()
+    .max(new Date(), "You can't select a future date")
+    .required(`${label} is required`);
 
 // Validation for the Complete Signup step (patient/doctor only)
 export const getCompleteSignupValidationSchema = (userType) => {
   if (userType === "patient") {
     return yup.object({
-      dateOfBirth: yup
-        .date()
-        .max(new Date(), "You can't select a future date")
-        .required("Date of birth is required"),
+      firstName: nameSchema("First name"),
+      lastName: nameSchema("Last name"),
+      gender: yup
+        .string()
+        .oneOf(["0", "1"], "Select a valid gender")
+        .required("Gender is required"),
+      dateOfBirth: dateSchema("Date of birth"),
       height: yup
         .number()
         .typeError("Height must be a number")
@@ -87,7 +64,7 @@ export const getCompleteSignupValidationSchema = (userType) => {
       bloodType: yup
         .string()
         .oneOf(
-          ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+          ["0", "1", "2", "3", "4", "5", "6", "7"],
           "Select a valid blood type"
         )
         .required("Blood type is required"),
@@ -101,27 +78,61 @@ export const getCompleteSignupValidationSchema = (userType) => {
       maritalStatus: yup
         .string()
         .oneOf(
-          ["single", "married", "divorced", "widowed"],
+          ["0", "1", "2", "3"],
           "Select a valid marital status"
         )
         .required("Marital status is required"),
+      chronicDisease: yup
+        .string()
+        .min(2, "Chronic disease details must be at least 2 characters")
+        .required("Chronic disease information is required"),
+      allergies: yup
+        .string()
+        .min(2, "Allergy details must be at least 2 characters")
+        .required("Allergy information is required"),
     });
   }
 
-  // doctor
+  if (userType === "doctor") {
+    return yup.object({
+      firstName: nameSchema("First name"),
+      lastName: nameSchema("Last name"),
+      gender: yup
+        .string()
+        .oneOf(["0", "1"], "Select a valid gender")
+        .required("Gender is required"),
+      dateOfBirth: dateSchema("Date of birth"),
+      careerStartDate: dateSchema("Career start date"),
+      clinicAddress: yup
+        .string()
+        .min(5, "Address must be at least 5 characters")
+        .required("Clinic address is required"),
+      licenseNumber: yup
+        .string()
+        .min(5, "License number must be at least 5 characters")
+        .required("License number is required"),
+    });
+  }
+
+  // scan / lab
   return yup.object({
-    dateOfBirth: yup
-      .date()
-      .max(new Date(), "You can't select a future date")
-      .required("Date of birth is required"),
-    careerStartDate: yup
-      .date()
-      .max(new Date(), "You can't select a future date")
-      .required("Date of birth is required"),
-    clinicAddress: yup
+    displayName: yup
+      .string()
+      .matches(/^[A-Za-z0-9\s]+$/, "Only letters and numbers are allowed")
+      .min(2, "Display name must be at least 2 characters")
+      .required("Display name is required"),
+    address: yup
       .string()
       .min(5, "Address must be at least 5 characters")
-      .required("Clinic address is required"),
+      .required("Address is required"),
+    licenseNumber: yup
+      .string()
+      .min(5, "License number must be at least 5 characters")
+      .required("License number is required"),
+    about: yup
+      .string()
+      .min(10, "About section must be at least 10 characters")
+      .required("About section is required"),
   });
 };
 
