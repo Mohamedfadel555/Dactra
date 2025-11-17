@@ -11,6 +11,14 @@
   box-sizing: border-box;
 }
 
+.rotate-3d {
+  transform: rotate3d(0, 0, 1, 45deg);
+}
+
+.rotate-3dn {
+  transform: rotate3d(0, 0, 1, -45deg);
+}
+
 @theme {
   --animate-shake: shake 0.3s ease-in-out 1;
 

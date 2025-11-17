@@ -17,9 +17,9 @@ import { loginValidationSchema } from "../../utils/validationSchemas";
 
 //importing Component
 import BrandLogo from "../../Components/Common/BrandLogo";
-import FormInputField from "./../../Components/Common/FormInputField";
-import SubmitButton from "./../../Components/Common/SubmitButton";
-import AuthLink from "./../../Components/Common/AuthLink";
+import FormInputField from "./../../Components/Auth/FormInputField";
+import SubmitButton from "./../../Components/Auth/SubmitButton";
+import AuthLink from "./../../Components/Auth/AuthLink";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 

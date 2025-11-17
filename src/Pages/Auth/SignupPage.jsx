@@ -9,10 +9,10 @@ import { FaBuilding, FaIdCard, FaMapMarkerAlt } from "react-icons/fa";
 
 // Components
 import BrandLogo from "../../Components/Common/BrandLogo";
-import FormInputField from "../../Components/Common/FormInputField";
-import UserTypeSelector from "../../Components/Common/UserTypeSelector";
-import SubmitButton from "../../Components/Common/SubmitButton";
-import AuthLink from "../../Components/Common/AuthLink";
+import FormInputField from "../../Components/Auth/FormInputField";
+import UserTypeSelector from "../../Components/Auth/UserTypeSelector";
+import SubmitButton from "../../Components/Auth/SubmitButton";
+import AuthLink from "../../Components/Auth/AuthLink";
 
 // Constants & Utils
 import {

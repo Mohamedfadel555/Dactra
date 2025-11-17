@@ -14,7 +14,7 @@ import { OTPValidationDchema } from "../../utils/validationSchemas";
 //importing components
 import OTPInput from "react-otp-input";
 import BrandLogo from "./../../Components/Common/BrandLogo";
-import SubmitButton from "../../Components/Common/SubmitButton";
+import SubmitButton from "../../Components/Auth/SubmitButton";
 import { motion, AnimatePresence } from "framer-motion";
 
 //importing apis hooks

@@ -3,9 +3,9 @@ import { Formik, Form } from "formik";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import BrandLogo from "../../Components/Common/BrandLogo";
-import UserTypeSelector from "../../Components/Common/UserTypeSelector";
-import FormInputField from "../../Components/Common/FormInputField";
-import SubmitButton from "../../Components/Common/SubmitButton";
+import UserTypeSelector from "../../Components/Auth/UserTypeSelector";
+import FormInputField from "../../Components/Auth/FormInputField";
+import SubmitButton from "../../Components/Auth/SubmitButton";
 import { USER_TYPE_IMAGES } from "../../constants/authConstants";
 import { getCompleteSignupValidationSchema } from "../../utils/validationSchemas";
 
