@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import "ldrs/ring";
 
 export default function SubmitButton({
   text = "Submit",
@@ -28,22 +29,7 @@ export default function SubmitButton({
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
     >
       {isLoading && (
-        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-          <circle
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="white"
-            strokeOpacity="0.25"
-            strokeWidth="3"
-          />
-          <path
-            d="M22 12a10 10 0 00-10-10"
-            stroke="white"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-        </svg>
+        <l-ring size="22" stroke="3" speed="1.4" color="#ffffff"></l-ring>
       )}
 
       <span>{isLoading ? loadingText : text}</span>

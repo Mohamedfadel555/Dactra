@@ -10,6 +10,11 @@ export const LoginAPI = async (Data) => {
   return res;
 };
 
+export const RegisterAPI = async (Data) => {
+  const res = await axios.post(`${baseURL}account/Register`, Data);
+  return res;
+};
+
 export const SendOTP = async (Data) => {
   const res = await axios.post(`${baseURL}account/SendOTP`, Data);
   return res;
@@ -35,6 +40,24 @@ export const VerifyOTP = async (Data) => {
 
 export const ResetPassword = async (Data) => {
   const res = await axios.post(`${baseURL}account/reset-password`, Data);
+  return res;
+};
+
+export const CompletePatientRegisterAPI = async (Data) => {
+  const res = await axios.post(`${baseURL}Patient/CompleteRegister`, Data);
+  return res;
+};
+
+export const CompleteDoctorRegisterAPI = async (Data) => {
+  const res = await axios.post(`${baseURL}Doctor/CompleteRegister`, Data);
+  return res;
+};
+
+export const CompleteMedicalProviderRegisterAPI = async (Data) => {
+  const res = await axios.post(
+    `${baseURL}MedicalTestsProvider/CompleteRegister`,
+    Data
+  );
   return res;
 };
 //write here all api function of Auth

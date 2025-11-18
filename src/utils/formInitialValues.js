@@ -1,30 +1,47 @@
-// Get initial values for signup form based on user type
-export const getSignupInitialValues = (userType) => {
-  const baseValues = {
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
+// Get initial values for signup form (shared across user types)
+export const getSignupInitialValues = () => ({
+  email: "",
+  password: "",
+  confirmPassword: "",
+  phone: "",
+});
+
+// Complete signup step initial values per user type
+export const getCompleteSignupInitialValues = (userType = "patient") => {
+  if (userType === "patient") {
+    return {
+      firstName: "",
+      lastName: "",
+      gender: "",
+      dateOfBirth: "",
+      height: "",
+      weight: "",
+      bloodType: "",
+      smokingStatus: "",
+      maritalStatus: "",
+      chronicDisease: "",
+      allergies: "",
+    };
+  }
+
+  if (userType === "doctor") {
+    return {
+      firstName: "",
+      lastName: "",
+      gender: "",
+      dateOfBirth: "",
+      careerStartDate: "",
+      clinicAddress: "",
+      licenseNumber: "",
+    };
+  }
+
+  return {
+    displayName: "",
+    address: "",
+    licenseNumber: "",
+    about: "",
   };
-
-  // doctor, scan, lap share licenseNumber
-  if (userType !== "patient") {
-    baseValues.licenseNumber = "";
-  }
-
-  // scan & lap have extra fields at initial signup
-  if (userType === "scan" || userType === "lap") {
-    baseValues.displayName = ""; // public name
-    baseValues.address = "";
-  }
-
-  if (userType !== "scan" && userType !== "lab") {
-    (baseValues.firstName = ""),
-      (baseValues.lastName = ""),
-      (baseValues.gender = "");
-  }
-
-  return baseValues;
 };
 
 // Initial values for login form

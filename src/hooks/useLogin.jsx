@@ -18,37 +18,50 @@ export const useLogin = () => {
     //function of aoi
     mutationFn: LoginAPI,
     onSuccess: (data) => {
-      console.log(data);
       toast.success("Logged in successfully!", {
         position: "top-center",
         closeOnClick: true,
       });
     },
+
     onError: async (data) => {
-      //specifie the error message from status
       if (data.status === 401) {
         toast.error("Email or password is invalid!", {
           position: "top-center",
           closeOnClick: true,
         });
       } else if (data.status === 400) {
-        // هنا بنتعامل مع response data
-        if (data.response.data === "Registration not Complete") {
+        if (data.response.data.massage === "Registration not Completed") {
           toast.warning("Registration not complete!", {
             position: "top-center",
             closeOnClick: true,
+            autoClose: 2000,
           });
-          navigate("../CompleteSignup");
-        } else if (data.response.data === "Not Verified") {
+          navigate("../CompleteSignup", {
+            state: {
+              email: data.response.data.email,
+              userType: data.response.data.role[0],
+            },
+          });
+        } else if (data.response.data.massage === " not verified") {
           toast.warning("Account not verified!", {
             position: "top-center",
             closeOnClick: true,
+            autoClose: 2000,
           });
-          // try{
-          //   await sendOTPMutation.mutateAsync({email:})
-          // }catch(err){
-          //   console.log(err)
-          // }
+          try {
+            const res = await sendOTPMutation.mutateAsync({
+              email: data.response.data.email,
+            });
+            if (res.status === 200) {
+              navigate("/auth/OTPVerify", {
+                state: {
+                  email: data.response.data.email,
+                  userType: data.response.data.role[0],
+                },
+              });
+            }
+          } catch (err) {}
         }
       } else {
         toast.error("Something went wrong, try again later!", {

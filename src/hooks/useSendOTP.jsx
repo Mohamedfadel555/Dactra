@@ -12,10 +12,15 @@ export const useSendOTP = () => {
       });
     },
     onError: (data) => {
-      toast.error("Something went wrong. Please try again later.", {
-        closeOnClick: true,
-        position: "top-center",
-      });
+      data.status === 404
+        ? toast.error("User Isn't Found.", {
+            closeOnClick: true,
+            position: "top-center",
+          })
+        : toast.error("Something went wrong. Please try again later.", {
+            closeOnClick: true,
+            position: "top-center",
+          });
     },
   });
 };

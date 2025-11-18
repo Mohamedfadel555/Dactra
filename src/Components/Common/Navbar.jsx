@@ -47,9 +47,7 @@ export default function Navbar() {
                   to={i.to}
                   className={({ isActive }) =>
                     `px-3 py-1 rounded transition-all duration-200 ${
-                      isActive
-                        ? "text-[#316BE8] bg-[#f0f4ff]"
-                        : "hover:text-[#316BE8]"
+                      isActive ? "text-[#316BE8] " : "hover:text-[#316BE8]"
                     }`
                   }
                 >

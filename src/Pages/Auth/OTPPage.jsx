@@ -5,7 +5,7 @@ import mainImage from "../../assets/images/OTPImage.png";
 
 //importing hooks
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 //importing utils
 import { OTPInitialValues } from "../../utils/formInitialValues";
@@ -28,11 +28,16 @@ export default function OTPPage() {
   //state of timer
   const [time, setTime] = useState(60);
 
-  const [searchParams] = useSearchParams();
-  const userType = searchParams.get("userType") || "";
-  // const email = searchParams.get("email") || "";
-  //instead of the above do this
   const { state } = useLocation();
+  const email = state?.email || "";
+  const userType = state?.userType || "";
+  const isPasswordFlow = !!state?.flag;
+
+  useEffect(() => {
+    if (!email) {
+      navigate("/auth/Signup", { replace: true });
+    }
+  }, [email, navigate]);
 
   //hook of verify otp
   const verifyOTPMutation = useVerifyOTP();
@@ -56,7 +61,7 @@ export default function OTPPage() {
   async function handleResent() {
     //the email that need to resend otp
     const data = {
-      email: state.email,
+      email,
     };
 
     try {
@@ -72,21 +77,22 @@ export default function OTPPage() {
   const submiting = async (values, { setSubmitting }) => {
     //object that will send to back
     const FormData = {
-      email: state.email,
+      email,
       otp: values.otp,
     };
     console.log(FormData);
     //handle otp cases
     //case one if the user is patient or doctor the the user need to complete his data so navigate to complete
-    if (userType === "patient" || userType === "doctor") {
+    if (userType) {
       try {
         const res = await verifyOTPMutation.mutateAsync(FormData);
         if (res.status === 200) {
-          navigate(
-            `/auth/CompleteSignup?userType=${userType}&email=${encodeURIComponent(
-              email
-            )}`
-          );
+          navigate("/auth/CompleteSignup", {
+            state: {
+              email,
+              userType,
+            },
+          });
         }
       } catch (err) {
         console.log(err);
@@ -94,7 +100,7 @@ export default function OTPPage() {
         setSubmitting(false);
       }
       //this case of update password
-    } else if (!userType) {
+    } else if (isPasswordFlow) {
       try {
         const res = await verifyOTPForgetPasswordMutation.mutateAsync(FormData);
       } catch (err) {
@@ -102,8 +108,8 @@ export default function OTPPage() {
       } finally {
         setSubmitting(false);
       }
-      //case labs and scans we verifying the user's only then navigate to login
     } else {
+      setSubmitting(false);
       navigate("/auth/Login");
     }
   };
