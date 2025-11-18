@@ -33,6 +33,7 @@ export const getCompleteSignupInitialValues = (userType = "patient") => {
       careerStartDate: "",
       clinicAddress: "",
       licenseNumber: "",
+      majorId: "",
     };
   }
 

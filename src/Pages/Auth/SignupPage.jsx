@@ -20,13 +20,11 @@ import {
 import { getSignupValidationSchema } from "../../utils/validationSchemas";
 import { getSignupInitialValues } from "../../utils/formInitialValues";
 import { useRegister } from "../../hooks/useRegister";
-import { useSendOTP } from "../../hooks/useSendOTP";
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const [userType, setUserType] = useState(DEFAULT_USER_TYPE);
   const registerMutation = useRegister();
-  const sendOtpMutation = useSendOTP();
   const capitalizeFirstLetter = (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -43,46 +41,14 @@ export default function SignupPage() {
       };
       console.log("Signup data being sent:", signupData);
       
-      try {
-        await registerMutation.mutateAsync(signupData);
-        // New account created successfully
-        await sendOtpMutation.mutateAsync({ email: values.email });
-        navigate("/auth/OTPVerify", {
-          state: {
-            email: values.email,
-            userType,
-          },
-        });
-      } catch (registerError) {
-        // Check if email already exists (409 Conflict)
-        if (registerError?.response?.status === 409) {
-          // Email already exists - check if verified by trying to send OTP
-          try {
-            // Try to send OTP - if it succeeds, email exists but not verified
-            await sendOtpMutation.mutateAsync({ email: values.email });
-            // Email exists but not verified - go to OTP
-            navigate("/auth/OTPVerify", {
-              state: {
-                email: values.email,
-                userType,
-              },
-            });
-          } catch (otpError) {
-            // If sending OTP fails (e.g., email already verified), 
-            // navigate directly to CompleteSignup
-            console.log("Email appears to be verified, navigating to CompleteSignup");
-            navigate("/auth/CompleteSignup", {
-              state: {
-                email: values.email,
-                userType,
-              },
-            });
-          }
-        } else {
-          // Other errors - rethrow to be handled by the outer catch
-          throw registerError;
-        }
-      }
+      await registerMutation.mutateAsync(signupData);
+
+      navigate("/auth/OTPVerify", {
+        state: {
+          email: values.email,
+          userType,
+        },
+      });
     } catch (error) {
       console.error("Signup error:", error);
       console.error("Server response:", error.response?.data);
@@ -133,10 +99,7 @@ export default function SignupPage() {
                 enableReinitialize
               >
                 {({ isSubmitting, isValid, dirty }) => {
-                  const isLoading =
-                    isSubmitting ||
-                    registerMutation.isPending ||
-                    sendOtpMutation.isPending;
+                  const isLoading = isSubmitting || registerMutation.isPending;
                   return (
                   <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
                     <div className="flex flex-col gap-[10px]">

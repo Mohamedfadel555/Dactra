@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Formik, Form } from "formik";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,21 +9,72 @@ import { USER_TYPE_IMAGES } from "../../constants/authConstants";
 import { getCompleteSignupValidationSchema } from "../../utils/validationSchemas";
 import { getCompleteSignupInitialValues } from "../../utils/formInitialValues";
 import { useCompleteSignup } from "../../hooks/useCompleteSignup";
+import { getMajorsAPI } from "../../api/authAPI";
+import {
+  MdPerson,
+  MdPersonOutline,
+  MdTransgender,
+  MdCalendarToday,
+  MdStraighten,
+  MdMonitorWeight,
+  MdSmokingRooms,
+  MdFavoriteBorder,
+  MdLocalHospital,
+  MdScience,
+  MdWorkHistory,
+  MdHomeWork,
+  MdBadge,
+  MdInfoOutline,
+} from "react-icons/md";
+import { FaTint, FaGraduationCap, FaMapMarkerAlt, FaIdCard, FaBuilding } from "react-icons/fa";
 
 export default function CompleteSignupPage() {
   const { state } = useLocation();
   const email = state?.email || "";
   const initialUserType = state?.userType || "patient";
   const navigate = useNavigate();
-  const [userType] = React.useState(initialUserType);
+  const [userType] = useState(initialUserType);
   const completeSignupMutation = useCompleteSignup(userType);
+  const [majors, setMajors] = useState([]);
+  const [majorsLoading, setMajorsLoading] = useState(false);
+  const [majorsError, setMajorsError] = useState("");
 
   useEffect(() => {
     if (!email) {
       navigate("/auth/Signup", { replace: true });
     }
   }, [email, navigate]);
- 
+
+  useEffect(() => {
+    if (userType !== "doctor") {
+      return;
+    }
+
+    let isMounted = true;
+    setMajorsLoading(true);
+    setMajorsError("");
+
+    getMajorsAPI()
+      .then((res) => {
+        if (!isMounted) return;
+        const list = res?.data?.data ?? res?.data ?? [];
+        setMajors(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setMajorsError("Failed to load majors. Please try again.");
+        setMajors([]);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setMajorsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userType]);
 
   const handleSubmit = async (values, { setSubmitting }) => {
     const payload = buildPayload({
@@ -76,10 +127,22 @@ export default function CompleteSignupPage() {
                 onSubmit={handleSubmit}
                 enableReinitialize
               >
-                {({ isSubmitting, isValid, dirty }) => (
+                {({ isSubmitting, isValid, dirty }) => {
+                  const isDoctor = userType === "doctor";
+                  const disableSubmit =
+                    !isValid ||
+                    !dirty ||
+                    (isDoctor && (majorsLoading || majors.length === 0));
+
+                  return (
                   <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
                     <div className="flex flex-col gap-[10px]">
-                      {renderFieldsByUserType(userType)}
+                      {renderFieldsByUserType(
+                        userType,
+                        majors,
+                        majorsLoading,
+                        majorsError
+                      )}
                     </div>
 
                     {/* Submit */}
@@ -90,11 +153,17 @@ export default function CompleteSignupPage() {
                         isLoading={
                           isSubmitting || completeSignupMutation.isPending
                         }
-                        disabled={!isValid || !dirty}
+                        disabled={disableSubmit}
                       />
+                      {isDoctor && majorsError && (
+                        <p className="text-sm text-red-500 text-center">
+                          {majorsError}
+                        </p>
+                      )}
                     </div>
                   </Form>
-                )}
+                  );
+                }}
               </Formik>
             </div>
           </div>
@@ -104,7 +173,7 @@ export default function CompleteSignupPage() {
   );
 }
 
-function renderFieldsByUserType(userType) {
+function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
   if (userType === "patient") {
     return (
       <>
@@ -113,11 +182,13 @@ function renderFieldsByUserType(userType) {
             name="firstName"
             label="First Name"
             placeholder="Enter first name"
+            icon={MdPerson}
           />
           <FormInputField
             name="lastName"
             label="Last Name"
             placeholder="Enter last name"
+            icon={MdPersonOutline}
           />
         </div>
         <FormInputField
@@ -129,11 +200,13 @@ function renderFieldsByUserType(userType) {
             { value: "0", label: "Male" },
             { value: "1", label: "Female" },
           ]}
+          icon={MdTransgender}
         />
         <FormInputField
           name="dateOfBirth"
           label="Date of Birth"
           type="date"
+          icon={MdCalendarToday}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
           <FormInputField
@@ -141,12 +214,14 @@ function renderFieldsByUserType(userType) {
             label="Height (cm)"
             type="number"
             placeholder="Enter height"
+            icon={MdStraighten}
           />
           <FormInputField
             name="weight"
             label="Weight (kg)"
             type="number"
             placeholder="Enter weight"
+            icon={MdMonitorWeight}
           />
         </div>
         <FormInputField
@@ -164,6 +239,7 @@ function renderFieldsByUserType(userType) {
             { value: "6", label: "O+" },
             { value: "7", label: "O-" },
           ]}
+          icon={FaTint}
         />
         <FormInputField
           name="smokingStatus"
@@ -175,6 +251,7 @@ function renderFieldsByUserType(userType) {
             { value: "non-smoker", label: "Non-smoker" },
             { value: "former", label: "Former" },
           ]}
+          icon={MdSmokingRooms}
         />
         <FormInputField
           name="maritalStatus"
@@ -187,24 +264,34 @@ function renderFieldsByUserType(userType) {
             { value: "2", label: "Divorced" },
             { value: "3", label: "Widowed" },
           ]}
+          icon={MdFavoriteBorder}
         />
         <FormInputField
           name="chronicDisease"
           label="Chronic Diseases"
           type="text"
           placeholder="List chronic diseases"
+          icon={MdLocalHospital}
         />
         <FormInputField
           name="allergies"
           label="Allergies"
           type="text"
           placeholder="List allergies"
+          icon={MdScience}
         />
       </>
     );
   }
 
   if (userType === "doctor") {
+    const majorOptions = (majors || [])
+      .filter((major) => major?.id !== undefined)
+      .map((major) => ({
+        value: String(major.id),
+        label: major.name || `Major ${major.id}`,
+      }));
+
     return (
       <>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
@@ -212,11 +299,13 @@ function renderFieldsByUserType(userType) {
             name="firstName"
             label="First Name"
             placeholder="Enter first name"
+            icon={MdPerson}
           />
           <FormInputField
             name="lastName"
             label="Last Name"
             placeholder="Enter last name"
+            icon={MdPersonOutline}
           />
         </div>
         <FormInputField
@@ -228,28 +317,51 @@ function renderFieldsByUserType(userType) {
             { value: "0", label: "Male" },
             { value: "1", label: "Female" },
           ]}
+          icon={MdTransgender}
         />
         <FormInputField
           name="dateOfBirth"
           label="Date of Birth"
           type="date"
+          icon={MdCalendarToday}
         />
         <FormInputField
           name="careerStartDate"
           label="Career Start Date"
           type="date"
+          icon={MdWorkHistory}
         />
         <FormInputField
           name="clinicAddress"
           label="Clinic Address"
           type="text"
           placeholder="Enter clinic address"
+          icon={MdHomeWork}
         />
         <FormInputField
           name="licenseNumber"
           label="License Number"
           type="text"
           placeholder="Enter license number"
+          icon={MdBadge}
+        />
+        {majorsLoading && (
+          <p className="text-sm text-[#145DB8]">Loading majors...</p>
+        )}
+        {!majorsLoading && majors.length === 0 && !majorsError && (
+          <p className="text-sm text-red-500">
+            No majors available. Please contact support.
+          </p>
+        )}
+        <FormInputField
+          name="majorId"
+          label="Major"
+          type="select"
+          placeholder={
+            majorsLoading ? "Loading majors..." : "Select a major"
+          }
+          options={majorOptions}
+          icon={FaGraduationCap}
         />
       </>
     );
@@ -262,24 +374,28 @@ function renderFieldsByUserType(userType) {
         label="Display Name"
         type="text"
         placeholder="Enter organization name"
+        icon={FaBuilding}
       />
       <FormInputField
         name="address"
         label="Address"
         type="text"
         placeholder="Enter address"
+        icon={FaMapMarkerAlt}
       />
       <FormInputField
         name="licenseNumber"
         label="License Number"
         type="text"
         placeholder="Enter license number"
+        icon={FaIdCard}
       />
       <FormInputField
         name="about"
         label="About"
         type="text"
         placeholder="Describe your services"
+        icon={MdInfoOutline}
       />
     </>
   );
@@ -315,6 +431,7 @@ function buildPayload({ email, userType, values }) {
       startingCareerDate: values.careerStartDate,
       licenceNo: values.licenseNumber,
       address: values.clinicAddress,
+      majorId: Number(values.majorId),
     };
   }
 

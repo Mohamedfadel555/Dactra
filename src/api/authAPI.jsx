@@ -60,4 +60,10 @@ export const CompleteMedicalProviderRegisterAPI = async (Data) => {
   );
   return res;
 };
+
+export const getMajorsAPI = async () => {
+  const res = await axios.get(`${baseURL}Majors/GetAll`);
+  return res;
+};
+
 //write here all api function of Auth
