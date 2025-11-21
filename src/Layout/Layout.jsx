@@ -4,7 +4,7 @@ import Footer from "../Components/Common/Footer";
 
 export default function Layout() {
   return (
-    <div className="min-h-screen w-screen relative pt-[60px]">
+    <div className="min-h-screen relative overflow-hidden ">
       <Navbar />
       <Outlet />
       <Footer />

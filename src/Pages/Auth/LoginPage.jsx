@@ -98,16 +98,21 @@ export default function LoginPage() {
                   <p className="text-[#003465] text-[12px] font-[400]">
                     or continue with
                   </p>
-                  <button
-                    type="button"
-                    className=" cursor-pointer w-full h-[40px] rounded-[5px] flex justify-center items-center border border-[#BCBEC0] "
+                  <a
+                    href="https://dactra.runasp.net/api/account/login/google?returnUrl=http://localhost:5173/google-callback"
+                    className="w-full"
                   >
-                    <img
-                      src={GIcon}
-                      alt="Google Icon"
-                      className="size-[30px]"
-                    />
-                  </button>
+                    <button
+                      type="button"
+                      className=" cursor-pointer w-full h-[40px] rounded-[5px] flex justify-center items-center border border-[#BCBEC0] "
+                    >
+                      <img
+                        src={GIcon}
+                        alt="Google Icon"
+                        className="size-[30px]"
+                      />
+                    </button>
+                  </a>
                   <AuthLink
                     to="../SignUp"
                     text="Don't have an account yet?"

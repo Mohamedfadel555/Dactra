@@ -10,9 +10,9 @@ import ERR404 from "./Pages/Error/Error404";
 import ERR403 from "./Pages/Error/Error403";
 import Layout from "./Layout/Layout";
 import HomePageForPatient from "./Pages/HomePageForPatient";
+import CallBack from "./Pages/Auth/CallBack";
 
 export const route = createBrowserRouter([
-  { path: "/*", element: <ERR404 /> },
   {
     path: "/",
     element: <Layout />,
@@ -20,6 +20,10 @@ export const route = createBrowserRouter([
       {
         index: true,
         element: <HomePageForPatient />,
+      },
+      {
+        path: "google-callback",
+        element: <CallBack />,
       },
     ],
   },
@@ -58,4 +62,5 @@ export const route = createBrowserRouter([
       },
     ],
   },
+  { path: "/*", element: <ERR404 /> },
 ]);

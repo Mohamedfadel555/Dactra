@@ -111,6 +111,9 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .string()
         .min(5, "License number must be at least 5 characters")
         .required("License number is required"),
+      majorId: yup
+        .string()
+        .required("Major is required"),
     });
   }
 

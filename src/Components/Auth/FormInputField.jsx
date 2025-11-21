@@ -16,6 +16,7 @@ export default function FormInputField({
   const inputType = isPasswordField && showPassword ? "text" : type;
   const showPasswordToggle = isPasswordField;
   const today = new Date().toISOString().split("T")[0];
+  const hasIcon = Boolean(Icon);
 
   return (
     <div className="flex flex-col gap-[5px]">
@@ -28,7 +29,9 @@ export default function FormInputField({
             as="select"
             id={name}
             name={name}
-            className={`w-full h-[32px] border text-[#003465] border-[#BCBEC0] rounded-[5px] px-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
+            className={`peer w-full h-[38px] border text-[#003465] border-[#BCBEC0] rounded-[8px] ${
+              hasIcon ? "pl-9 pr-3" : "px-3"
+            } focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
           >
             <option value="" disabled>
               {placeholder || "Select"}
@@ -46,13 +49,17 @@ export default function FormInputField({
             name={name}
             max={type === "date" ? today : undefined}
             placeholder={placeholder}
-            className={`w-full h-[32px] peer border placeholder:text-[#BCBEC0] placeholder:text-[15px] border-[#BCBEC0] rounded-[5px] pl-8 ${
+            className={`w-full h-[32px] peer border placeholder:text-[#A0AEC0] placeholder:text-[15px] border-[#BCBEC0] rounded-[5px] pl-8 ${
               showPasswordToggle ? "pr-8" : ""
             } focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:bg-blue-50 transition-all duration-300 ${className}`}
           />
         )}
-        {!options && Icon && (
-          <Icon className="absolute transition-all duration-300 peer-focus:text-blue-500 left-2 top-1/2 peer-[]: -translate-y-1/2 text-[#BCBEC0]" />
+        {Icon && (
+          <Icon
+            className={`absolute transition-all duration-300 ${
+              options ? "left-2.5 top-1/2 -translate-y-1/2" : "left-2 top-1/2 -translate-y-1/2"
+            } peer-focus:text-blue-500 text-[#BCBEC0]`}
+          />
         )}
         {showPasswordToggle && (
           <button

@@ -7,8 +7,41 @@
   --font-english: "Cairo", sans-serif;
 }
 
+body {
+  overflow-x: hidden;
+}
+
+.hover-gradient {
+  background: linear-gradient(140deg, #a7e2ff, #316be8, #a7e2ff, #316be8);
+  background-size: 400% 400%;
+}
+
+.hover-gradient:hover {
+  animation: rotateGradient 3s linear infinite;
+}
+
+@keyframes rotateGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 * {
   box-sizing: border-box;
+}
+
+.gradient-text {
+  background: linear-gradient(to right, #316be8, #88d8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .rotate-3d {

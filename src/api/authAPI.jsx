@@ -2,7 +2,7 @@
 import axios from "axios";
 
 //the Base URL for all apis
-const baseURL = "http://dactra.runasp.net/api/";
+const baseURL = "https://dactra.runasp.net/api/";
 
 //make function return the respones of api
 export const LoginAPI = async (Data) => {
@@ -60,4 +60,10 @@ export const CompleteMedicalProviderRegisterAPI = async (Data) => {
   );
   return res;
 };
+
+export const getMajorsAPI = async () => {
+  const res = await axios.get(`${baseURL}Majors/GetAll`);
+  return res;
+};
+
 //write here all api function of Auth

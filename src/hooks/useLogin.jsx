@@ -18,6 +18,7 @@ export const useLogin = () => {
     //function of aoi
     mutationFn: LoginAPI,
     onSuccess: (data) => {
+      console.log(data);
       toast.success("Logged in successfully!", {
         position: "top-center",
         closeOnClick: true,
@@ -25,12 +26,14 @@ export const useLogin = () => {
     },
 
     onError: async (data) => {
+      console.log(data);
       if (data.status === 401) {
         toast.error("Email or password is invalid!", {
           position: "top-center",
           closeOnClick: true,
         });
       } else if (data.status === 400) {
+        console.log(data);
         if (data.response.data.massage === "Registration not Completed") {
           toast.warning("Registration not complete!", {
             position: "top-center",
@@ -40,7 +43,7 @@ export const useLogin = () => {
           navigate("../CompleteSignup", {
             state: {
               email: data.response.data.email,
-              userType: data.response.data.role[0],
+              userType: data.response.data.role[0].toLowerCase(),
             },
           });
         } else if (data.response.data.massage === " not verified") {
@@ -57,11 +60,13 @@ export const useLogin = () => {
               navigate("/auth/OTPVerify", {
                 state: {
                   email: data.response.data.email,
-                  userType: data.response.data.role[0],
+                  userType: data.response.data.role[0].toLowerCase(),
                 },
               });
             }
-          } catch (err) {}
+          } catch (err) {
+            console.log(err);
+          }
         }
       } else {
         toast.error("Something went wrong, try again later!", {

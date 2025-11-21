@@ -1,12 +1,37 @@
 import { NavLink, Link } from "react-router-dom";
 import BrandLogo from "../../Components/Common/BrandLogo";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiChevronDown } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
   const [sidenav, setSidenav] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handle = () => {
+      const isNowScrolled = window.scrollY > 60;
+
+      setScrolled((prev) => {
+        if (prev !== isNowScrolled) return isNowScrolled;
+        return prev;
+      });
+    };
+
+    window.addEventListener("scroll", handle);
+
+    return () => window.removeEventListener("scroll", handle);
+  }, []);
+
+  useEffect(() => {
+    if (sidenav) document.body.style.overflow = "hidden";
+    else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => (document.body.style.overflow = "auto");
+  }, [sidenav]);
 
   const NavLinks = [
     { to: "/", label: "Home" },
@@ -32,7 +57,11 @@ export default function Navbar() {
   return (
     <>
       {/* top navbar */}
-      <nav className="absolute top-0 left-0 w-full h-[60px] flex items-center justify-between px-[10px] md:px-[20px]">
+      <nav
+        className={` ${
+          scrolled || sidenav ? "bg-white" : ""
+        } fixed z-50 top-0 left-0 w-screen h-[60px] transition-[1s] flex items-center justify-between px-[10px] md:px-[20px]`}
+      >
         {/* logo */}
         <BrandLogo
           size="w-[35px] sm:w-[40px]"
@@ -144,7 +173,7 @@ export default function Navbar() {
       <div
         className={`h-[calc(100vh-60px)] ${
           sidenav ? "left-0" : "left-[-100%]"
-        } transition-[1s] w-[280px] sm:w-[400px]  absolute top-[60px]  md:hidden bg-white flex-col flex gap-0.5 ease-in-out`}
+        } transition-[1s] w-[280px] sm:w-[400px] z-50 fixed  top-[60px]  md:hidden bg-white flex-col flex gap-0.5 ease-in-out`}
       >
         {NavLinks.map((i, index) =>
           i.to ? (
