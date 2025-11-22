@@ -8,9 +8,25 @@ import UpdatePasswordPage from "./Pages/Auth/UpdatePasswordPage";
 import CompleteSignupPage from "./Pages/Auth/CompleteSignupPage";
 import ERR404 from "./Pages/Error/Error404";
 import ERR403 from "./Pages/Error/Error403";
+import Layout from "./Layout/Layout";
+import HomePageForPatient from "./Pages/HomePageForPatient";
+import CallBack from "./Pages/Auth/CallBack";
 
 export const route = createBrowserRouter([
-  { path: "/*", element: <ERR404 /> },
+  {
+    path: "/",
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: <HomePageForPatient />,
+      },
+      {
+        path: "google-callback",
+        element: <CallBack />,
+      },
+    ],
+  },
   {
     path: "/auth",
     element: <AuthLayout />,
@@ -46,4 +62,5 @@ export const route = createBrowserRouter([
       },
     ],
   },
+  { path: "/*", element: <ERR404 /> },
 ]);

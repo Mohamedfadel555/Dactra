@@ -3,8 +3,8 @@ import { Formik, Form } from "formik";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import BrandLogo from "../../Components/Common/BrandLogo";
-import FormInputField from "../../Components/Common/FormInputField";
-import SubmitButton from "../../Components/Common/SubmitButton";
+import FormInputField from "../../Components/Auth/FormInputField";
+import SubmitButton from "../../Components/Auth/SubmitButton";
 import { USER_TYPE_IMAGES } from "../../constants/authConstants";
 import { getCompleteSignupValidationSchema } from "../../utils/validationSchemas";
 import { getCompleteSignupInitialValues } from "../../utils/formInitialValues";
@@ -26,7 +26,14 @@ import {
   MdBadge,
   MdInfoOutline,
 } from "react-icons/md";
-import { FaTint, FaGraduationCap, FaMapMarkerAlt, FaIdCard, FaBuilding } from "react-icons/fa";
+import {
+  FaTint,
+  FaGraduationCap,
+  FaMapMarkerAlt,
+  FaIdCard,
+  FaBuilding,
+} from "react-icons/fa";
+import { useMajors } from "../../hooks/useMajors";
 
 export default function CompleteSignupPage() {
   const { state } = useLocation();
@@ -35,9 +42,15 @@ export default function CompleteSignupPage() {
   const navigate = useNavigate();
   const [userType] = useState(initialUserType);
   const completeSignupMutation = useCompleteSignup(userType);
-  const [majors, setMajors] = useState([]);
-  const [majorsLoading, setMajorsLoading] = useState(false);
-  const [majorsError, setMajorsError] = useState("");
+  // const [majors, setMajors] = useState([]);
+  // const [majorsLoading, setMajorsLoading] = useState(false);
+  // const [majorsError, setMajorsError] = useState("");
+
+  const {
+    data: majors,
+    isLoading: majorsLoading,
+    isError: majorsError,
+  } = useMajors(userType);
 
   useEffect(() => {
     if (!email) {
@@ -45,36 +58,36 @@ export default function CompleteSignupPage() {
     }
   }, [email, navigate]);
 
-  useEffect(() => {
-    if (userType !== "doctor") {
-      return;
-    }
+  // useEffect(() => {
+  //   if (userType !== "doctor") {
+  //     return;
+  //   }
 
-    let isMounted = true;
-    setMajorsLoading(true);
-    setMajorsError("");
+  //   let isMounted = true;
+  //   setMajorsLoading(true);
+  //   setMajorsError("");
 
-    getMajorsAPI()
-      .then((res) => {
-        if (!isMounted) return;
-        const list = res?.data?.data ?? res?.data ?? [];
-        setMajors(Array.isArray(list) ? list : []);
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setMajorsError("Failed to load majors. Please try again.");
-        setMajors([]);
-      })
-      .finally(() => {
-        if (isMounted) {
-          setMajorsLoading(false);
-        }
-      });
+  //   getMajorsAPI()
+  //     .then((res) => {
+  //       if (!isMounted) return;
+  //       const list = res?.data?.data ?? res?.data ?? [];
+  //       setMajors(Array.isArray(list) ? list : []);
+  //     })
+  //     .catch(() => {
+  //       if (!isMounted) return;
+  //       setMajorsError("Failed to load majors. Please try again.");
+  //       setMajors([]);
+  //     })
+  //     .finally(() => {
+  //       if (isMounted) {
+  //         setMajorsLoading(false);
+  //       }
+  //     });
 
-    return () => {
-      isMounted = false;
-    };
-  }, [userType]);
+  //   return () => {
+  //     isMounted = false;
+  //   };
+  // }, [userType]);
 
   const handleSubmit = async (values, { setSubmitting }) => {
     const payload = buildPayload({
@@ -135,33 +148,33 @@ export default function CompleteSignupPage() {
                     (isDoctor && (majorsLoading || majors.length === 0));
 
                   return (
-                  <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
-                    <div className="flex flex-col gap-[10px]">
-                      {renderFieldsByUserType(
-                        userType,
-                        majors,
-                        majorsLoading,
-                        majorsError
-                      )}
-                    </div>
+                    <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
+                      <div className="flex flex-col gap-[10px]">
+                        {renderFieldsByUserType(
+                          userType,
+                          majors,
+                          majorsLoading,
+                          majorsError
+                        )}
+                      </div>
 
-                    {/* Submit */}
-                    <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
-                      <SubmitButton
-                        text="Sign Up"
-                        loadingText="Saving..."
-                        isLoading={
-                          isSubmitting || completeSignupMutation.isPending
-                        }
-                        disabled={disableSubmit}
-                      />
-                      {isDoctor && majorsError && (
-                        <p className="text-sm text-red-500 text-center">
-                          {majorsError}
-                        </p>
-                      )}
-                    </div>
-                  </Form>
+                      {/* Submit */}
+                      <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
+                        <SubmitButton
+                          text="Sign Up"
+                          loadingText="Saving..."
+                          isLoading={
+                            isSubmitting || completeSignupMutation.isPending
+                          }
+                          disabled={disableSubmit}
+                        />
+                        {isDoctor && majorsError && (
+                          <p className="text-sm text-red-500 text-center">
+                            {majorsError}
+                          </p>
+                        )}
+                      </div>
+                    </Form>
                   );
                 }}
               </Formik>
@@ -292,6 +305,12 @@ function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
         label: major.name || `Major ${major.id}`,
       }));
 
+    const majorPlaceholder = majorsLoading
+      ? "Loading majors..."
+      : majorOptions.length === 0
+      ? "No majors available"
+      : "Select a major";
+
     return (
       <>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
@@ -356,10 +375,9 @@ function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
         <FormInputField
           name="majorId"
           label="Major"
+          placeholder={majorPlaceholder}
+          // {majorloading ? "Loading majors..." : "Select a major"}
           type="select"
-          placeholder={
-            majorsLoading ? "Loading majors..." : "Select a major"
-          }
           options={majorOptions}
           icon={FaGraduationCap}
         />

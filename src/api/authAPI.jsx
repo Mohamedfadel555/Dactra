@@ -2,7 +2,7 @@
 import axios from "axios";
 
 //the Base URL for all apis
-const baseURL = "http://dactra.runasp.net/api/";
+const baseURL = "https://dactra.runasp.net/api/";
 
 //make function return the respones of api
 export const LoginAPI = async (Data) => {

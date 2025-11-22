@@ -5,11 +5,15 @@ import { LoginAPI } from "../api/authAPI";
 
 //import mutation of react query
 import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useSendOTP } from "./useSendOTP";
 
 let message = "";
 
 //make the hook of login
 export const useLogin = () => {
+  const navigate = useNavigate();
+  const sendOTPMutation = useSendOTP();
   return useMutation({
     //function of aoi
     mutationFn: LoginAPI,
@@ -20,19 +24,59 @@ export const useLogin = () => {
         closeOnClick: true,
       });
     },
-    onError: (data) => {
-      //specifie the error message from status
-      data.status === 401
-        ? (message = "Email or password is invalid!")
-        : data.status === 400
-        ? (message = "User Isn't Fonud")
-        : (message = "Something went wrong. Please try again later.");
+
+    onError: async (data) => {
+      console.log(data);
+      if (data.status === 401) {
+        toast.error("Email or password is invalid!", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+      } else if (data.status === 400) {
+        console.log(data);
+        if (data.response.data.massage === "Registration not Completed") {
+          toast.warning("Registration not complete!", {
+            position: "top-center",
+            closeOnClick: true,
+            autoClose: 2000,
+          });
+          navigate("../CompleteSignup", {
+            state: {
+              email: data.response.data.email,
+              userType: data.response.data.role[0].toLowerCase(),
+            },
+          });
+        } else if (data.response.data.massage === " not verified") {
+          toast.warning("Account not verified!", {
+            position: "top-center",
+            closeOnClick: true,
+            autoClose: 2000,
+          });
+          try {
+            const res = await sendOTPMutation.mutateAsync({
+              email: data.response.data.email,
+            });
+            if (res.status === 200) {
+              navigate("/auth/OTPVerify", {
+                state: {
+                  email: data.response.data.email,
+                  userType: data.response.data.role[0].toLowerCase(),
+                },
+              });
+            }
+          } catch (err) {
+            console.log(err);
+          }
+        }
+      } else {
+        toast.error("Something went wrong, try again later!", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+      }
+
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       //not completed yet
-      toast.error(message, {
-        position: "top-center",
-        closeOnClick: true,
-      });
     },
   });
 };

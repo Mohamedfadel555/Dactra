@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import "ldrs/ring2";
+import "ldrs/ring";
 
 export default function SubmitButton({
   text = "Submit",
@@ -29,13 +29,7 @@ export default function SubmitButton({
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
     >
       {isLoading && (
-        <l-ring-2
-          size="22"
-          stroke="3"
-          speed="1.4"
-          color="#ffffff"
-          aria-hidden="true"
-        ></l-ring-2>
+        <l-ring size="22" stroke="3" speed="1.4" color="#ffffff"></l-ring>
       )}
 
       <span>{isLoading ? loadingText : text}</span>
