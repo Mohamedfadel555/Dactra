@@ -156,6 +156,18 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
         />
         <StepsSection Role={Role} />
       </div>
+      {/* For patient */}
+      {Role === "patient" && (
+        <>
+          <HeaderSection
+            leftText="Our"
+            rightText="Doctors"
+            gradientText="Top Rated"
+          />
+        </>
+      )}
+      {/* For others users */}
+      {/* {Role!=="patient"&&} */}
     </div>
   );
 }

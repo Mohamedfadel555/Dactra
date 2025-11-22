@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import vector from "../../assets/images/Vector.png";
 import Group from "../../assets/images/Group 27.png";
 import doctor from "../../assets/images/doctor.png";
@@ -30,15 +31,47 @@ const providerSteps = [
   },
 ];
 
+// animation variants
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.18, // الفرق الزمني بين كل خطوة والتانية
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { x: -60, opacity: 0 }, // ييجي من الشمال
+  show: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 120,
+      damping: 16,
+    },
+  },
+};
+
 export default function StepsSection({ Role }) {
   return (
     <div className="flex flex-col lg:flex-row w-[90%]  lg:w-[70%] justify-between gap-[120px] lg:gap-[30px] items-center">
-      <div className="flex flex-col gap-[15px]">
+      {/* هنا غيرت الـdiv اللي فيها الماب ل motion.div بس نفس كل الـclasses */}
+      <motion.div
+        className="flex flex-col gap-[15px]"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: false, amount: 0.2 }}
+      >
         {(Role === "patient" ? patientSteps : providerSteps).map(
           (step, index) => (
-            <div
+            // كل ستب ملفوفة بـ motion.div عشان تعمل slide-in مع stagger
+            <motion.div
               key={index}
               className="flex gap-[20px] w-full lg:max-w-[400px]"
+              variants={itemVariants}
             >
               <div className="flex justify-center items-start">
                 <div className=" size-[40px] text-[20px] md:size-[60px] rounded-full text-[30px]  hover-gradient text-white font-bold flex justify-center items-center">
@@ -53,10 +86,11 @@ export default function StepsSection({ Role }) {
                   {step.desc}
                 </p>
               </div>
-            </div>
+            </motion.div>
           )
         )}
-      </div>
+      </motion.div>
+
       <div className=" size-[250px] md:size-[300px] relative  bg-[linear-gradient(140deg,white_29%,#C0EAFF)] rounded-[20px] border-2 border-blue-300  ">
         <img
           src={Group}
