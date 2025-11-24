@@ -77,10 +77,7 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .required("Smoking status is required"),
       maritalStatus: yup
         .string()
-        .oneOf(
-          ["0", "1", "2", "3"],
-          "Select a valid marital status"
-        )
+        .oneOf(["0", "1", "2", "3"], "Select a valid marital status")
         .required("Marital status is required"),
       chronicDisease: yup
         .string()
@@ -111,9 +108,7 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .string()
         .min(5, "License number must be at least 5 characters")
         .required("License number is required"),
-      majorId: yup
-        .string()
-        .required("Major is required"),
+      majorId: yup.string().required("Major is required"),
     });
   }
 
@@ -145,11 +140,7 @@ export const loginValidationSchema = yup.object({
   password: yup
     .string()
     .required("Password is required")
-    .min(8, "Password must be at least 8 characters")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
-      "Password must have upper, lower, number & symbol"
-    ),
+    .min(8, "Password must be at least 8 characters"),
 });
 
 //Forget Password validation schema

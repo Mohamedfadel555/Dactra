@@ -1,7 +1,7 @@
 import { Formik, Form } from "formik";
 
 //importing image
-import mainImage from "../../assets/images/UpdatePasswordImage.png";
+import mainImage from "../../assets/images/UpdatePasswordImage.webp";
 
 //importing hooks
 import { useNavigate } from "react-router-dom";
@@ -54,7 +54,7 @@ export default function UpdatePasswordPage() {
             key="login-image"
             src={mainImage}
             alt="LoginImage"
-            loading="eager"
+            loading="lazy"
             className="max-w-[90%] min-w-[250px]"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}

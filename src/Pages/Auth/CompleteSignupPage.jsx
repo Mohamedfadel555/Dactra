@@ -114,6 +114,7 @@ export default function CompleteSignupPage() {
         <div className="flex justify-center items-center w-1/2">
           <AnimatePresence mode="wait">
             <motion.img
+              loading="lazy"
               key={userType}
               src={USER_TYPE_IMAGES[userType]}
               alt={`${userType} Complete SignUp Image`}

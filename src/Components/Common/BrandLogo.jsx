@@ -1,4 +1,4 @@
-import Icon from "../../assets/images/icons/dactraIcon.png";
+import Icon from "../../assets/images/icons/dactraIcon.webp";
 import { motion } from "framer-motion";
 
 export default function BrandLogo({

@@ -1,7 +1,7 @@
 import { Formik, Form } from "formik";
 
 //importing image
-import mainImage from "../../assets/images/OTPImage.png";
+import mainImage from "../../assets/images/OTPImage.webp";
 
 //importing hooks
 import { useEffect, useState } from "react";
@@ -120,7 +120,7 @@ export default function OTPPage() {
         <AnimatePresence mode="wait">
           <motion.img
             key="login-image"
-            loading="eager"
+            loading="lazy"
             src={mainImage}
             alt="LoginImage"
             className="max-w-[90%] min-w-[250px]"

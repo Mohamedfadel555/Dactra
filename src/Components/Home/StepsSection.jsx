@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import vector from "../../assets/images/Vector.png";
-import Group from "../../assets/images/Group 27.png";
-import doctor from "../../assets/images/doctor.png";
+import vector from "../../assets/images/Vector.webp";
+import Group from "../../assets/images/Group 27.webp";
+import doctor from "../../assets/images/doctor.webp";
 const patientSteps = [
   {
     header: "Create Your Profile",
@@ -63,7 +63,7 @@ export default function StepsSection({ Role }) {
         variants={containerVariants}
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.2 }}
+        viewport={{ once: false, amount: 0.5 }}
       >
         {(Role === "patient" ? patientSteps : providerSteps).map(
           (step, index) => (
@@ -94,17 +94,18 @@ export default function StepsSection({ Role }) {
       <div className=" size-[250px] md:size-[300px] relative  bg-[linear-gradient(140deg,white_29%,#C0EAFF)] rounded-[20px] border-2 border-blue-300  ">
         <img
           src={Group}
-          alt=""
+          loading="lazy"
+          alt="design photo"
           className="w-[100px]  md:w-[150px] absolute right-[-20%] md:right-[-30%] top-[-10%] "
         />
         <img
           src={vector}
-          alt=""
+          alt="design photo"
           className="w-[80px] md:w-[100px] absolute right-[-18%] md:right-[-33%] top-[-18%] "
         />
         <img
           src={doctor}
-          alt=""
+          alt="doctor photo"
           className=" w-[150%] md:w-[200%] object-none h-[350px] md:h-[400px] absolute left-0 bottom-0 "
         />
       </div>

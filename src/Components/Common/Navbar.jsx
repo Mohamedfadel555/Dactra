@@ -59,7 +59,9 @@ export default function Navbar() {
       {/* top navbar */}
       <nav
         className={` ${
-          scrolled || sidenav ? "bg-white" : ""
+          scrolled || sidenav
+            ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
+            : ""
         } fixed z-50 top-0 left-0 w-screen h-[60px] transition-[1s] flex items-center justify-between px-[10px] md:px-[20px]`}
       >
         {/* logo */}

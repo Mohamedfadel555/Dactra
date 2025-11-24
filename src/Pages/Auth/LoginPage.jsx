@@ -4,8 +4,8 @@ import { Formik, Form } from "formik";
 import { useLogin } from "../../hooks/useLogin";
 
 // importing imagesyy
-import mainImage from "../../assets/images/AllLoginImage.png";
-import GIcon from "../../assets/images/icons/googleIcon.png";
+import mainImage from "../../assets/images/AllLoginImage.webp";
+import GIcon from "../../assets/images/icons/googleIcon.webp";
 
 //importing icons
 import { MdEmail } from "react-icons/md"; //email icon
@@ -44,7 +44,7 @@ export default function LoginPage() {
           <motion.img
             key="login-image"
             src={mainImage}
-            loading="eager"
+            loading="lazy"
             alt="LoginImage"
             className="max-w-[90%] min-w-[250px]"
             initial={{ opacity: 0, x: -20 }}
@@ -108,6 +108,7 @@ export default function LoginPage() {
                     >
                       <img
                         src={GIcon}
+                        loading="lazy"
                         alt="Google Icon"
                         className="size-[30px]"
                       />

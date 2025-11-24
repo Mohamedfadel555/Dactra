@@ -2,7 +2,7 @@ import { Formik, Form } from "formik";
 import { useNavigate } from "react-router-dom";
 
 //importing image
-import mainImage from "../../assets/images/ForgotPasswordImage.png";
+import mainImage from "../../assets/images/ForgotPasswordImage.webp";
 
 //importing icons
 import { MdEmail } from "react-icons/md"; //email icon
@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
         <AnimatePresence mode="wait">
           <motion.img
             key="login-image"
-            loading="eager"
+            loading="lazy"
             src={mainImage}
             alt="LoginImage"
             className="max-w-[90%] min-w-[250px] [--initial-var:] "

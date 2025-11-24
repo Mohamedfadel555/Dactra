@@ -1,8 +1,8 @@
 import { HiChevronRight } from "react-icons/hi";
 import { HiStar } from "react-icons/hi";
-import qoutes from "../../assets/images/Vector (3).png";
-import sir from "../../assets/images/magdy.png";
-import vec from "../../assets/images/vector 1.png";
+import qoutes from "../../assets/images/Vector (3).webp";
+import sir from "../../assets/images/magdy.webp";
+import vec from "../../assets/images/vector 1.webp";
 import { motion } from "framer-motion";
 
 const fadeUp = {
@@ -24,7 +24,12 @@ export default function HeroSection({ Role = "patient" }) {
     <div className="flex flex-col md:flex-row gap-10 justify-center relative items-center w-full px-5 md:px-[50px]">
       {/* LEFT SIDE */}
 
-      <img src={vec} className="absolute top-[20%] md:top-[40%] z-20 " />
+      <img
+        loading="lazy"
+        alt="background photo"
+        src={vec}
+        className="absolute top-[20%] md:top-[40%] z-20 "
+      />
 
       <motion.div
         className="flex-1 flex flex-col gap-6 justify-center items-center md:justify-start md:items-stretch text-center md:text-left"
@@ -61,7 +66,10 @@ export default function HeroSection({ Role = "patient" }) {
           {Role === "patient" ? "or Book an Appointment today." : ""}
         </p>
 
-        <button className="font-semibold relative z-30 w-[80%] sm:w-[60%] md:w-[60%] md:h-[50px] lg:text-xl xl:text-2xl text-white h-[46px] bg-[linear-gradient(141deg,#A7E2FF,#316BE8)] rounded-2xl flex justify-center items-center">
+        <button
+          type="button"
+          className="font-semibold relative z-30 w-[80%] sm:w-[60%] md:w-[60%] md:h-[50px] lg:text-xl xl:text-2xl text-white h-[46px] bg-[linear-gradient(141deg,#A7E2FF,#316BE8)] rounded-2xl flex justify-center items-center"
+        >
           {Role === "patient"
             ? "Book an appointment"
             : "Check your appointments"}
@@ -87,6 +95,8 @@ export default function HeroSection({ Role = "patient" }) {
         >
           <img
             src={sir}
+            alt="Hero image"
+            loading="lazy"
             className="absolute bottom-0 w-full left-[25%] translate-x-[-40%]"
           />
           <div className="text-[#0069AB] z-30 md:text-[10px] lg:text-[14px] xltext-[18px] flex absolute top-2/3 -left-1/4 shadow-[5px_6px_10px_#b7b7b7] w-fit gap-1.5 justify-center items-center px-[10px] py-[4px] bg-white rounded-[10px]">
@@ -100,6 +110,8 @@ export default function HeroSection({ Role = "patient" }) {
           <div className="text-[#3D3D3D] z-30 md:text-[10px] md:w-[185px] lg:text-[14px] xl:text-[18px] relative lg:w-[250px] xl:w-[300px] top-[92%] left-[55%] right-[-30%] px-[20px] pb-[10px] pt-[20px] bg-[#E9F6FF] border-2 border-[#95DDFF] rounded-[10px] shadow-[5px_6px_10px_#b7b7b7]">
             <img
               src={qoutes}
+              loading="lazy"
+              alt="quotes"
               className="absolute left-[10%] md:w-[30%] lg:w-[60px] xl:w-[70px] top-[-26%]"
             />
             <p>

@@ -7,6 +7,10 @@
   --font-english: "Cairo", sans-serif;
 }
 
+@font-face {
+  font-display: swap;
+}
+
 body {
   overflow-x: hidden;
 }
@@ -18,6 +22,39 @@ body {
 
 .hover-gradient:hover {
   animation: rotateGradient 3s linear infinite;
+}
+
+#custom-swiper-pagination .custom-bullet {
+  width: 12px;
+  height: 12px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+#custom-swiper-pagination .custom-bullet-active {
+  background: #3b82f6;
+  opacity: 1;
+  transform: scale(1.3);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+#custom-swiper-pagination1 .custom-bullet {
+  width: 12px;
+  height: 12px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+#custom-swiper-pagination1 .custom-bullet-active {
+  background: #3b82f6;
+  opacity: 1;
+  transform: scale(1.3);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
 @keyframes rotateGradient {

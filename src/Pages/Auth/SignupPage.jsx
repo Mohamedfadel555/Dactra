@@ -40,7 +40,7 @@ export default function SignupPage() {
         role: capitalizeFirstLetter(userType),
       };
       console.log("Signup data being sent:", signupData);
-      
+
       await registerMutation.mutateAsync(signupData);
 
       navigate("/auth/OTPVerify", {
@@ -72,6 +72,7 @@ export default function SignupPage() {
           <AnimatePresence mode="wait">
             <motion.img
               key={userType}
+              loading="lazy"
               src={USER_TYPE_IMAGES[userType]}
               alt={`${userType} SignUp Image`}
               className="max-w-[90%] min-w-[250px]"
@@ -101,60 +102,60 @@ export default function SignupPage() {
                 {({ isSubmitting, isValid, dirty }) => {
                   const isLoading = isSubmitting || registerMutation.isPending;
                   return (
-                  <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
-                    <div className="flex flex-col gap-[10px]">
-                      {/* Email */}
-                      <FormInputField
-                        name="email"
-                        label="Email"
-                        type="email"
-                        placeholder="username@gmail.com"
-                        icon={MdEmail}
-                      />
+                    <Form className="w-full flex flex-col gap-[20px] pb-[10px]">
+                      <div className="flex flex-col gap-[10px]">
+                        {/* Email */}
+                        <FormInputField
+                          name="email"
+                          label="Email"
+                          type="email"
+                          placeholder="username@gmail.com"
+                          icon={MdEmail}
+                        />
 
-                      {/* Password */}
-                      <FormInputField
-                        name="password"
-                        label="password"
-                        type="password"
-                        placeholder="Enter Your Password"
-                        icon={RiLock2Line}
-                      />
+                        {/* Password */}
+                        <FormInputField
+                          name="password"
+                          label="password"
+                          type="password"
+                          placeholder="Enter Your Password"
+                          icon={RiLock2Line}
+                        />
 
-                      {/* Confirm Password */}
-                      <FormInputField
-                        name="confirmPassword"
-                        label="Confirm Password"
-                        type="password"
-                        placeholder="Confirm Your Password"
-                        icon={RiLock2Line}
-                      />
+                        {/* Confirm Password */}
+                        <FormInputField
+                          name="confirmPassword"
+                          label="Confirm Password"
+                          type="password"
+                          placeholder="Confirm Your Password"
+                          icon={RiLock2Line}
+                        />
 
-                      {/* Phone */}
-                      <FormInputField
-                        name="phone"
-                        label="Phone Number"
-                        type="tel"
-                        placeholder="Enter Your Phone Number"
-                        icon={RiPhoneLine}
-                      />
-                    </div>
+                        {/* Phone */}
+                        <FormInputField
+                          name="phone"
+                          label="Phone Number"
+                          type="tel"
+                          placeholder="Enter Your Phone Number"
+                          icon={RiPhoneLine}
+                        />
+                      </div>
 
-                    {/* Submit Button & Auth Link */}
-                    <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
-                      <SubmitButton
-                        text="Sign Up"
-                        loadingText="Signing up..."
-                        isLoading={isLoading}
-                        disabled={!isValid || !dirty}
-                      />
+                      {/* Submit Button & Auth Link */}
+                      <div className="w-full flex flex-col gap-[10px] justify-center items-center pb-[10px]">
+                        <SubmitButton
+                          text="Sign Up"
+                          loadingText="Signing up..."
+                          isLoading={isLoading}
+                          disabled={!isValid || !dirty}
+                        />
 
-                      <AuthLink
-                        to="/auth/Login"
-                        text="Do you have an account ?"
-                        linkText="log in"
-                      />
-                    </div>
+                        <AuthLink
+                          to="/auth/Login"
+                          text="Do you have an account ?"
+                          linkText="log in"
+                        />
+                      </div>
                     </Form>
                   );
                 }}

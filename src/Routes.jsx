@@ -1,66 +1,131 @@
+import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import AuthLayout from "./Layout/AuthLayout";
-import LoginPage from "./Pages/Auth/LoginPage";
-import SignupPage from "./Pages/Auth/SignupPage";
-import ForgotPasswordPage from "./Pages/Auth/ForgotPasswordPage";
-import OTPPage from "./Pages/Auth/OTPPage";
-import UpdatePasswordPage from "./Pages/Auth/UpdatePasswordPage";
-import CompleteSignupPage from "./Pages/Auth/CompleteSignupPage";
-import ERR404 from "./Pages/Error/Error404";
-import ERR403 from "./Pages/Error/Error403";
-import Layout from "./Layout/Layout";
-import HomePageForPatient from "./Pages/HomePageForPatient";
-import CallBack from "./Pages/Auth/CallBack";
+import Loader from "./Components/Common/loader";
+
+const Layout = lazy(() => import("./Layout/Layout"));
+const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
+
+const HomePageForPatient = lazy(() => import("./Pages/HomePageForPatient"));
+const CallBack = lazy(() => import("./Pages/Auth/CallBack"));
+
+const LoginPage = lazy(() => import("./Pages/Auth/LoginPage"));
+const SignupPage = lazy(() => import("./Pages/Auth/SignupPage"));
+const ForgotPasswordPage = lazy(() =>
+  import("./Pages/Auth/ForgotPasswordPage")
+);
+const OTPPage = lazy(() => import("./Pages/Auth/OTPPage"));
+const CompleteSignupPage = lazy(() =>
+  import("./Pages/Auth/CompleteSignupPage")
+);
+const UpdatePasswordPage = lazy(() =>
+  import("./Pages/Auth/UpdatePasswordPage")
+);
+
+const ERR404 = lazy(() => import("./Pages/Error/Error404"));
+const ERR403 = lazy(() => import("./Pages/Error/Error403"));
 
 export const route = createBrowserRouter([
   {
     path: "/",
-    element: <Layout />,
+    element: (
+      <Suspense fallback={<Loader />}>
+        <Layout />
+      </Suspense>
+    ),
     children: [
       {
         index: true,
-        element: <HomePageForPatient />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <HomePageForPatient />
+          </Suspense>
+        ),
       },
       {
         path: "google-callback",
-        element: <CallBack />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <CallBack />
+          </Suspense>
+        ),
       },
     ],
   },
+
   {
     path: "/auth",
-    element: <AuthLayout />,
+    element: (
+      <Suspense fallback={<Loader />}>
+        <AuthLayout />
+      </Suspense>
+    ),
     children: [
-      {
-        index: true,
-        element: <Navigate to="Login" replace />,
-      },
+      { index: true, element: <Navigate to="Login" replace /> },
       {
         path: "Login",
-        element: <LoginPage />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <LoginPage />
+          </Suspense>
+        ),
       },
       {
         path: "Signup",
-        element: <SignupPage />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <SignupPage />
+          </Suspense>
+        ),
       },
-
       {
         path: "ForgotPassword",
-        element: <ForgotPasswordPage />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ForgotPasswordPage />
+          </Suspense>
+        ),
       },
       {
         path: "OTPVerify",
-        element: <OTPPage />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <OTPPage />
+          </Suspense>
+        ),
       },
       {
         path: "CompleteSignup",
-        element: <CompleteSignupPage />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <CompleteSignupPage />
+          </Suspense>
+        ),
       },
       {
         path: "UpdatePassword",
-        element: <UpdatePasswordPage />,
+        element: (
+          <Suspense fallback={<Loader />}>
+            <UpdatePasswordPage />
+          </Suspense>
+        ),
       },
     ],
   },
-  { path: "/*", element: <ERR404 /> },
+
+  {
+    path: "/403",
+    element: (
+      <Suspense fallback={<Loader />}>
+        <ERR403 />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/*",
+    element: (
+      <Suspense fallback={<Loader />}>
+        <ERR404 />
+      </Suspense>
+    ),
+  },
 ]);
