@@ -13,7 +13,7 @@ import { getMajorsAPI } from "../../api/authAPI";
 import {
   MdPerson,
   MdPersonOutline,
-  MdGender,
+  MdMale,
   MdCalendarToday,
   MdStraighten,
   MdMonitorWeight,
@@ -213,7 +213,7 @@ function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
             { value: "0", label: "Male" },
             { value: "1", label: "Female" },
           ]}
-          icon={MdTransgender}
+          icon={MdMale}
         />
         <FormInputField
           name="dateOfBirth"
