@@ -724,7 +724,56 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
         </>
       )}
       {/* For others users */}
-      {/* {Role!=="patient"&&} */}
+      {Role !== "patient" && (
+        <>
+          <ServicesPricingSection />
+          <StatisticsSection />
+          <PlatformFeaturesSection />
+
+          {/* Frequently Ask Questions Section */}
+          <div className="flex flex-col gap-8 justify-center items-center relative z-40 px-4">
+            <HeaderSection
+              leftText="Frequently Ask"
+              gradientText="Questions"
+              rightText=""
+            />
+            <FAQAccordion
+              items={[
+                {
+                  question: "How do I set up my services and pricing?",
+                  answer:
+                    "Setting up your services is quick and easy. Navigate to your dashboard, click on 'Services & Pricing', and add your consultation fees, test prices, or scan rates. You can update them anytime to match your business needs.",
+                },
+                {
+                  question: "How do I manage my appointment schedule?",
+                  answer:
+                    "Use our intuitive schedule management system to set your working hours, block unavailable times, and view all upcoming appointments. You can also set automatic reminders for both you and your patients.",
+                },
+                {
+                  question: "How do I get paid for my services?",
+                  answer:
+                    "All payments are processed securely through our platform. Once a patient books and pays for your service, the amount is transferred directly to your account. You can track all transactions in your payment dashboard.",
+                },
+                {
+                  question: "Can I answer patient questions on the platform?",
+                  answer:
+                    "Yes! You can browse and answer patient questions related to your specialty. This helps build your reputation and allows patients to learn more about your expertise before booking.",
+                },
+                {
+                  question: "How do I improve my visibility to patients?",
+                  answer:
+                    "Complete your profile with detailed information, add your specialties, upload professional photos, and encourage satisfied patients to leave reviews. Higher ratings and complete profiles appear first in search results.",
+                },
+                {
+                  question: "What support is available if I need help?",
+                  answer:
+                    "Our support team is available 24/7 to assist you with any questions or technical issues. You can reach us through the help center, email, or live chat. We're here to help you succeed on Dactra.",
+                },
+              ]}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
