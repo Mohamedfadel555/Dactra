@@ -1,11 +1,11 @@
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
+import HomePage from "./Pages/HomePage";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
 
-const HomePageForPatient = lazy(() => import("./Pages/HomePageForPatient"));
 const CallBack = lazy(() => import("./Pages/Auth/CallBack"));
 
 const LoginPage = lazy(() => import("./Pages/Auth/LoginPage"));
@@ -37,7 +37,7 @@ export const route = createBrowserRouter([
         index: true,
         element: (
           <Suspense fallback={<Loader />}>
-            <HomePageForPatient />
+            <HomePage />
           </Suspense>
         ),
       },

@@ -3,7 +3,7 @@ import { ImLab } from "react-icons/im";
 import { GiRadioactive } from "react-icons/gi";
 import { FaHandHoldingMedical, FaStar } from "react-icons/fa";
 import { motion } from "framer-motion";
-import HeaderSection from "./../Components/Home/HeaderSection";
+import HeaderSection from "../Components/Home/HeaderSection";
 import HeroSection from "../Components/Home/HeroSection";
 import ServiceCard from "../Components/Home/ServiceCard";
 import { FaUserDoctor } from "react-icons/fa6";
@@ -26,14 +26,14 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { useMajors } from "../hooks/useMajors";
 import SpecialistCard from "../Components/Home/SpecialistCard";
-import BrandLogo from "./../Components/Common/BrandLogo";
+import BrandLogo from "../Components/Common/BrandLogo";
 import { Link } from "react-router-dom";
 import Bar from "../Components/Common/ReviewBar";
-import CommentCard from "./../Components/Common/CommentCard";
-import ServicesPricingSection from "./../Components/Home/ServicesPricingSection";
-import StatisticsSection from "./../Components/Home/StatisticsSection";
-import PlatformFeaturesSection from "./../Components/Home/PlatformFeaturesSection";
-import FAQAccordion from "./../Components/Home/FAQAccordion";
+import CommentCard from "../Components/Common/CommentCard";
+import ServicesPricingSection from "../Components/Home/ServicesPricingSection";
+import StatisticsSection from "../Components/Home/StatisticsSection";
+import PlatformFeaturesSection from "../Components/Home/PlatformFeaturesSection";
+import FAQAccordion from "../Components/Home/FAQAccordion";
 import { useAuth } from "../Context/AuthContext";
 import axios from "axios";
 
@@ -198,7 +198,7 @@ const comments = [
   },
 ];
 
-export default function HomePageForPatient() {
+export default function HomePage() {
   const { role } = useAuth();
   const {
     data: majors,
