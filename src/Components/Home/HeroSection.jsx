@@ -2,7 +2,7 @@ import { HiChevronRight } from "react-icons/hi";
 import { HiStar } from "react-icons/hi";
 import qoutes from "../../assets/images/Vector3.webp";
 import sir from "../../assets/images/magdy.webp";
-import vec from "../../assets/images/vector1.webp";
+import vec from "../../assets/images/Vector1.webp";
 import { motion } from "framer-motion";
 
 const fadeUp = {
