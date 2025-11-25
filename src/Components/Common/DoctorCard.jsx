@@ -1,4 +1,4 @@
-import Doctor from "../../assets/images/Frame_93.webp";
+import Doctor from "../../assets/images/Frame93.webp";
 import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
 import { FaStar } from "react-icons/fa";
 import { useState } from "react";

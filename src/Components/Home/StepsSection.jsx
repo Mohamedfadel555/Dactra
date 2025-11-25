@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import vector from "../../assets/images/Vector.webp";
-import Group from "../../assets/images/Group_27.webp";
+import Group from "../../assets/images/Group27.webp";
 import doctor from "../../assets/images/doctor.webp";
 const patientSteps = [
   {
