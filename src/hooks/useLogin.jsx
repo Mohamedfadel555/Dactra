@@ -7,22 +7,28 @@ import { LoginAPI } from "../api/authAPI";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useSendOTP } from "./useSendOTP";
+import { useAuth } from "../Context/AuthContext";
 
 let message = "";
 
 //make the hook of login
 export const useLogin = () => {
+  const { login } = useAuth();
   const navigate = useNavigate();
   const sendOTPMutation = useSendOTP();
   return useMutation({
     //function of aoi
     mutationFn: LoginAPI,
-    onSuccess: (data) => {
-      console.log(data);
+    onSuccess: async (data) => {
+      await login(
+        data.data.token,
+        JSON.parse(atob(data.data.token.split(".")[1])).role
+      );
       toast.success("Logged in successfully!", {
         position: "top-center",
         closeOnClick: true,
       });
+      navigate("/");
     },
 
     onError: async (data) => {
@@ -74,9 +80,6 @@ export const useLogin = () => {
           closeOnClick: true,
         });
       }
-
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      //not completed yet
     },
   });
 };

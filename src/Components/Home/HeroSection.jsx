@@ -40,37 +40,43 @@ export default function HeroSection({ Role = "patient" }) {
       >
         <h1 className="text-[26px] leading-[32px] md:text-[34px] md:leading-[34px] lg:text-[50px] xl:text-[60px] max-w-[550px] lg:leading-16 font-bold">
           Your <span className="gradient-text">trusted partner</span>
-          {Role === "patient"
+          {Role === "patient" || Role === null
             ? " in digital healthcare."
             : " in buildinga smarter medical practice"}
         </h1>
 
         <p className="font-semibold text-[13px] sm:text-[14px] xl:text-xl max-w-[350px] md:max-w-full">
           <span className="gradient-text">
-            {Role === "patient"
+            {Role === "patient" || Role === null
               ? "Empowering Your Health at Every Step."
               : "Take your medical career to the next level."}
           </span>
-          {Role === "patient"
+          {Role === "patient" || Role === null
             ? "Experience personalized medical care from the comfort of your home.Connect with"
             : "Easily organize appointments, engage with patients through posts, publish helpful articles, and build trust with verified ratings. Everything you need to manage and grow your practice,"}
           <span className="gradient-text">
-            {Role === "patient" ? "certified doctors" : " all in one place."}
+            {Role === "patient" || Role === null
+              ? "certified doctors"
+              : " all in one place."}
           </span>
-          {Role === "patient"
+          {Role === "patient" || Role === null
             ? ", or manage prescriptions, and schedule appointments with ease. Ready to take control of your health?"
             : "Stay in control of your schedule—"}
           <span className="gradient-text">
-            {Role === "patient" ? " Get Started " : "Check your appointment."}
+            {Role === "patient" || Role === null
+              ? " Get Started "
+              : "Check your appointment."}
           </span>{" "}
-          {Role === "patient" ? "or Book an Appointment today." : ""}
+          {Role === "patient" || Role === null
+            ? "or Book an Appointment today."
+            : ""}
         </p>
 
         <button
           type="button"
           className="font-semibold relative z-30 w-[80%] sm:w-[60%] md:w-[60%] md:h-[50px] lg:text-xl xl:text-2xl text-white h-[46px] bg-[linear-gradient(141deg,#A7E2FF,#316BE8)] rounded-2xl flex justify-center items-center"
         >
-          {Role === "patient"
+          {Role === "patient" || Role === null
             ? "Book an appointment"
             : "Check your appointments"}
           <HiChevronRight className="text-xl md:text-2xl lg:text-3xl ml-1" />
@@ -102,7 +108,7 @@ export default function HeroSection({ Role = "patient" }) {
           <div className="text-[#0069AB] z-30 md:text-[10px] lg:text-[14px] xltext-[18px] flex absolute top-2/3 -left-1/4 shadow-[5px_6px_10px_#b7b7b7] w-fit gap-1.5 justify-center items-center px-[10px] py-[4px] bg-white rounded-[10px]">
             <HiStar className="bg-[#EFF9FF] text-[20px] " />
             <p>
-              {Role === "patient"
+              {Role === "patient" || Role === null
                 ? "Easy Appointment Booking"
                 : "Seamless Appointment Management"}
             </p>
@@ -115,7 +121,7 @@ export default function HeroSection({ Role = "patient" }) {
               className="absolute left-[10%] md:w-[30%] lg:w-[60px] xl:w-[70px] top-[-26%]"
             />
             <p>
-              {Role === "patient"
+              {Role === "patient" || Role === null
                 ? "Easily manage your appointments and stay connected with your doctor anytime."
                 : "Organize your schedule with ease and stay connected with your patients anytime"}
             </p>

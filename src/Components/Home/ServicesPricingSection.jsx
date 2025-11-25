@@ -4,10 +4,6 @@ import { GiLabCoat } from "react-icons/gi";
 import { FaXRay } from "react-icons/fa";
 import HeaderSection from "./HeaderSection";
 
-// vector images
-import Vector from "../../assets/images/Vector.png";
-import Vector2 from "../../assets/images/Vector2.jpg";
-
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.95 },
   show: {
@@ -41,7 +37,6 @@ const services = [
 export default function ServicesPricingSection() {
   return (
     <div className="flex flex-col gap-8 justify-center items-center relative z-40 px-4">
-
       <HeaderSection
         leftText="Start Making Money"
         gradientText="From Day One"
@@ -49,21 +44,6 @@ export default function ServicesPricingSection() {
         start receiving online consultations, receiving lab/imaging referrals,
         or getting e-prescriptions sent straight to your pharmacy."
       />
-
-     {/* ===== Right-side decorative images ===== */}
-<div className="hidden md:flex flex-col gap-2 absolute right-30 top-20">
-  <img
-    src={Vector}
-    alt=""
-    className="w-20 opacity-70"
-  />
-  <img
-    src={Vector2}
-    alt=""
-    className="w-20 opacity-70"
-  />
-</div>
-
 
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg p-6 md:p-10 flex flex-col gap-6">
         <h2 className="text-2xl md:text-3xl font-bold text-[#3D3D3D] text-center">

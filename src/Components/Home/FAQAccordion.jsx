@@ -10,7 +10,7 @@ export default function FAQAccordion({ items }) {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="w-full max-w-6xl min-h-[400px] mx-auto columns-1 md:columns-2 gap-4 space-y-4">
       {items.map((item, index) => (
         <motion.div
           key={index}
@@ -18,7 +18,7 @@ export default function FAQAccordion({ items }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.3, delay: index * 0.1 }}
-          className="w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+          className="break-inside-avoid bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
         >
           <button
             onClick={() => toggleItem(index)}
@@ -46,6 +46,7 @@ export default function FAQAccordion({ items }) {
               )}
             </motion.div>
           </button>
+
           <AnimatePresence>
             {openIndex === index && (
               <motion.div
@@ -68,4 +69,3 @@ export default function FAQAccordion({ items }) {
     </div>
   );
 }
-

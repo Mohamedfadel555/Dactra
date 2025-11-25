@@ -3,11 +3,14 @@ import BrandLogo from "../../Components/Common/BrandLogo";
 import { useEffect, useState } from "react";
 import { HiChevronDown } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../../Context/AuthContext";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
   const [sidenav, setSidenav] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const { accessToken } = useAuth();
 
   useEffect(() => {
     const handle = () => {
@@ -141,12 +144,15 @@ export default function Navbar() {
 
         <div className="flex justify-center items-center gap-[10px]">
           {/* sign in button */}
-          <Link
-            to="/auth"
-            className="flex justify-center items-center px-[20px] py-[8px] bg-[#316BE8] font-english font-semibold rounded-[10px] text-white text-[12px] md:text-[16px] hover:bg-[#2552c1] transition-all duration-200"
-          >
-            Sign in
-          </Link>
+
+          {accessToken ? null : (
+            <Link
+              to="/auth"
+              className="flex justify-center items-center px-[20px] py-[8px] bg-[#316BE8] font-english font-semibold rounded-[10px] text-white text-[12px] md:text-[16px] hover:bg-[#2552c1] transition-all duration-200"
+            >
+              Sign in
+            </Link>
+          )}
           {/* menu sign */}
           <div
             className="h-fit pb-[5px] md:hidden cursor-pointer "

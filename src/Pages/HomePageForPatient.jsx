@@ -19,7 +19,6 @@ import DoctorCard from "../Components/Common/DoctorCard";
 import vDoctor from "../assets/images/doctorvideo.webp";
 import vCustomer from "../assets/images/customervideo.webp";
 
-// ←←← إضافة Swiper هنا
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
@@ -31,6 +30,12 @@ import BrandLogo from "./../Components/Common/BrandLogo";
 import { Link } from "react-router-dom";
 import Bar from "../Components/Common/ReviewBar";
 import CommentCard from "./../Components/Common/CommentCard";
+import ServicesPricingSection from "./../Components/Home/ServicesPricingSection";
+import StatisticsSection from "./../Components/Home/StatisticsSection";
+import PlatformFeaturesSection from "./../Components/Home/PlatformFeaturesSection";
+import FAQAccordion from "./../Components/Home/FAQAccordion";
+import { useAuth } from "../Context/AuthContext";
+import axios from "axios";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -193,22 +198,38 @@ const comments = [
   },
 ];
 
-const Role = "patient";
-
 export default function HomePageForPatient() {
+  const { role } = useAuth();
   const {
     data: majors,
     isLoading: majorsLoading,
     isError: majorsError,
   } = useMajors("doctor");
 
+  const test = async () => {
+    try {
+      const res = await axios.post(
+        "https://dactra.runasp.net/api/account/refresh",
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      console.log(res);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  test();
+
   return (
     <div className="w-full flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
       {/* Section1 */}
-      <HeroSection Role={Role} />
+      <HeroSection Role={role} />
 
       {/* Section2 - Services */}
-      {Role === "patient" ? (
+      {role === "Patient" || role === null ? (
         <div className="flex flex-col gap-8 justify-center items-center relative z-40 px-4">
           <HeaderSection
             leftText="Top"
@@ -309,10 +330,10 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
           rightText="works"
           description="Navigating your healthcare journey with Dactra is seamless. Just follow these steps mentioned below to proceed with your selected services. You can also see our FAQ section for more guidance:"
         />
-        <StepsSection Role={Role} />
+        <StepsSection Role={role} />
       </div>
 
-      {Role === "patient" && (
+      {(role === "Patient" || role === null) && (
         <>
           <div className="flex flex-col gap-12 justify-center items-center px-4 md:px-8 lg:px-12">
             <HeaderSection
@@ -576,7 +597,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
               </div>
             </motion.div>
 
-            <div className="flex flex-col gap-12 justify-center items-center">
+            <div className=" w-full flex flex-col gap-12 justify-center items-center">
               <HeaderSection
                 leftText={"What People Think"}
                 gradientText={"About Us"}
@@ -724,7 +745,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
         </>
       )}
       {/* For others users */}
-      {Role !== "patient" && (
+      {role !== "Patient" && role !== null && (
         <>
           <ServicesPricingSection />
           <StatisticsSection />

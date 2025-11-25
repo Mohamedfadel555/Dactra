@@ -1,7 +1,7 @@
 import { FaRegStar, FaStar } from "react-icons/fa";
 export default function CommentCard({ name, photo, heading, body, starsNo }) {
   return (
-    <div className="flex flex-col w-[310px] shadow-[0_3px_10px_rgba(0,0,0,0.08),0_6px_20px_rgba(0,0,0,0.06)] p-4 rounded-[20px] h-[280px] gap-[18px]">
+    <div className="flex flex-col w-[310px] lg:w-[300px] xl:w-[400px] shadow-[0_3px_10px_rgba(0,0,0,0.08),0_6px_20px_rgba(0,0,0,0.06)] p-4 rounded-[20px] h-[280px] gap-[18px]">
       <div className="flex  items-center gap-[10px]">
         <img
           loading="lazy"

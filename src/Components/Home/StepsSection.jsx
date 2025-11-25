@@ -65,30 +65,31 @@ export default function StepsSection({ Role }) {
         whileInView="show"
         viewport={{ once: false, amount: 0.5 }}
       >
-        {(Role === "patient" ? patientSteps : providerSteps).map(
-          (step, index) => (
-            // كل ستب ملفوفة بـ motion.div عشان تعمل slide-in مع stagger
-            <motion.div
-              key={index}
-              className="flex gap-[20px] w-full lg:max-w-[400px]"
-              variants={itemVariants}
-            >
-              <div className="flex justify-center items-start">
-                <div className=" size-[40px] text-[20px] md:size-[60px] rounded-full text-[30px]  hover-gradient text-white font-bold flex justify-center items-center">
-                  {++index}
-                </div>
+        {(Role === "patient" || Role === null
+          ? patientSteps
+          : providerSteps
+        ).map((step, index) => (
+          // كل ستب ملفوفة بـ motion.div عشان تعمل slide-in مع stagger
+          <motion.div
+            key={index}
+            className="flex gap-[20px] w-full lg:max-w-[400px]"
+            variants={itemVariants}
+          >
+            <div className="flex justify-center items-start">
+              <div className=" size-[40px] text-[20px] md:size-[60px] rounded-full text-[30px]  hover-gradient text-white font-bold flex justify-center items-center">
+                {++index}
               </div>
-              <div className="pt-[10px] flex flex-col gap-[10px] ">
-                <h2 className=" text-[20px] md:text-[30px] text-[#3D3D3D] font-bold">
-                  {step.header}
-                </h2>
-                <p className="text-[#6D6D6D] text-[14px] md:text-[18px]">
-                  {step.desc}
-                </p>
-              </div>
-            </motion.div>
-          )
-        )}
+            </div>
+            <div className="pt-[10px] flex flex-col gap-[10px] ">
+              <h2 className=" text-[20px] md:text-[30px] text-[#3D3D3D] font-bold">
+                {step.header}
+              </h2>
+              <p className="text-[#6D6D6D] text-[14px] md:text-[18px]">
+                {step.desc}
+              </p>
+            </div>
+          </motion.div>
+        ))}
       </motion.div>
 
       <div className=" size-[250px] md:size-[300px] relative  bg-[linear-gradient(140deg,white_29%,#C0EAFF)] rounded-[20px] border-2 border-blue-300  ">
