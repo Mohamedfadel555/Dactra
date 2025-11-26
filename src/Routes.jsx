@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
+import ProtectedAuth from "./Components/Common/ProtectedAuth";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -51,63 +52,68 @@ export const route = createBrowserRouter([
       },
     ],
   },
-
   {
     path: "/auth",
-    element: (
-      <Suspense fallback={<Loader />}>
-        <AuthLayout />
-      </Suspense>
-    ),
+    element: <ProtectedAuth />,
     children: [
-      { index: true, element: <Navigate to="Login" replace /> },
       {
-        path: "Login",
+        path: "",
         element: (
           <Suspense fallback={<Loader />}>
-            <LoginPage />
+            <AuthLayout />
           </Suspense>
         ),
-      },
-      {
-        path: "Signup",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <SignupPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "ForgotPassword",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <ForgotPasswordPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "OTPVerify",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <OTPPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "CompleteSignup",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <CompleteSignupPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "UpdatePassword",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <UpdatePasswordPage />
-          </Suspense>
-        ),
+        children: [
+          { index: true, element: <Navigate to="Login" replace /> },
+          {
+            path: "Login",
+            element: (
+              <Suspense fallback={<Loader />}>
+                <LoginPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "Signup",
+            element: (
+              <Suspense fallback={<Loader />}>
+                <SignupPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "ForgotPassword",
+            element: (
+              <Suspense fallback={<Loader />}>
+                <ForgotPasswordPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "OTPVerify",
+            element: (
+              <Suspense fallback={<Loader />}>
+                <OTPPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "CompleteSignup",
+            element: (
+              <Suspense fallback={<Loader />}>
+                <CompleteSignupPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "UpdatePassword",
+            element: (
+              <Suspense fallback={<Loader />}>
+                <UpdatePasswordPage />
+              </Suspense>
+            ),
+          },
+        ],
       },
     ],
   },
