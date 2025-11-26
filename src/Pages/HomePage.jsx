@@ -206,23 +206,6 @@ export default function HomePage() {
     isError: majorsError,
   } = useMajors("doctor");
 
-  const test = async () => {
-    try {
-      const res = await axios.post(
-        "https://dactra.runasp.net/api/account/refresh",
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-      console.log(res);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  test();
-
   return (
     <div className="w-full flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
       {/* Section1 */}
