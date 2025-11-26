@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { HiChevronDown } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../Context/AuthContext";
-import { useAxios } from "./../../hooks/useAxios";
 import { useLogout } from "./../../hooks/useLogout";
 
 export default function Navbar() {
@@ -13,8 +12,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   const { accessToken } = useAuth();
-
-  const axiosInstance = useAxios();
 
   const logoutMutation = useLogout();
 
