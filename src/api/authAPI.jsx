@@ -6,7 +6,9 @@ const baseURL = "https://dactra.runasp.net/api/";
 
 //make function return the respones of api
 export const LoginAPI = async (Data) => {
-  const res = await axios.post(`${baseURL}account/Login`, Data);
+  const res = await axios.post(`${baseURL}account/Login`, Data, {
+    withCredentials: true,
+  });
   return res;
 };
 
