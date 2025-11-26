@@ -427,7 +427,11 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
             />
             <div className="flex gap-[15px] justify-center items-center flex-wrap">
               {majors?.map((major, ind) => (
-                <SpecialistCard name={major.name} icon={major.iconPath} />
+                <SpecialistCard
+                  key={ind}
+                  name={major.name}
+                  icon={major.iconPath}
+                />
               ))}
             </div>
           </div>

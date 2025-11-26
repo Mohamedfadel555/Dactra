@@ -21,7 +21,7 @@ export const useAxios = () => {
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
         try {
-          const res = await instance.post("account/refresh");
+          const res = await axios.post("account/refresh");
           const newAccessToken = res.data.accessToken;
           await login(
             newAccessToken,

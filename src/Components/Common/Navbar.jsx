@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { HiChevronDown } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../Context/AuthContext";
+import { useAxios } from "./../../hooks/useAxios";
+import { useLogout } from "./../../hooks/useLogout";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -11,6 +13,10 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   const { accessToken } = useAuth();
+
+  const axiosInstance = useAxios();
+
+  const logoutMutation = useLogout();
 
   useEffect(() => {
     const handle = () => {
@@ -56,6 +62,10 @@ export default function Navbar() {
     },
     { to: "/aboutus", label: "About US" },
   ];
+
+  async function handleLogout() {
+    logoutMutation.mutate();
+  }
 
   return (
     <>
@@ -236,6 +246,32 @@ export default function Navbar() {
               </div>
             </div>
           )
+        )}
+        {/* Logout Button */}
+        {accessToken && (
+          <button
+            onClick={handleLogout}
+            className="mt-auto bg-red-500 text-white font-semibold 
+             h-[45px] w-full flex items-center justify-center gap-2 
+             text-[16px] uppercase transition-all duration-300
+             active:scale-95 hover:bg-red-600 shadow-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.8}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l3 3m0 0l-3 3m3-3H3"
+              />
+            </svg>
+            Logout
+          </button>
         )}
       </div>
     </>

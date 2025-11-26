@@ -2,7 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
-import ProtectedAuth from "./Components/Common/ProtectedAuth";
+import ProtectedAuth from "./Components/Auth/ProtectedAuth";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));

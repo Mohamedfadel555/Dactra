@@ -1,5 +1,6 @@
 //importing axios
 import axios from "axios";
+import { useAxios } from "../hooks/useAxios";
 
 //the Base URL for all apis
 const baseURL = "https://dactra.runasp.net/api/";
@@ -66,6 +67,25 @@ export const CompleteMedicalProviderRegisterAPI = async (Data) => {
 export const getMajorsAPI = async () => {
   const res = await axios.get(`${baseURL}Majors/GetAll`);
   return res;
+};
+
+export const LogoutAPI = async () => {
+  const res = await axios.post(
+    `${baseURL}account/logout`,
+    {},
+    { withCredentials: true }
+  );
+  return res;
+};
+
+export const useRefreshApi = () => {
+  const axiosInstance = useAxios();
+
+  const refreshApi = async () => {
+    return axiosInstance.post("account/refresh");
+  };
+
+  return { refreshApi };
 };
 
 //write here all api function of Auth
