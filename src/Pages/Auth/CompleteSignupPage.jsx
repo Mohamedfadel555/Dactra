@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Formik, Form } from "formik";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,7 +9,6 @@ import { USER_TYPE_IMAGES } from "../../constants/authConstants";
 import { getCompleteSignupValidationSchema } from "../../utils/validationSchemas";
 import { getCompleteSignupInitialValues } from "../../utils/formInitialValues";
 import { useCompleteSignup } from "../../hooks/useCompleteSignup";
-import { getMajorsAPI } from "../../api/authAPI";
 import {
   MdPerson,
   MdPersonOutline,
@@ -337,7 +336,7 @@ function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
             { value: "0", label: "Male" },
             { value: "1", label: "Female" },
           ]}
-          icon={MdGender}
+          icon={MdMale}
         />
         <FormInputField
           name="dateOfBirth"

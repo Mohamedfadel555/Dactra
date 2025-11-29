@@ -150,8 +150,7 @@ export default function Footer() {
                 <FaClock className="text-blue-500" /> 24/7 Support
               </p>
               <p className="flex items-center gap-3">
-                <FaMapMarkerAlt className="text-blue-500" /> Riyadh, Saudi
-                Arabia
+                <FaMapMarkerAlt className="text-blue-500" /> Cairo, Egypt
               </p>
             </div>
           </motion.div>
