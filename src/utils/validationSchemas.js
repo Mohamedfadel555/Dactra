@@ -32,11 +32,61 @@ const nameSchema = (label) =>
     .min(2, `${label} must be at least 2 characters`)
     .required(`${label} is required`);
 
-const dateSchema = (label) =>
-  yup
+const dateSchema = (label, userType = null) => {
+  let schema = yup
     .date()
-    .max(new Date(), "You can't select a future date")
     .required(`${label} is required`);
+
+  // Add validation using .test() to check multiple conditions
+  schema = schema.test(
+    "date-validation",
+    function (value) {
+      if (!value) return true; // Let required() handle empty values
+      
+      const selectedDate = new Date(value);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Reject today's date and future dates
+      if (selectedDate >= today) {
+        return this.createError({
+          message: "You can't select today's date or a future date",
+        });
+      }
+
+      // Check minimum age based on user type
+      if (userType === "doctor") {
+        const maxBirthDate = new Date();
+        maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 25);
+        maxBirthDate.setHours(0, 0, 0, 0);
+        
+        // Birth date must be before or equal to maxBirthDate (age >= 25)
+        if (selectedDate > maxBirthDate) {
+          return this.createError({
+            message: "You must be at least 25 years old to register as a doctor",
+          });
+        }
+      } else if (userType === "patient") {
+        const maxBirthDate = new Date();
+        maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 12);
+        maxBirthDate.setHours(0, 0, 0, 0);
+        
+        // Birth date must be before or equal to maxBirthDate (age >= 12)
+        if (selectedDate > maxBirthDate) {
+          return this.createError({
+            message: "You must be at least 12 years old to register",
+          });
+        }
+      }
+
+      return true;
+    }
+  );
+
+  return schema;
+};
 
 // Validation for the Complete Signup step (patient/doctor only)
 export const getCompleteSignupValidationSchema = (userType) => {
@@ -48,7 +98,7 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .string()
         .oneOf(["0", "1"], "Select a valid gender")
         .required("Gender is required"),
-      dateOfBirth: dateSchema("Date of birth"),
+      dateOfBirth: dateSchema("Date of birth", "patient"),
       height: yup
         .number()
         .typeError("Height must be a number")
@@ -82,11 +132,11 @@ export const getCompleteSignupValidationSchema = (userType) => {
       chronicDisease: yup
         .string()
         .min(2, "Chronic disease details must be at least 2 characters")
-        .required("Chronic disease information is required"),
+       ,
       allergies: yup
         .string()
         .min(2, "Allergy details must be at least 2 characters")
-        .required("Allergy information is required"),
+        ,
     });
   }
 
@@ -98,7 +148,7 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .string()
         .oneOf(["0", "1"], "Select a valid gender")
         .required("Gender is required"),
-      dateOfBirth: dateSchema("Date of birth"),
+      dateOfBirth: dateSchema("Date of birth", "doctor"),
       careerStartDate: dateSchema("Career start date"),
       clinicAddress: yup
         .string()
