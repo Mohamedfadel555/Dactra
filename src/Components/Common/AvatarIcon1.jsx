@@ -5,7 +5,9 @@ export default function AvatarIcon({ user, handle, ref, className }) {
       <div
         ref={ref}
         onClick={handle}
-        className="size-[40px] overflow-hidden  rounded-full bg-gray-200 border-2 border-blue-500 flex relative "
+        className={`${
+          user && "cursor-pointer"
+        }size-[40px] overflow-hidden  rounded-full bg-gray-200 border-2 border-blue-500 flex relative `}
       >
         <IoPersonSharp className="size-[30px] absolute bottom-[-2px] left-1/2 translate-x-[-50%] text-white " />
       </div>
