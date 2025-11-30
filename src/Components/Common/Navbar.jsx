@@ -9,7 +9,7 @@ import { IoPersonSharp } from "react-icons/io5";
 import { useGetUser } from "../../hooks/useGetUser";
 import { FaChevronRight } from "react-icons/fa";
 import { IoIosHeartEmpty } from "react-icons/io";
-import AvatarIcon from "./avatarIcon";
+import AvatarIcon from "../../Components/Common/AvatarIcon";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
