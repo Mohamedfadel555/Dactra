@@ -65,7 +65,7 @@ export default function StepsSection({ Role }) {
         whileInView="show"
         viewport={{ once: false, amount: 0.5 }}
       >
-        {(Role === "patient" || Role === null
+        {(Role === "Patient" || Role === null
           ? patientSteps
           : providerSteps
         ).map((step, index) => (

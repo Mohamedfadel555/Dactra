@@ -57,7 +57,7 @@ export default function Footer() {
             </p>
 
             {/* Social Icons */}
-            <div className="flex gap-5">
+            <div className="flex gap-3">
               <motion.a
                 href="#"
                 className="group bg-gray-800 p-3 rounded-full transition-all duration-300 hover:bg-[#1877F2]"

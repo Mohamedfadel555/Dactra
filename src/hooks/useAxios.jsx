@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 
 export const useAxios = () => {
-  const { accessToken, role, login, logout } = useAuth();
+  const { accessToken, login, logout } = useAuth();
 
   const instance = axios.create({
     baseURL: "https://dactra.runasp.net/api/",
@@ -21,8 +21,13 @@ export const useAxios = () => {
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
         try {
-          const res = await axios.post("account/refresh");
+          const res = await axios.post(
+            "https://dactra.runasp.net/api/account/refresh",
+            {},
+            { withCredentials: true }
+          );
           const newAccessToken = res.data.accessToken;
+          console.log(newAccessToken);
           await login(
             newAccessToken,
             JSON.parse(atob(newAccessToken.split(".")[1])).role
