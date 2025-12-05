@@ -158,7 +158,7 @@ export default function Profile() {
 
             {/* البوب أب */}
             <motion.div
-              className="w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
+              className="w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
                    -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
               variants={popupVariants}
               initial="hidden"
@@ -223,7 +223,7 @@ export default function Profile() {
 
             {/* البوب أب */}
             <motion.div
-              className="w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
+              className=" w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
                    -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
               variants={popupVariants}
               initial="hidden"
