@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
 import ProtectedAuth from "./Components/Auth/ProtectedAuth";
+import Profile from "./Pages/Profile/Profile";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -47,6 +48,14 @@ export const route = createBrowserRouter([
         element: (
           <Suspense fallback={<Loader />}>
             <CallBack />
+          </Suspense>
+        ),
+      },
+      {
+        path: "myprofile",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <Profile />
           </Suspense>
         ),
       },

@@ -66,3 +66,9 @@ export const updatePasswordInitialValues = {
   password: "",
   confirm_password: "",
 };
+
+export const changePasswordInitialValues = {
+  oldPassword: "",
+  newPassword: "",
+  confirmNewPassword: "",
+};

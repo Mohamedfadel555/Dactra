@@ -1,10 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { LogoutAPI } from "../api/authAPI";
 import { toast } from "react-toastify";
 import { useAuth } from "../Context/AuthContext";
 
 export const useLogout = () => {
   const { logout } = useAuth();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: LogoutAPI,
     onSuccess: () => {
@@ -12,6 +13,7 @@ export const useLogout = () => {
         position: "top-center",
         closeOnClick: true,
       });
+      queryClient.clear();
       logout();
     },
     onError: () => {

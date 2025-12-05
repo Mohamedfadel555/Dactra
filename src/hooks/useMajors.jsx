@@ -8,6 +8,8 @@ export const useMajors = (userType) => {
     queryFn: getMajorsAPI,
     enabled: userType === "doctor",
     staleTime: 1000 * 60 * 60,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 2,
     select: (response) => {
       return response.data;

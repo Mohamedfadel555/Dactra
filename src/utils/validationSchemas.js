@@ -33,57 +33,52 @@ const nameSchema = (label) =>
     .required(`${label} is required`);
 
 const dateSchema = (label, userType = null) => {
-  let schema = yup
-    .date()
-    .required(`${label} is required`);
+  let schema = yup.date().required(`${label} is required`);
 
   // Add validation using .test() to check multiple conditions
-  schema = schema.test(
-    "date-validation",
-    function (value) {
-      if (!value) return true; // Let required() handle empty values
-      
-      const selectedDate = new Date(value);
-      selectedDate.setHours(0, 0, 0, 0);
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Reject today's date and future dates
-      if (selectedDate >= today) {
+  schema = schema.test("date-validation", function (value) {
+    if (!value) return true; // Let required() handle empty values
+
+    const selectedDate = new Date(value);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Reject today's date and future dates
+    if (selectedDate >= today) {
+      return this.createError({
+        message: "You can't select today's date or a future date",
+      });
+    }
+
+    // Check minimum age based on user type
+    if (userType === "doctor") {
+      const maxBirthDate = new Date();
+      maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 25);
+      maxBirthDate.setHours(0, 0, 0, 0);
+
+      // Birth date must be before or equal to maxBirthDate (age >= 25)
+      if (selectedDate > maxBirthDate) {
         return this.createError({
-          message: "You can't select today's date or a future date",
+          message: "You must be at least 25 years old to register as a doctor",
         });
       }
+    } else if (userType === "patient") {
+      const maxBirthDate = new Date();
+      maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 12);
+      maxBirthDate.setHours(0, 0, 0, 0);
 
-      // Check minimum age based on user type
-      if (userType === "doctor") {
-        const maxBirthDate = new Date();
-        maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 25);
-        maxBirthDate.setHours(0, 0, 0, 0);
-        
-        // Birth date must be before or equal to maxBirthDate (age >= 25)
-        if (selectedDate > maxBirthDate) {
-          return this.createError({
-            message: "You must be at least 25 years old to register as a doctor",
-          });
-        }
-      } else if (userType === "patient") {
-        const maxBirthDate = new Date();
-        maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 12);
-        maxBirthDate.setHours(0, 0, 0, 0);
-        
-        // Birth date must be before or equal to maxBirthDate (age >= 12)
-        if (selectedDate > maxBirthDate) {
-          return this.createError({
-            message: "You must be at least 12 years old to register",
-          });
-        }
+      // Birth date must be before or equal to maxBirthDate (age >= 12)
+      if (selectedDate > maxBirthDate) {
+        return this.createError({
+          message: "You must be at least 12 years old to register",
+        });
       }
-
-      return true;
     }
-  );
+
+    return true;
+  });
 
   return schema;
 };
@@ -120,10 +115,7 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .required("Blood type is required"),
       smokingStatus: yup
         .string()
-        .oneOf(
-          ["smoker", "non-smoker", "former"],
-          "Select a valid smoking status"
-        )
+        .oneOf(["0", "1", "2"], "Select a valid smoking status")
         .required("Smoking status is required"),
       maritalStatus: yup
         .string()
@@ -131,12 +123,10 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .required("Marital status is required"),
       chronicDisease: yup
         .string()
-        .min(2, "Chronic disease details must be at least 2 characters")
-       ,
+        .min(2, "Chronic disease details must be at least 2 characters"),
       allergies: yup
         .string()
-        .min(2, "Allergy details must be at least 2 characters")
-        ,
+        .min(2, "Allergy details must be at least 2 characters"),
     });
   }
 
@@ -217,4 +207,93 @@ export const updatePasswordValidationSchema = yup.object({
     .string()
     .oneOf([yup.ref("password")], "passwords must match")
     .required("Confirm is required"),
+});
+
+export const editProfileValidationSchema = yup.object({
+  firstName: nameSchema("First Name"),
+  lastName: nameSchema("Last name"),
+  phoneNamber: yup
+    .string()
+    .matches(/^[0-9]{10,15}$/, "Phone number must be 10-15 digits")
+    .required("Phone number is required"),
+  height: yup
+    .number()
+    .typeError("Height must be a number")
+    .min(30, "Height too small")
+    .max(300, "Height too large")
+    .required("Height is required"),
+  weight: yup
+    .number()
+    .typeError("Weight must be a number")
+    .min(2, "Weight too small")
+    .max(500, "Weight too large")
+    .required("Weight is required"),
+  smokingStatus: yup
+    .string()
+    .oneOf(["0", "1", "2"], "Select a valid smoking status")
+    .required("Smoking status is required"),
+  maritalStatus: yup
+    .string()
+    .oneOf(["0", "1", "2", "3"], "Select a valid marital status")
+    .required("Marital status is required"),
+  bloodType: yup
+    .string()
+    .oneOf(
+      ["0", "1", "2", "3", "4", "5", "6", "7"],
+      "Select a valid blood type"
+    )
+    .required("Blood type is required"),
+  addressId: yup
+    .string()
+    .oneOf(
+      [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+      ],
+      "select a valid city"
+    )
+    .required("address is required"),
+});
+
+export const changePasswordValidationSchema = yup.object({
+  oldPassword: yup
+    .string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters"),
+  newPassword: yup
+    .string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
+      "Password must have upper, lower, number & symbol"
+    ),
+  confirmNewPassword: yup
+    .string()
+    .oneOf([yup.ref("newPassword")], "Passwords must match")
+    .required("Confirm password is required"),
 });

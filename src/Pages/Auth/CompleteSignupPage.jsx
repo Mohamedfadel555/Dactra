@@ -57,37 +57,6 @@ export default function CompleteSignupPage() {
     }
   }, [email, navigate]);
 
-  // useEffect(() => {
-  //   if (userType !== "doctor") {
-  //     return;
-  //   }
-
-  //   let isMounted = true;
-  //   setMajorsLoading(true);
-  //   setMajorsError("");
-
-  //   getMajorsAPI()
-  //     .then((res) => {
-  //       if (!isMounted) return;
-  //       const list = res?.data?.data ?? res?.data ?? [];
-  //       setMajors(Array.isArray(list) ? list : []);
-  //     })
-  //     .catch(() => {
-  //       if (!isMounted) return;
-  //       setMajorsError("Failed to load majors. Please try again.");
-  //       setMajors([]);
-  //     })
-  //     .finally(() => {
-  //       if (isMounted) {
-  //         setMajorsLoading(false);
-  //       }
-  //     });
-
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, [userType]);
-
   const handleSubmit = async (values, { setSubmitting }) => {
     const payload = buildPayload({
       email,

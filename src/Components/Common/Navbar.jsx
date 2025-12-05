@@ -39,7 +39,7 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleOnclickOutside);
     return () =>
       document.removeEventListener("mousedown", handleOnclickOutside);
-  }, []);
+  }, [popup]);
 
   useEffect(() => {
     const handle = () => {
@@ -182,8 +182,9 @@ export default function Navbar() {
           {/* sign in button */}
 
           {accessToken ? (
-            <div className="relative">
+            <div className="hidden md:block relative">
               <AvatarIcon
+                ref={avatarRef}
                 handle={() => {
                   setPopup((prev) => !prev);
                   setOpenMenu(null);
@@ -204,7 +205,7 @@ export default function Navbar() {
 
                     {/* Links */}
                     <Link
-                      to="/profile"
+                      to="/myprofile"
                       onClick={() => setPopup(false)}
                       className="flex justify-between items-center px-3 py-2 rounded hover:bg-blue-50 transition"
                     >
@@ -293,7 +294,11 @@ export default function Navbar() {
           sidenav ? "left-0" : "left-[-100%]"
         } transition-[1s] w-[280px] sm:w-[400px] z-50 fixed  top-[60px]  md:hidden bg-white flex-col flex gap-0.5 ease-in-out`}
       >
-        <AvatarIcon user={user} className="ml-[10px] mb-[10px]" />
+        {accessToken && (
+          <Link to="/myprofile" onClick={() => setSidenav(false)}>
+            <AvatarIcon user={user} className="ml-[10px] mb-[10px]" />
+          </Link>
+        )}
         {NavLinks.map((i, index) =>
           i.to ? (
             <NavLink
@@ -353,7 +358,10 @@ export default function Navbar() {
         {/* Logout Button */}
         {accessToken && (
           <button
-            onClick={handleLogout}
+            onClick={() => {
+              handleLogout();
+              setSidenav(false);
+            }}
             className="mt-auto bg-red-500 text-white font-semibold 
              h-[45px] w-full flex items-center justify-center gap-2 
              text-[16px] uppercase transition-all duration-300

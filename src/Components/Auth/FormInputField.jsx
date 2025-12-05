@@ -19,7 +19,7 @@ export default function FormInputField({
   const hasIcon = Boolean(Icon);
 
   return (
-    <div className="flex flex-col gap-[5px]">
+    <div className="flex flex-col gap-[5px] w-full ">
       <label htmlFor={name} className="text-[#003465] font-[500] font-english">
         {label}
       </label>
@@ -57,7 +57,9 @@ export default function FormInputField({
         {Icon && (
           <Icon
             className={`absolute transition-all duration-300 ${
-              options ? "left-2.5 top-1/2 -translate-y-1/2" : "left-2 top-1/2 -translate-y-1/2"
+              options
+                ? "left-2.5 top-1/2 -translate-y-1/2"
+                : "left-2 top-1/2 -translate-y-1/2"
             } peer-focus:text-blue-500 text-[#BCBEC0]`}
           />
         )}

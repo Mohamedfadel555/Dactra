@@ -27,7 +27,6 @@ export const useAxios = () => {
             { withCredentials: true }
           );
           const newAccessToken = res.data.accessToken;
-          console.log(newAccessToken);
           await login(
             newAccessToken,
             JSON.parse(atob(newAccessToken.split(".")[1])).role

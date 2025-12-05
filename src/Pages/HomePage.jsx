@@ -207,7 +207,7 @@ export default function HomePage() {
   } = useMajors("doctor");
 
   return (
-    <div className="w-full flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
+    <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
       {/* Section1 */}
       <HeroSection Role={role} />
 
@@ -326,7 +326,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
               description="Meet our top-rated doctors, trusted by patients for their expertise and exceptional care"
             />
 
-            <div className="w-full max-w-screen-2xl mx-auto">
+            <div className="w-full  max-w-screen-2xl mx-auto">
               <Swiper
                 modules={[Navigation, Pagination, Autoplay]}
                 spaceBetween={30}
