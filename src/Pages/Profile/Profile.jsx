@@ -72,9 +72,6 @@ const appointmentData = [
   { date: "2025-01-04", count: 4 },
   { date: "2025-01-05", count: 10 },
   { date: "2025-01-06", count: 5 },
-  { date: "2025-01-07", count: 7 },
-  { date: "2025-01-08", count: 9 },
-  { date: "2025-01-09", count: 6 },
 ];
 
 export default function Profile() {
@@ -83,6 +80,7 @@ export default function Profile() {
   const { data: user } = useGetUser();
   const { data: cities } = useCities();
   const { role } = useAuth();
+  console.log(user);
 
   const editPatientMutation = useEditPatientProfile();
 
@@ -246,17 +244,27 @@ export default function Profile() {
               <Formik
                 onSubmit={editSubmitting}
                 validationSchema={editProfileValidationSchema}
-                initialValues={{
-                  firstName: user?.firstName,
-                  lastName: user?.lastName,
-                  phoneNamber: user?.phoneNumber,
-                  addressId: user?.addressId ? user.addressId : "",
-                  height: user?.height,
-                  weight: user?.weight,
-                  smokingStatus: `${user?.smokingStatus}`,
-                  maritalStatus: `${user?.maritalStatus}`,
-                  bloodType: `${user?.bloodType}`,
-                }}
+                initialValues={
+                  role === "Patient"
+                    ? {
+                        firstName: user?.firstName,
+                        lastName: user?.lastName,
+                        phoneNamber: user?.phoneNumber,
+                        addressId: user?.addressId ? user.addressId : "",
+                        height: user?.height,
+                        weight: user?.weight,
+                        smokingStatus: `${user?.smokingStatus}`,
+                        maritalStatus: `${user?.maritalStatus}`,
+                        bloodType: `${user?.bloodType}`,
+                      }
+                    : {
+                        firstName: user?.firstName,
+                        lastName: user?.lastName,
+                        phoneNamber: user?.phoneNumber,
+                        address: user?.address,
+                        about: user?.about,
+                      }
+                }
                 enableReinitialize={true}
               >
                 {({ isValid, dirty, isSubmitting }) => (
@@ -275,66 +283,81 @@ export default function Profile() {
                       label={"Phone Number"}
                     />
 
-                    <FormInputField
-                      name={"addressId"}
-                      label={"Address"}
-                      placeholder={"Select City"}
-                      options={cities.map(({ id, name }) => ({
-                        value: id,
-                        label: name,
-                      }))}
-                    />
+                    {role === "Doctor" && (
+                      <>
+                        <FormInputField name={"address"} label={"Address"} />
+                        <FormInputField
+                          name={"about"}
+                          label={"About"}
+                          type="text area"
+                        />
+                      </>
+                    )}
 
-                    <div className="flex gap-1.5 items-center w-full">
-                      <FormInputField
-                        name={"height"}
-                        label={"Height"}
-                        type="number"
-                      />
-                      <FormInputField
-                        name={"weight"}
-                        label={"Weight"}
-                        type="number"
-                      />
-                    </div>
+                    {role === "Patient" && (
+                      <>
+                        <FormInputField
+                          name={"addressId"}
+                          label={"Address"}
+                          placeholder={"Select City"}
+                          options={cities.map(({ id, name }) => ({
+                            value: id,
+                            label: name,
+                          }))}
+                        />
 
-                    <div className="flex gap-1.5 items-center w-full">
-                      <FormInputField
-                        name={"smokingStatus"}
-                        label={"Smoking"}
-                        options={[
-                          { value: 0, label: "Non-smoker" },
-                          { value: 1, label: "Smoker" },
-                          { value: 2, label: "Former" },
-                        ]}
-                      />
+                        <div className="flex gap-1.5 items-center w-full">
+                          <FormInputField
+                            name={"height"}
+                            label={"Height"}
+                            type="number"
+                          />
+                          <FormInputField
+                            name={"weight"}
+                            label={"Weight"}
+                            type="number"
+                          />
+                        </div>
 
-                      <FormInputField
-                        name={"maritalStatus"}
-                        label={"Martial status"}
-                        options={[
-                          { value: "0", label: "Single" },
-                          { value: "1", label: "Married" },
-                          { value: "2", label: "Divorced" },
-                          { value: "3", label: "Widowed" },
-                        ]}
-                      />
-                    </div>
+                        <div className="flex gap-1.5 items-center w-full">
+                          <FormInputField
+                            name={"smokingStatus"}
+                            label={"Smoking"}
+                            options={[
+                              { value: 0, label: "Non-smoker" },
+                              { value: 1, label: "Smoker" },
+                              { value: 2, label: "Former" },
+                            ]}
+                          />
 
-                    <FormInputField
-                      name={"bloodType"}
-                      label={"Blood Type"}
-                      options={[
-                        { value: 0, label: "A+" },
-                        { value: 1, label: "A-" },
-                        { value: 2, label: "B+" },
-                        { value: 3, label: "B-" },
-                        { value: 4, label: "AB+" },
-                        { value: 5, label: "AB-" },
-                        { value: 6, label: "O+" },
-                        { value: 7, label: "O-" },
-                      ]}
-                    />
+                          <FormInputField
+                            name={"maritalStatus"}
+                            label={"Martial status"}
+                            options={[
+                              { value: "0", label: "Single" },
+                              { value: "1", label: "Married" },
+                              { value: "2", label: "Divorced" },
+                              { value: "3", label: "Widowed" },
+                            ]}
+                          />
+                        </div>
+
+                        <FormInputField
+                          name={"bloodType"}
+                          label={"Blood Type"}
+                          options={[
+                            { value: 0, label: "A+" },
+                            { value: 1, label: "A-" },
+                            { value: 2, label: "B+" },
+                            { value: 3, label: "B-" },
+                            { value: 4, label: "AB+" },
+                            { value: 5, label: "AB-" },
+                            { value: 6, label: "O+" },
+                            { value: 7, label: "O-" },
+                          ]}
+                        />
+                      </>
+                    )}
 
                     <SubmitButton
                       text="Edit"
