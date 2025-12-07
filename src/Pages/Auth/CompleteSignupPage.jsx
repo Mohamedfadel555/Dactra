@@ -229,9 +229,9 @@ function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
           type="select"
           placeholder="Select smoking status"
           options={[
-            { value: "smoker", label: "Smoker" },
-            { value: "non-smoker", label: "Non-smoker" },
-            { value: "former", label: "Former" },
+            { value: "0", label: "Non-smoker" },
+            { value: "1", label: "Smoker" },
+            { value: "2", label: "Former" },
           ]}
           icon={MdSmokingRooms}
         />

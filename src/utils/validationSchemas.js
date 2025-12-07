@@ -209,7 +209,7 @@ export const updatePasswordValidationSchema = yup.object({
     .required("Confirm is required"),
 });
 
-export const editProfileValidationSchema = yup.object({
+export const editPatientProfileValidationSchema = yup.object({
   firstName: nameSchema("First Name"),
   lastName: nameSchema("Last name"),
   phoneNamber: yup
@@ -277,6 +277,19 @@ export const editProfileValidationSchema = yup.object({
       "select a valid city"
     )
     .required("address is required"),
+});
+
+export const editDoctorProfileValidationSchema = yup.object({
+  firstName: nameSchema("First Name"),
+  lastName: nameSchema("Last name"),
+  address: yup
+    .string()
+    .min(5, "Address must be at least 5 characters")
+    .required("Clinic address is required"),
+  about: yup
+    .string()
+    .min(10, "About section must be at least 10 characters")
+    .required("About section is required"),
 });
 
 export const changePasswordValidationSchema = yup.object({

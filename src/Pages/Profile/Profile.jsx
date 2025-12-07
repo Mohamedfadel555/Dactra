@@ -17,7 +17,8 @@ import { IoCloseSharp } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   changePasswordValidationSchema,
-  editProfileValidationSchema,
+  editDoctorProfileValidationSchema,
+  editPatientProfileValidationSchema,
 } from "../../utils/validationSchemas";
 import { changePasswordInitialValues } from "../../utils/formInitialValues";
 import { useCities } from "../../hooks/useCities";
@@ -81,6 +82,13 @@ export default function Profile() {
   const { data: cities } = useCities();
   const { role } = useAuth();
   console.log(user);
+  console.log({
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+    phoneNamber: user?.phoneNumber,
+    address: user?.address,
+    about: user?.about,
+  });
 
   const editPatientMutation = useEditPatientProfile();
 
@@ -243,14 +251,18 @@ export default function Profile() {
 
               <Formik
                 onSubmit={editSubmitting}
-                validationSchema={editProfileValidationSchema}
+                validationSchema={
+                  role === "Patient"
+                    ? editPatientProfileValidationSchema
+                    : editDoctorProfileValidationSchema
+                }
                 initialValues={
                   role === "Patient"
                     ? {
                         firstName: user?.firstName,
                         lastName: user?.lastName,
                         phoneNamber: user?.phoneNumber,
-                        addressId: user?.addressId ? user.addressId : "",
+                        addressId: user?.addressId ? `${user.addressId}` : "",
                         height: user?.height,
                         weight: user?.weight,
                         smokingStatus: `${user?.smokingStatus}`,
@@ -272,24 +284,34 @@ export default function Profile() {
                     <div className="flex gap-1.5 items-center w-full">
                       <FormInputField
                         name={"firstName"}
-                        label={"FirstName"}
-                        className="w-full p-0"
+                        label={"FirstName*"}
+                        className=" !pl-2"
                       />
-                      <FormInputField name={"lastName"} label={"LastName"} />
+                      <FormInputField
+                        name={"lastName"}
+                        label={"LastName*"}
+                        className=" !pl-2"
+                      />
                     </div>
 
                     <FormInputField
                       name={"phoneNamber"}
-                      label={"Phone Number"}
+                      label={"Phone Number*"}
+                      className=" !pl-2"
                     />
 
                     {role === "Doctor" && (
                       <>
-                        <FormInputField name={"address"} label={"Address"} />
+                        <FormInputField
+                          name={"address"}
+                          label={"Address*"}
+                          className=" !pl-2"
+                        />
                         <FormInputField
                           name={"about"}
-                          label={"About"}
+                          label={"About*"}
                           type="text area"
+                          className=" !pl-2"
                         />
                       </>
                     )}
