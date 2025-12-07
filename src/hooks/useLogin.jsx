@@ -20,15 +20,25 @@ export const useLogin = () => {
     //function of aoi
     mutationFn: LoginAPI,
     onSuccess: async (data) => {
-      await login(
-        data.data.token,
-        JSON.parse(atob(data.data.token.split(".")[1])).role
-      );
+      const tokenPayload = JSON.parse(atob(data.data.token.split(".")[1]));
+      const role = tokenPayload.role;
+      console.log("Login role:", role); // Debug: Check actual role value
+      await login(data.data.token, role);
       toast.success("Logged in successfully!", {
         position: "top-center",
         closeOnClick: true,
       });
-      navigate("/");
+      // Redirect admin to admin dashboard
+      // Check role case-insensitively
+      const normalizedRole = role?.toLowerCase();
+      console.log("Normalized role:", normalizedRole); // Debug
+      if (normalizedRole === "admin" || normalizedRole === "administrator") {
+        console.log("Redirecting to /admin/dashboard"); // Debug
+        navigate("/admin/dashboard", { replace: true });
+      } else {
+        console.log("Redirecting to /"); // Debug
+        navigate("/", { replace: true });
+      }
     },
 
     onError: async (data) => {

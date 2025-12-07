@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
 import ProtectedAuth from "./Components/Auth/ProtectedAuth";
+import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
+import DoctorsListPage from "./Pages/DoctorsListPage";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -25,6 +27,25 @@ const UpdatePasswordPage = lazy(() =>
 const ERR404 = lazy(() => import("./Pages/Error/Error404"));
 const ERR403 = lazy(() => import("./Pages/Error/Error403"));
 
+// Admin Layout and Pages
+const AdminLayout = lazy(() => import("./Layout/AdminLayout"));
+const DashboardPage = lazy(() => import("./Pages/Admin/DashboardPage"));
+const DoctorsManagementPage = lazy(() =>
+  import("./Pages/Admin/DoctorsManagementPage")
+);
+const PatientsManagementPage = lazy(() =>
+  import("./Pages/Admin/PatientsManagementPage")
+);
+const LabsManagementPage = lazy(() =>
+  import("./Pages/Admin/LabsManagementPage")
+);
+const ScansManagementPage = lazy(() =>
+  import("./Pages/Admin/ScansManagementPage")
+);
+const ComplaintsReportsPage = lazy(() =>
+  import("./Pages/Admin/ComplaintsReportsPage")
+);
+
 export const route = createBrowserRouter([
   {
     path: "/",
@@ -39,6 +60,14 @@ export const route = createBrowserRouter([
         element: (
           <Suspense fallback={<Loader />}>
             <HomePage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "doctors",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <DoctorsListPage />
           </Suspense>
         ),
       },
@@ -118,6 +147,70 @@ export const route = createBrowserRouter([
     ],
   },
 
+  {
+    path: "/admin",
+    element: (
+      <Suspense fallback={<Loader />}>
+        <ProtectedAdmin>
+          <AdminLayout />
+        </ProtectedAdmin>
+      </Suspense>
+    ),
+    children: [
+      {
+        index: true,
+        element: <Navigate to="dashboard" replace />,
+      },
+      {
+        path: "dashboard",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <DashboardPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "doctors",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <DoctorsManagementPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "patients",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <PatientsManagementPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "labs",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <LabsManagementPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "scans",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ScansManagementPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "complaints",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ComplaintsReportsPage />
+          </Suspense>
+        ),
+      },
+    ],
+  },
   {
     path: "/403",
     element: (

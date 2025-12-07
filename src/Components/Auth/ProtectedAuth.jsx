@@ -3,7 +3,17 @@ import { useAuth } from "../../Context/AuthContext";
 import { toast } from "react-toastify";
 
 export default function ProtectedAuth() {
-  const { accessToken } = useAuth();
+  const { accessToken, role } = useAuth();
 
-  return accessToken ? <Navigate to="/" /> : <Outlet />;
+  // Don't redirect admin - let useLogin handle the redirect
+  if (accessToken) {
+    const normalizedRole = role?.toLowerCase();
+    if (normalizedRole === "admin" || normalizedRole === "administrator") {
+      // Admin redirect is handled in useLogin hook
+      return <Outlet />;
+    }
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
 }
