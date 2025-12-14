@@ -4,6 +4,7 @@ import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
 import ProtectedAuth from "./Components/Auth/ProtectedAuth";
 import Profile from "./Pages/Profile/Profile";
+import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -55,7 +56,9 @@ export const route = createBrowserRouter([
         path: "myprofile",
         element: (
           <Suspense fallback={<Loader />}>
-            <Profile />
+            <ProtectedRoutes>
+              <Profile />
+            </ProtectedRoutes>
           </Suspense>
         ),
       },
