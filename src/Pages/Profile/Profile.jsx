@@ -66,6 +66,14 @@ export default function Profile() {
   console.log(ratings);
 
   const { role } = useAuth();
+  console.log(user);
+  console.log({
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+    phoneNamber: user?.phoneNumber,
+    address: user?.address,
+    about: user?.about,
+  });
 
   useEffect(() => {
     if (!vitals) return;
@@ -385,7 +393,7 @@ export default function Profile() {
                         firstName: user?.firstName,
                         lastName: user?.lastName,
                         phoneNamber: user?.phoneNumber,
-                        addressId: user?.addressId ? user.addressId : "",
+                        addressId: user?.addressId ? `${user.addressId}` : "",
                         height: user?.height,
                         weight: user?.weight,
                         smokingStatus: `${user?.smokingStatus}`,
@@ -407,8 +415,13 @@ export default function Profile() {
                     <div className="flex gap-1.5 items-center w-full">
                       <FormInputField
                         name={"firstName"}
-                        label={"First Name"}
-                        className="w-full pl-[10px]"
+                        label={"FirstName*"}
+                        className=" !pl-2"
+                      />
+                      <FormInputField
+                        name={"lastName"}
+                        label={"LastName*"}
+                        className=" !pl-2"
                       />
                       <FormInputField
                         name={"lastName"}
@@ -417,8 +430,19 @@ export default function Profile() {
                       />
                     </div>
 
+                    <FormInputField
+                      name={"phoneNamber"}
+                      label={"Phone Number*"}
+                      className=" !pl-2"
+                    />
+
                     {role === "Doctor" && (
                       <>
+                        <FormInputField
+                          name={"address"}
+                          label={"Address*"}
+                          className=" !pl-2"
+                        />
                         <FormInputField
                           name={"phoneNumber"}
                           label={"Phone Number"}
@@ -431,7 +455,8 @@ export default function Profile() {
                         />
                         <FormInputField
                           name={"about"}
-                          label={"About"}
+                          label={"About*"}
+                          type="text area"
                           className="pl-[10px]!"
                         />
                       </>
