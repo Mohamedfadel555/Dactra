@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { MdAddChart } from "react-icons/md";
 import {
   LineChart,
   Line,
@@ -12,6 +13,7 @@ import {
 import * as yup from "yup";
 import { Formik, Form, Field } from "formik";
 import { motion, AnimatePresence } from "framer-motion";
+import SubmitButton from "../Auth/SubmitButton";
 
 export default function ChartComp({ data, title, domain, fields, onAdd }) {
   const [showForm, setShowForm] = useState(false);
@@ -29,14 +31,24 @@ export default function ChartComp({ data, title, domain, fields, onAdd }) {
 
   return (
     <div className="duration-700 w-full flex flex-col gap-4 bg-white shadow-md rounded-xl p-5">
-      <p className="mb-[10px] text-lg font-semibold">{title}</p>
+      <div className=" mb-[10px] flex w-full justify-between items-center">
+        <p className=" text-lg font-semibold">{title}</p>
+        <MdAddChart
+          onClick={() => setShowForm((prev) => !prev)}
+          className="text-[25px] cursor-pointer text-blue-600"
+        />
+      </div>
 
       {/* Chart */}
       <div className="w-full h-[300px] sm:h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 10 }}
+              className="whitespace-pre-line! "
+            />
             <YAxis domain={domain} tick={{ fontSize: 12 }} />
             <Tooltip />
             <Legend />
@@ -54,16 +66,6 @@ export default function ChartComp({ data, title, domain, fields, onAdd }) {
         </ResponsiveContainer>
       </div>
 
-      {/* زرار */}
-      <div className="w-full flex justify-end sm:justify-end">
-        <button
-          onClick={() => setShowForm((prev) => !prev)}
-          className="w-full sm:w-[200px] h-[40px] text-white font-bold bg-blue-700 rounded-[10px]"
-        >
-          + Add record
-        </button>
-      </div>
-
       {/* Form */}
       <AnimatePresence>
         {showForm && (
@@ -79,17 +81,22 @@ export default function ChartComp({ data, title, domain, fields, onAdd }) {
                 {}
               )}
               validationSchema={validationsch}
-              onSubmit={(values, { resetForm }) => {
-                onAdd({
+              onSubmit={async (values, { resetForm }) => {
+                await onAdd({
                   ...values,
-                  date: new Date().toISOString().split("T")[0],
+                  vitalSignTypeId:
+                    title === "Blood Pressure"
+                      ? 1
+                      : title === "Heart Rate"
+                      ? 2
+                      : 3,
                 });
-                resetForm();
                 setShowForm(false);
+                resetForm();
               }}
             >
-              {({ errors, touched }) => (
-                <Form className="flex flex-col sm:flex-row items-end flex-wrap gap-4 mt-[20px]">
+              {({ errors, touched, isValid, dirty, isSubmitting }) => (
+                <Form className="flex flex-col sm:flex-row sm:items-start min-h-[100px] items-end flex-wrap gap-4 mt-[20px]">
                   {fields.map((field) => (
                     <div
                       key={field.key}
@@ -115,12 +122,14 @@ export default function ChartComp({ data, title, domain, fields, onAdd }) {
                     </div>
                   ))}
 
-                  <button
-                    type="submit"
-                    className="w-full sm:w-[120px] h-[40px] text-white font-bold bg-blue-700 rounded-[10px]"
-                  >
-                    Add
-                  </button>
+                  <SubmitButton
+                    fullWidth={false}
+                    className="mt-[19px]! px-[20px]!"
+                    text="Add"
+                    loadingText="Adding"
+                    disabled={!isValid && !dirty}
+                    isLoading={isSubmitting}
+                  />
                 </Form>
               )}
             </Formik>

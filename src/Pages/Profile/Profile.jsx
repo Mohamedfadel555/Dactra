@@ -3,33 +3,36 @@ import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaRegEdit } from "react-icons/fa";
 import ChartComp from "../../Components/Common/ChartComp";
 import { useGetUser } from "../../hooks/useGetUser";
 import { MdOutlinePassword } from "react-icons/md";
+import profilePhoto from "../../assets/images/profile.webp";
 import { useAuth } from "../../Context/AuthContext";
-import { FaGraduationCap } from "react-icons/fa6";
-import { PiCertificate } from "react-icons/pi";
-import { RiMedalLine } from "react-icons/ri";
 import BarComp from "../../Components/Common/BarComp";
-import { useState } from "react";
+import { IoTrashOutline } from "react-icons/io5";
+import { useEffect, useState } from "react";
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
 import { Form, Formik } from "formik";
 import FormInputField from "./../../Components/Auth/FormInputField";
 import SubmitButton from "../../Components/Auth/SubmitButton";
 import { IoCloseSharp } from "react-icons/io5";
+import CommentCard from "../../Components/Common/CommentCard";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   changePasswordValidationSchema,
-  editProfileValidationSchema,
+  deleteAccValidationSchema,
+  editDoctorProfileValidationSchema,
+  editPatientProfileValidationSchema,
 } from "../../utils/validationSchemas";
 import { changePasswordInitialValues } from "../../utils/formInitialValues";
 import { useCities } from "../../hooks/useCities";
 import { useEditPatientProfile } from "../../hooks/useEditPatientProfile";
 import { useChangePassword } from "../../hooks/useChangePassword";
-const data = [
-  { date: "2025-01-01", systolic: 120, diastolic: 80 },
-  { date: "2025-01-02", systolic: 130, diastolic: 85 },
-  { date: "2025-01-03", systolic: 125, diastolic: 82 },
-  { date: "2025-01-04", systolic: 140, diastolic: 90 },
-  { date: "2025-01-05", systolic: 135, diastolic: 88 },
-];
+import DoctorSection from "../../Components/Profile/DoctorSection";
+import { useGetMyQualifications } from "../../hooks/useGetMyQualifications";
+import { useDeleteMyAcc } from "../../hooks/useDeleteMyAcc";
+import { useAddVitals } from "../../hooks/useAddVitals";
+import { useGetVitals } from "../../hooks/useGetVitals";
+import { useGetMyRatings } from "../../hooks/useGetMyRatings";
+import ReviewsDetailsSection from "./../../Components/Common/ReviewsDetailsSection";
+import SwiperComponent from "../../Components/Common/SwiperComponent";
 
 const genderData = ["Male", "Female"];
 
@@ -39,32 +42,6 @@ const SmokingData = ["No", "Yes", "EX-Smoker"];
 
 const martialData = ["Single", "Married", "Divorced", "Widowed"];
 
-const heartData = [
-  { date: "2025-12-01", heartRate: 72 },
-  { date: "2025-12-02", heartRate: 75 },
-  { date: "2025-12-03", heartRate: 78 },
-  { date: "2025-12-04", heartRate: 80 },
-  { date: "2025-12-05", heartRate: 76 },
-  { date: "2025-12-06", heartRate: 74 },
-  { date: "2025-12-07", heartRate: 82 },
-  { date: "2025-12-08", heartRate: 79 },
-  { date: "2025-12-09", heartRate: 77 },
-  { date: "2025-12-10", heartRate: 81 },
-];
-
-const glucoseData = [
-  { date: "2025-12-01", glucose: 95 },
-  { date: "2025-12-02", glucose: 102 },
-  { date: "2025-12-03", glucose: 110 },
-  { date: "2025-12-04", glucose: 98 },
-  { date: "2025-12-05", glucose: 105 },
-  { date: "2025-12-06", glucose: 99 },
-  { date: "2025-12-07", glucose: 115 },
-  { date: "2025-12-08", glucose: 107 },
-  { date: "2025-12-09", glucose: 100 },
-  { date: "2025-12-10", glucose: 112 },
-];
-
 const appointmentData = [
   { date: "2025-01-01", count: 5 },
   { date: "2025-01-02", count: 8 },
@@ -72,19 +49,81 @@ const appointmentData = [
   { date: "2025-01-04", count: 4 },
   { date: "2025-01-05", count: 10 },
   { date: "2025-01-06", count: 5 },
+  { date: "2025-01-07", count: 14 },
 ];
 
 export default function Profile() {
   const [edit, setEdit] = useState(false);
   const [changePass, setchangePass] = useState(false);
+  const [deleteAcc, setDeleteAcc] = useState(false);
+  const [grouped, setGrouped] = useState([]);
+
   const { data: user } = useGetUser();
   const { data: cities } = useCities();
+  const { data: quals } = useGetMyQualifications();
+  const { data: vitals } = useGetVitals();
+  const { data: ratings } = useGetMyRatings();
+  console.log(ratings);
+
   const { role } = useAuth();
-  console.log(user);
+
+  useEffect(() => {
+    if (!vitals) return;
+
+    let newg = vitals.reduce((acc, item) => {
+      let id = item.vitalSignTypeId;
+      console.log(id);
+      if (!acc[id]) acc[id] = [];
+      if (id === 1) {
+        acc[1].unshift({
+          systolic: item.value,
+          diastolic: item.value2,
+          date: `${item.date.split("T")[0]}-[${
+            item.date.split("T")[1].split(".")[0]
+          }]`,
+        });
+      } else if (id === 2) {
+        acc[2].unshift({
+          heartRate: item.value,
+          date: `${item.date.split("T")[0]}-[${
+            item.date.split("T")[1].split(".")[0]
+          }]`,
+        });
+      } else if (id === 3) {
+        acc[3].unshift({
+          glucose: item.value,
+          date: `${item.date.split("T")[0]}-[${
+            item.date.split("T")[1].split(".")[0]
+          }]`,
+        });
+      }
+      return acc;
+    }, {});
+    setGrouped(newg);
+  }, [vitals]);
+
+  const deleteAccMutation = useDeleteMyAcc();
 
   const editPatientMutation = useEditPatientProfile();
 
   const changePasswordMutation = useChangePassword();
+
+  const useAddVitalMutation = useAddVitals();
+
+  const addVitals = async (values) => {
+    const FormData = {
+      vitalSignTypeId: values.vitalSignTypeId,
+      value: values.systolic ?? values.heartRate ?? values.glucose,
+      value2: values.diastolic ?? null,
+    };
+
+    console.log(FormData);
+    await useAddVitalMutation.mutateAsync(FormData);
+  };
+
+  const deleteAccountHandle = () => {
+    deleteAccMutation.mutate();
+  };
 
   const changePasswordSubmitting = async (values, { setSubmitting }) => {
     try {
@@ -104,33 +143,32 @@ export default function Profile() {
       ["addressId", "bloodType", "maritalStatus", "smokingStatus"].forEach(
         (key) => (values[key] = Number(values[key]))
       );
-      console.log(values);
-      try {
-        const res = await editPatientMutation.mutateAsync(values);
-        console.log(res);
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setSubmitting(false);
-        setEdit(false);
-      }
+    }
+    try {
+      const res = await editPatientMutation.mutateAsync(values);
+      console.log(res);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setSubmitting(false);
+      setEdit(false);
     }
   };
 
   const popupVariants = {
-    hidden: { opacity: 0, scale: 0.7, y: 40 },
+    hidden: { opacity: 0, scale: 0.85, y: 30 },
     show: {
       opacity: 1,
       scale: 1,
       y: 0,
       transition: {
-        duration: 2000,
+        duration: 0.35,
         type: "spring",
         stiffness: 160,
         damping: 18,
       },
     },
-    exit: { opacity: 0, scale: 0.7, y: 40 },
+    exit: { opacity: 0, scale: 0.85, y: 30 },
   };
 
   const overlayVariants = {
@@ -139,12 +177,95 @@ export default function Profile() {
     exit: { opacity: 0 },
   };
 
+  const rightContainer = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.12,
+        when: "beforeChildren",
+      },
+    },
+  };
+
+  const rightItem = {
+    hidden: { opacity: 0, x: 60 },
+    show: {
+      opacity: 1,
+      x: 0,
+      transition: { duration: 0.55, ease: "easeOut" },
+    },
+    exit: { opacity: 0, x: 40, transition: { duration: 0.25 } },
+  };
+
+  const sidebarContainer = {
+    hidden: {},
+    show: {
+      transition: { staggerChildren: 0.06, delayChildren: 0.06 },
+    },
+  };
+
+  const sidebarItem = {
+    hidden: { opacity: 0, x: -40 },
+    show: { opacity: 1, x: 0, transition: { duration: 0.45, ease: "easeOut" } },
+  };
+
   return (
     <>
       <AnimatePresence>
+        {deleteAcc && (
+          <>
+            <motion.div
+              className="w-full h-screen fixed top-0 left-0 z-50 bg-[#0000008f] flex justify-center items-center"
+              variants={overlayVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={() => setDeleteAcc(false)}
+            />
+            <motion.div
+              className="w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
+                   -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
+              variants={popupVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IoCloseSharp
+                className="absolute top-3 right-3 text-3xl cursor-pointer"
+                onClick={() => setDeleteAcc(false)}
+              />
+
+              <p className="text-4xl font-bold text-red-500 ">Delete Account</p>
+              <Formik
+                initialValues={{ confirm: "" }}
+                validationSchema={deleteAccValidationSchema}
+                onSubmit={deleteAccountHandle}
+              >
+                {({ isValid, dirty, isSubmitting }) => (
+                  <Form className="flex flex-col gap-[30px]">
+                    <FormInputField
+                      name={"confirm"}
+                      label={'Enter "Delete my account"'}
+                      className="pl-[10px]!"
+                    />
+                    <SubmitButton
+                      text="Delete"
+                      isLoading={isSubmitting}
+                      disabled={!isValid || !dirty}
+                      className="bg-red-500!"
+                    />
+                  </Form>
+                )}
+              </Formik>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {changePass && (
           <>
-            {/* الخلفية */}
             <motion.div
               className="w-full h-screen fixed top-0 left-0 z-50 bg-[#0000008f] flex justify-center items-center"
               variants={overlayVariants}
@@ -154,7 +275,6 @@ export default function Profile() {
               onClick={() => setchangePass(false)}
             />
 
-            {/* البوب أب */}
             <motion.div
               className="w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
                    -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
@@ -182,22 +302,26 @@ export default function Profile() {
                       type="password"
                       name="oldPassword"
                       label={"Old Password"}
+                      className="pl-[10px]!"
                     />
                     <FormInputField
                       type="password"
                       name="newPassword"
                       label={"New Password"}
+                      className="pl-[10px]!"
                     />
                     <FormInputField
                       type="password"
                       name="confirmNewPassword"
                       label={"Confirm PAssword"}
+                      className="pl-[10px]!"
                     />
                     <SubmitButton
                       text="Change"
                       disabled={!isValid || !dirty}
                       isLoading={isSubmitting}
                       loadingText="Changing"
+                      className="mt-[20px]!"
                     />
                   </Form>
                 )}
@@ -209,7 +333,6 @@ export default function Profile() {
       <AnimatePresence>
         {edit && (
           <>
-            {/* الخلفية */}
             <motion.div
               className="w-full h-screen fixed top-0 left-0 z-50 bg-[#0000008f] flex justify-center items-center"
               variants={overlayVariants}
@@ -219,7 +342,6 @@ export default function Profile() {
               onClick={() => setEdit(false)}
             />
 
-            {/* البوب أب */}
             <motion.div
               className=" w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
                    -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
@@ -235,15 +357,28 @@ export default function Profile() {
               />
 
               <div className="flex justify-between items-center">
-                <AvatarIcon size={90} />
-                <button className="py-[5px] font-bold cursor-pointer border-blue-600 border-2 rounded-[10px] text-blue-600 px-[10px] flex justify-center items-center">
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 260 }}
+                >
+                  <AvatarIcon size={90} />
+                </motion.div>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="py-[5px] font-bold cursor-pointer border-blue-600 border-2 rounded-[10px] text-blue-600 px-[10px] flex justify-center items-center"
+                >
                   Upload image
-                </button>
+                </motion.button>
               </div>
 
               <Formik
                 onSubmit={editSubmitting}
-                validationSchema={editProfileValidationSchema}
+                validationSchema={
+                  role === "Patient"
+                    ? editPatientProfileValidationSchema
+                    : editDoctorProfileValidationSchema
+                }
                 initialValues={
                   role === "Patient"
                     ? {
@@ -260,7 +395,7 @@ export default function Profile() {
                     : {
                         firstName: user?.firstName,
                         lastName: user?.lastName,
-                        phoneNamber: user?.phoneNumber,
+                        phoneNumber: user?.phoneNumber,
                         address: user?.address,
                         about: user?.about,
                       }
@@ -272,24 +407,32 @@ export default function Profile() {
                     <div className="flex gap-1.5 items-center w-full">
                       <FormInputField
                         name={"firstName"}
-                        label={"FirstName"}
-                        className="w-full p-0"
+                        label={"First Name"}
+                        className="w-full pl-[10px]"
                       />
-                      <FormInputField name={"lastName"} label={"LastName"} />
+                      <FormInputField
+                        name={"lastName"}
+                        label={"Last Name"}
+                        className="pl-[10px]!"
+                      />
                     </div>
-
-                    <FormInputField
-                      name={"phoneNamber"}
-                      label={"Phone Number"}
-                    />
 
                     {role === "Doctor" && (
                       <>
-                        <FormInputField name={"address"} label={"Address"} />
+                        <FormInputField
+                          name={"phoneNumber"}
+                          label={"Phone Number"}
+                          className="pl-[10px]!"
+                        />
+                        <FormInputField
+                          name={"address"}
+                          label={"Address"}
+                          className="pl-[10px]!"
+                        />
                         <FormInputField
                           name={"about"}
                           label={"About"}
-                          type="text area"
+                          className="pl-[10px]!"
                         />
                       </>
                     )}
@@ -297,9 +440,15 @@ export default function Profile() {
                     {role === "Patient" && (
                       <>
                         <FormInputField
+                          name={"phoneNamber"}
+                          label={"Phone Number"}
+                          className="pl-[10px]!"
+                        />
+                        <FormInputField
                           name={"addressId"}
                           label={"Address"}
                           placeholder={"Select City"}
+                          className="pl-[10px]!"
                           options={cities.map(({ id, name }) => ({
                             value: id,
                             label: name,
@@ -311,11 +460,13 @@ export default function Profile() {
                             name={"height"}
                             label={"Height"}
                             type="number"
+                            className="pl-[10px]!"
                           />
                           <FormInputField
                             name={"weight"}
                             label={"Weight"}
                             type="number"
+                            className="pl-[10px]!"
                           />
                         </div>
 
@@ -364,6 +515,7 @@ export default function Profile() {
                       disabled={!isValid || !dirty}
                       isLoading={isSubmitting}
                       loadingText="Editing"
+                      className="mt-[20px]!"
                     />
                   </Form>
                 )}
@@ -372,216 +524,324 @@ export default function Profile() {
           </>
         )}
       </AnimatePresence>
-      <div
-        className="pt-[100px] px-4 md:px-[30px] lg:px-[50px] min-h-screen font-english 
+      <div className="flex flex-col gap-[70px] justify-center ">
+        <div
+          className="pt-[100px] w-full overflow-hidden pb-[10px] px-4 md:px-[30px] lg:px-[50px] min-h-screen font-english 
       flex flex-col lg:flex-row gap-[30px] lg:gap-[50px] justify-center"
-      >
-        {/* Sidebar */}
-        <div className="w-full lg:w-[350px] flex-shrink-0">
-          <div
-            className=" flex flex-col justify-center items-center 
-          gap-[15px] p-[16px] rounded-[10px] bg-[#F5F6F7] shadow-md"
+        >
+          {/* Sidebar */}
+          <motion.div
+            className="w-full lg:w-[350px] flex-shrink-0 "
+            variants={sidebarContainer}
+            initial="hidden"
+            animate="show"
           >
-            <div
-              className="w-[150px] h-[150px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] 
-            rounded-full overflow-hidden relative flex justify-center items-center bg-gray-200"
+            <motion.div
+              variants={sidebarItem}
+              className=" relative flex flex-col justify-center items-center 
+          gap-[15px] p-[16px] rounded-[10px] bg-[#F5F6F7] shadow-md"
             >
-              <IoPersonSharp
-                className="text-[130px] md:text-[160px] lg:text-[180px] text-white 
-              absolute bottom-[-10px] left-1/2 translate-x-[-50%]"
-              />
-            </div>
-
-            <div className="flex flex-col gap-[5px] items-center">
-              <p className="text-2xl md:text-3xl font-bold">
-                {user && user?.firstName + " " + user?.lastName}
-              </p>
-              <p className="text-[#404448]">{role}</p>
-            </div>
-
-            <hr className="w-full text-[rgb(193,193,193)]" />
-
-            <div className="flex flex-col w-full gap-[15px] text-[#404448]">
-              <div className="flex items-center gap-[10px]">
-                <FaPhone /> {user?.phoneNumber}
-              </div>
-              <div className="flex items-center gap-[10px]">
-                <FaEnvelope /> {user?.email}
-              </div>
-              <div className="flex items-center gap-[10px]">
-                <FaMapMarkerAlt />{" "}
-                {user?.address ? user?.address : "Not Specified"}
-              </div>
-            </div>
-
-            <hr className="w-full text-[rgb(193,193,193)]" />
-
-            <div className=" w-full gap-[15px]  flex flex-col md:flex-row lg:flex-col">
-              <button
-                onClick={() => setEdit(true)}
-                className="w-full h-[40px] cursor-pointer text-white font-bold text-[18px] bg-blue-600 
-            rounded-[10px] flex justify-center items-center gap-[10px]"
+              <motion.div
+                variants={sidebarItem}
+                className="absolute size-[30px] rounded-full bg-white top-[10px] right-[10px] flex justify-center items-center"
               >
-                <FaRegEdit /> Edit
-              </button>
-              <button
-                onClick={() => setchangePass(true)}
-                className="w-full border-2 cursor-pointer border-blue-600 h-[40px] text-blue-600 font-bold text-[18px] bg-white
-            rounded-[10px] flex justify-center items-center gap-[10px]"
+                <motion.div
+                  whileHover={{ rotate: 10, scale: 1.08 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <IoTrashOutline
+                    onClick={() => setDeleteAcc((prev) => !prev)}
+                    className="size-[20px] text-red-500 cursor-pointer "
+                  />
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                variants={sidebarItem}
+                className="w-[150px] h-[150px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] 
+            rounded-full overflow-hidden relative flex justify-center items-center bg-gray-200"
+                whileHover={{ scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 260 }}
               >
-                <MdOutlinePassword /> Change Password
-              </button>
-            </div>
-          </div>
-        </div>
+                <IoPersonSharp
+                  className="text-[130px] md:text-[160px] lg:text-[180px] text-white 
+              absolute bottom-[-20px] left-1/2 translate-x-[-50%]"
+                />
+              </motion.div>
 
-        {/* Main Content */}
-        <div className="flex-1 w-full max-w-[1000px] flex flex-col items-center gap-[20px]">
-          {/* User Info */}
-          <div className="w-full bg-white shadow-md rounded-xl p-4 md:p-5">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-5">
-              {(role === "Patient"
-                ? [
-                    { label: "Gender", value: genderData[user?.gender] },
-                    { label: "Age", value: user?.age },
-                    { label: "Blood", value: bloodTypeData[user?.bloodType] },
-                    { label: "Height", value: user?.height },
-                    { label: "Weight", value: user?.weight },
-                    {
-                      label: "Smoking",
-                      value: SmokingData[user?.smokingStatus],
-                    },
-                    {
-                      label: "Marital Status",
-                      value: martialData[user?.maritalStatus],
-                    },
-                  ]
-                : [
-                    { label: "Gender", value: genderData[user?.gender] },
-                    { label: "Age", value: user?.age },
-                    {
-                      label: "Specialization",
-                      value: user?.specializationName,
-                    },
-                    { label: "EXP.Years", value: user?.yearsOfExperience },
-                    { label: "Rating", value: user?.averageRating },
-                  ]
-              ).map((item, i) => (
-                <div key={i} className="flex flex-col">
-                  <p className="text-[#6D7379] text-[14px] md:text-[15px]">
-                    {item.label}
-                  </p>
-                  <p className="text-[18px] md:text-[20px] font-semibold">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {role === "Doctor" && (
-            <>
-              <div className="w-full bg-white shadow-md flex  gap-[20px] rounded-xl p-4 md:p-5">
-                <p className="text-[20px] font-bold">About:</p>
-                <p className="pt-[5px]">
-                  {user?.about !== ""
-                    ? user?.about
-                    : "Add a short bio to personalize your profile"}
+              <motion.div
+                variants={sidebarItem}
+                className="flex flex-col gap-[5px] items-center"
+              >
+                <p className="text-2xl md:text-3xl font-bold">
+                  {user && user?.firstName + " " + user?.lastName}
                 </p>
-              </div>
-              <div className="w-full bg-white shadow-md flex flex-col  gap-[10px] rounded-xl p-4 md:p-5">
-                <p className="text-[20px] font-bold">Qualification</p>
-                <div className="px-[20px] flex flex-col gap-[10px] ">
-                  <div className="flex  items-center gap-[20px]">
-                    <FaGraduationCap className="text-[28px] text-blue-600  " />
-                    M.B.B.Ch, Faculty of Medicine – Cairo University (2012)
-                  </div>
-                  <div className="flex  items-center gap-[20px]">
-                    <PiCertificate className="text-[28px] text-blue-600  " />
-                    Master’s Degree in Cardiology – Ain Shams University (2017)
-                  </div>
-                  <div className="flex  items-center gap-[20px]">
-                    <RiMedalLine className="text-[28px] text-blue-600  " />
-                    Fellowship of the European Society of Cardiology (ESC)
-                  </div>
-                </div>
-              </div>
-              <div className="w-full bg-white shadow-md flex flex-col  gap-[10px] rounded-xl p-4 md:p-5">
-                <p className="text-[20px] font-bold">Experience</p>
-                <div className="px-[20px] flex flex-col gap-[10px] ">
-                  <div className="flex  items-center gap-[20px]">
-                    <FaGraduationCap className="text-[28px] text-blue-600  " />
-                    Former Resident in Internal Medicine at Cairo University
-                    Hospitals (2013 – 2016)
-                  </div>
-                  <div className="flex  items-center gap-[20px]">
-                    <PiCertificate className="text-[28px] text-blue-600  " />
-                    Cardiology Specialist at Ain Shams University Hospitals
-                    (2017 – Present)
-                  </div>
-                </div>
-              </div>
-              <BarComp title="Appointment" data={appointmentData} />
-            </>
-          )}
+                <p className="text-[#404448]">{role}</p>
+              </motion.div>
 
-          {/* Charts */}
-          {role === "Patient" && (
-            <>
-              <ChartComp
-                title="Blood Pressure"
-                data={data}
-                domain={[40, 200]}
-                fields={[
-                  {
-                    key: "systolic",
-                    label: "Systolic",
-                    min: 40,
-                    max: 200,
-                    color: "#ff4d4f",
-                  },
-                  {
-                    key: "diastolic",
-                    label: "Diastolic",
-                    min: 40,
-                    max: 130,
-                    color: "#36cfc9",
-                  },
-                ]}
-              />
+              <hr className="w-full text-[rgb(193,193,193)]" />
 
-              <ChartComp
-                title="Heart Rate"
-                data={heartData}
-                domain={[40, 180]}
-                fields={[
-                  {
-                    key: "heartRate",
-                    label: "Heart Rate (BPM)",
-                    min: 40,
-                    max: 180,
-                    color: "#ff7a45",
-                  },
-                ]}
-              />
+              <motion.div
+                variants={sidebarItem}
+                className="flex flex-col w-full gap-[15px] text-[#404448]"
+              >
+                <motion.div
+                  variants={sidebarItem}
+                  className="flex items-center gap-[10px]"
+                >
+                  <FaPhone /> {user?.phoneNumber}
+                </motion.div>
+                <motion.div
+                  variants={sidebarItem}
+                  className="flex items-center gap-[10px]"
+                >
+                  <FaEnvelope /> {user?.email}
+                </motion.div>
+                <motion.div
+                  variants={sidebarItem}
+                  className="flex items-center gap-[10px]"
+                >
+                  <FaMapMarkerAlt />{" "}
+                  {user?.address ? user?.address : "Not Specified"}
+                </motion.div>
+              </motion.div>
 
-              <ChartComp
-                title="Glucose"
-                data={glucoseData}
-                domain={[40, 180]}
-                fields={[
-                  {
-                    key: "glucose",
-                    label: "Glucose (mg/dL)",
-                    min: 70,
-                    max: 180,
-                    color: "#ffc107",
-                  },
-                ]}
-              />
-            </>
-          )}
+              <hr className="w-full text-[rgb(193,193,193)]" />
+
+              <motion.div
+                variants={sidebarItem}
+                className=" w-full gap-[15px]  flex flex-col md:flex-row lg:flex-col"
+              >
+                <motion.button
+                  variants={sidebarItem}
+                  onClick={() => setEdit(true)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full h-[40px] cursor-pointer text-white font-bold text-[18px] bg-blue-600 
+            rounded-[10px] flex justify-center items-center gap-[10px]"
+                >
+                  <FaRegEdit /> Edit
+                </motion.button>
+                <motion.button
+                  variants={sidebarItem}
+                  onClick={() => setchangePass(true)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full border-2 cursor-pointer border-blue-600 h-[40px] text-blue-600 font-bold text-[18px] bg-white
+            rounded-[10px] flex justify-center items-center gap-[10px]"
+                >
+                  <MdOutlinePassword /> Change Password
+                </motion.button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+          {/* right */}
+          <motion.div
+            className="flex-1 w-full max-w-[1000px] flex flex-col items-center gap-[20px]"
+            variants={rightContainer}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.div
+              variants={rightItem}
+              className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-5">
+                {(role === "Patient"
+                  ? [
+                      { label: "Gender", value: genderData[user?.gender] },
+                      { label: "Age", value: user?.age },
+                      { label: "Blood", value: bloodTypeData[user?.bloodType] },
+                      { label: "Height", value: user?.height },
+                      { label: "Weight", value: user?.weight },
+                      {
+                        label: "Smoking",
+                        value: SmokingData[user?.smokingStatus],
+                      },
+                      {
+                        label: "Marital Status",
+                        value: martialData[user?.maritalStatus],
+                      },
+                    ]
+                  : [
+                      { label: "Gender", value: genderData[user?.gender] },
+                      { label: "Age", value: user?.age },
+                      {
+                        label: "Specialization",
+                        value: user?.specializationName,
+                      },
+                      { label: "EXP.Years", value: user?.yearsOfExperience },
+                      { label: "Rating", value: user?.averageRating },
+                    ]
+                ).map((item, i) => (
+                  <div key={i} className="flex flex-col">
+                    <p className="text-[#6D7379] text-[14px] md:text-[15px]">
+                      {item.label}
+                    </p>
+                    <p className="text-[18px] md:text-[20px] font-semibold">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {role === "Doctor" && (
+              <>
+                <motion.div
+                  variants={rightItem}
+                  className="w-full bg-white shadow-md flex  gap-[20px] rounded-xl p-4 md:p-5"
+                >
+                  <p className="text-[20px] font-bold">About:</p>
+                  <p className="pt-[5px]">
+                    {user?.about !== ""
+                      ? user?.about
+                      : "Add a short bio to personalize your profile"}
+                  </p>
+                </motion.div>
+
+                <motion.div variants={rightItem} className="w-full">
+                  <DoctorSection
+                    title={"Qualifications"}
+                    info={quals && quals}
+                  />
+                </motion.div>
+
+                <motion.div variants={rightItem} className="w-full">
+                  <DoctorSection title={"Experience"} />
+                </motion.div>
+
+                <motion.div variants={rightItem} className="w-full">
+                  <BarComp title="Appointment" data={appointmentData} />
+                </motion.div>
+              </>
+            )}
+
+            {role === "Patient" && (
+              <>
+                <motion.div
+                  variants={rightItem}
+                  className="w-full"
+                  whileHover={{ y: -6 }}
+                  transition={{ type: "spring", stiffness: 260 }}
+                >
+                  <ChartComp
+                    title="Blood Pressure"
+                    data={grouped[1] ? grouped[1] : []}
+                    domain={[40, 200]}
+                    onAdd={addVitals}
+                    fields={[
+                      {
+                        key: "systolic",
+                        label: "Systolic",
+                        min: 40,
+                        max: 200,
+                        color: "#ff4d4f",
+                      },
+                      {
+                        key: "diastolic",
+                        label: "Diastolic",
+                        min: 40,
+                        max: 130,
+                        color: "#36cfc9",
+                      },
+                    ]}
+                  />
+                </motion.div>
+
+                <motion.div
+                  variants={rightItem}
+                  className="w-full"
+                  whileHover={{ y: -6 }}
+                  transition={{ type: "spring", stiffness: 260 }}
+                >
+                  <ChartComp
+                    title="Heart Rate"
+                    data={grouped[2] ? grouped[2] : []}
+                    domain={[40, 180]}
+                    fields={[
+                      {
+                        key: "heartRate",
+                        label: "Heart Rate (BPM)",
+                        min: 40,
+                        max: 180,
+                        color: "#ff7a45",
+                      },
+                    ]}
+                    onAdd={addVitals}
+                  />
+                </motion.div>
+
+                <motion.div
+                  variants={rightItem}
+                  className="w-full"
+                  whileHover={{ y: -6 }}
+                  transition={{ type: "spring", stiffness: 260 }}
+                >
+                  <ChartComp
+                    title="Glucose"
+                    data={grouped[3] ? grouped[3] : []}
+                    domain={[40, 180]}
+                    onAdd={addVitals}
+                    fields={[
+                      {
+                        key: "glucose",
+                        label: "Glucose (mg/dL)",
+                        min: 70,
+                        max: 180,
+                        color: "#ffc107",
+                      },
+                    ]}
+                  />
+                </motion.div>
+              </>
+            )}
+          </motion.div>
         </div>
+
+        {role === "Doctor" && (
+          <>
+            <div className="w-[80%] flex flex-col gap-10 m-auto ">
+              {ratings && (
+                <>
+                  <motion.div
+                    variants={rightItem}
+                    initial={{ opacity: 0, x: 80 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className=""
+                  >
+                    <ReviewsDetailsSection
+                      NumOfReviews={ratings && ratings.totalRatings}
+                      avgRating={ratings && ratings.averageRating}
+                      addFlag={false}
+                      data={ratings && ratings.scoreCounts}
+                    />
+                  </motion.div>
+
+                  {ratings?.ratings?.length > 0 && (
+                    <motion.div
+                      variants={rightItem}
+                      initial={{ opacity: 0, x: 80 }}
+                      animate={{ opacity: 1, x: 0 }}
+                    >
+                      <SwiperComponent
+                        Card={CommentCard}
+                        data={ratings ? ratings.ratings : []}
+                        mapProps={(item) => ({
+                          name: item.PatientName,
+                          photo: profilePhoto,
+                          starsNo: item.Score,
+                          heading: item.Heading,
+                          body: item.Comment,
+                        })}
+                      />
+                    </motion.div>
+                  )}
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </>
   );

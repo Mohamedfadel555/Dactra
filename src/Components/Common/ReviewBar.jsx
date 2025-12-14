@@ -5,7 +5,7 @@ export default function Bar({ number, percent }) {
     <div className="flex w-full justify-center items-center gap-[10px]">
       {/* العداد */}
       <motion.p
-        className="text-[30px] font-bold text-[#AAAAAA]"
+        className="text-[30px]  font-bold text-[#AAAAAA]"
         initial={{ scale: 0 }}
         whileInView={{ scale: 1 }}
         viewport={{ once: true }}

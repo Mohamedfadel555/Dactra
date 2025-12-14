@@ -209,7 +209,7 @@ export const updatePasswordValidationSchema = yup.object({
     .required("Confirm is required"),
 });
 
-export const editProfileValidationSchema = yup.object({
+export const editPatientProfileValidationSchema = yup.object({
   firstName: nameSchema("First Name"),
   lastName: nameSchema("Last name"),
   phoneNamber: yup
@@ -279,6 +279,25 @@ export const editProfileValidationSchema = yup.object({
     .required("address is required"),
 });
 
+export const editDoctorProfileValidationSchema = yup.object({
+  firstName: nameSchema("First Name"),
+  lastName: nameSchema("Last name"),
+  phoneNumber: yup
+    .string()
+    .matches(/^[0-9]{10,15}$/, "Phone number must be 10-15 digits")
+    .required("Phone number is required"),
+  address: yup
+    .string()
+    .min(4, "Too short")
+    .max(150, "Too long")
+    .required("required"),
+  about: yup
+    .string()
+    .min(10, "Too short")
+    .max(500, "Too long")
+    .required("required"),
+});
+
 export const changePasswordValidationSchema = yup.object({
   oldPassword: yup
     .string()
@@ -296,4 +315,24 @@ export const changePasswordValidationSchema = yup.object({
     .string()
     .oneOf([yup.ref("newPassword")], "Passwords must match")
     .required("Confirm password is required"),
+});
+
+export const qualificationsValidationSchema = yup.object({
+  type: yup.string().required("required"),
+  description: yup
+    .string()
+    .required("required")
+    .min(20, "too short")
+    .max(400, "too big"),
+});
+export const experienceValidationSchema = yup.object({
+  content: yup
+    .string()
+    .required("required")
+    .min(20, "too short")
+    .max(400, "too big"),
+});
+
+export const deleteAccValidationSchema = yup.object({
+  confirm: yup.string().oneOf(["Delete my account"]),
 });

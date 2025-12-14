@@ -72,3 +72,11 @@ export const changePasswordInitialValues = {
   newPassword: "",
   confirmNewPassword: "",
 };
+
+export const qualificationsInitialValues = {
+  type: "",
+  description: "",
+};
+export const experienceInitialValues = {
+  content: "",
+};

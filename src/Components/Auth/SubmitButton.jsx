@@ -20,10 +20,7 @@ export default function SubmitButton({
       aria-disabled={isDisabled}
       className={`relative flex items-center justify-center gap-3 text-white cursor-pointer font-semibold font-english px-4 py-2 ${
         fullWidth ? "w-full" : "inline-flex"
-      } h-[44px] rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all ${className}`}
-      style={{
-        background: "linear-gradient(90deg,#3E69FE 0%, #2F5CEC 100%)",
-      }}
+      } h-[44px] rounded-lg disabled:opacity-60 disabled:cursor-not-allowed bg-blue-600 transition-all ${className}`}
       whileHover={!isDisabled ? { scale: 1.02 } : {}}
       whileTap={!isDisabled ? { scale: 0.98 } : {}}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}

@@ -36,6 +36,7 @@ import PlatformFeaturesSection from "../Components/Home/PlatformFeaturesSection"
 import FAQAccordion from "../Components/Home/FAQAccordion";
 import { useAuth } from "../Context/AuthContext";
 import axios from "axios";
+import ReviewsDetailsSection from "../Components/Common/ReviewsDetailsSection";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -593,47 +594,17 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 variants={fadeUp}
                 className="w-[80%] m-auto flex flex-col justify-center items-center gap-10"
               >
-                <div
-                  className="w-full flex flex-col gap-5 justify-center items-center 
-    shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded-2xl p-6 sm:p-8 bg-white"
-                >
-                  <div className="flex flex-col sm:flex-row w-full justify-between items-center gap-4 sm:gap-0">
-                    <BrandLogo />
-                    <Link className="text-[16px] sm:text-[20px] text-[#567CFE] font-bold">
-                      Add Reviews+
-                    </Link>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row w-full justify-between items-center gap-8 md:gap-[100px] mt-4">
-                    {/* Bar Ratings */}
-                    {/* Bar Ratings */}
-                    <div className="md:flex-3 flex flex-col justify-between items-center w-full md:w-[300px] lg:w-[400px]">
-                      <Bar number={1} percent={30} />
-                      <Bar number={2} percent={40} />
-                      <Bar number={3} percent={10} />
-                      <Bar number={4} percent={60} />
-                      <Bar number={5} percent={70} />
-                    </div>
-
-                    {/* Overall Rating */}
-                    <div className="flex flex-col justify-center items-center gap-2 md:gap-4">
-                      <h2 className="text-[60px] sm:text-[80px] md:text-[100px] font-bold">
-                        5.0
-                      </h2>
-                      <div className="flex justify-center items-center gap-1 sm:gap-2">
-                        <FaStar className="text-[#EAB308] text-[16px] sm:text-[18px]" />
-                        <FaStar className="text-[#EAB308] text-[16px] sm:text-[18px]" />
-                        <FaStar className="text-[#EAB308] text-[16px] sm:text-[18px]" />
-                        <FaStar className="text-[#EAB308] text-[16px] sm:text-[18px]" />
-                        <FaStar className="text-[#EAB308] text-[16px] sm:text-[18px]" />
-                      </div>
-                      <p className="text-[#868686] text-[14px] sm:text-[16px] mt-1 sm:mt-2">
-                        500 reviews
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
+                <ReviewsDetailsSection
+                  data={[
+                    { num: 1, percent: 30 },
+                    { num: 2, percent: 40 },
+                    { num: 3, percent: 10 },
+                    { num: 4, percent: 60 },
+                    { num: 5, percent: 70 },
+                  ]}
+                  NumOfReviews={500}
+                  avgRating={"5.0"}
+                />
                 <div className=" pb-[30px] overflow-hidden w-full max-w-screen-2xl mx-auto">
                   <Swiper
                     modules={[Navigation, Pagination, Autoplay]}

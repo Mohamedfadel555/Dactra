@@ -1,19 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUserAPI } from "../api/userAPI";
 import { toast } from "react-toastify";
-import { useAuth } from "../Context/AuthContext";
 
-export const useEditPatientProfile = () => {
-  const { editPatientProfile, editDcotorProfile } = useUserAPI();
+export const useAddVitals = () => {
+  const { addVital } = useUserAPI();
   const queryClient = useQueryClient();
-  const { role } = useAuth();
   return useMutation({
-    mutationFn: role === "Patient" ? editPatientProfile : editDcotorProfile,
+    mutationFn: addVital,
     onSuccess: () => {
       queryClient.refetchQueries({
-        queryKey: ["user"],
+        queryKey: ["vitals"],
       });
-      toast.success("Information Updated Successfully", {
+      toast.success("Added Successfully", {
         position: "top-center",
         closeOnClick: true,
       });
