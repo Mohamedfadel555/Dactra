@@ -423,19 +423,7 @@ export default function Profile() {
                         label={"LastName*"}
                         className=" !pl-2"
                       />
-                      <FormInputField
-                        name={"lastName"}
-                        label={"Last Name"}
-                        className="pl-[10px]!"
-                      />
                     </div>
-
-                    <FormInputField
-                      name={"phoneNamber"}
-                      label={"Phone Number*"}
-                      className=" !pl-2"
-                    />
-
                     {role === "Doctor" && (
                       <>
                         <FormInputField
@@ -445,14 +433,10 @@ export default function Profile() {
                         />
                         <FormInputField
                           name={"phoneNumber"}
-                          label={"Phone Number"}
+                          label={"Phone Number*"}
                           className="pl-[10px]!"
                         />
-                        <FormInputField
-                          name={"address"}
-                          label={"Address"}
-                          className="pl-[10px]!"
-                        />
+
                         <FormInputField
                           name={"about"}
                           label={"About*"}
