@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
@@ -13,23 +13,41 @@ export default function ScansManagementPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  // TODO: Replace with actual API endpoint when backend is ready
-  const { data: scansData, isLoading } = useQuery({
+  // Fetch all scans info with pagination
+  const { data: scansData, isLoading, refetch } = useQuery({
     queryKey: ["admin-scans", page, pageSize],
     queryFn: async () => {
-      // Placeholder - replace with actual API call
-      // const res = await axiosInstance.get(`MedicalTestsProvider/GetAll?pageNumber=${page}&pageSize=${pageSize}`);
-      return {
-        items: [],
-        totalCount: 0,
-        pageNumber: page,
-        pageSize: pageSize,
-        totalPages: 0,
-      };
+      const res = await adminAPI.getAllScansInfo(page, pageSize);
+      return res.data; // Array of scans
     },
   });
 
-  const filteredScans = (scansData?.items || []).filter((scan) => {
+  const [allLoadedScans, setAllLoadedScans] = useState([]);
+
+  useEffect(() => {
+    if (scansData && Array.isArray(scansData) && scansData.length > 0) {
+      setAllLoadedScans((prev) => {
+        const existingPageStart = (page - 1) * pageSize;
+        const hasPage = prev.length > existingPageStart && prev[existingPageStart] !== undefined;
+
+        if (!hasPage) {
+          const newList = [...prev];
+          while (newList.length < existingPageStart) {
+            newList.push(undefined);
+          }
+          scansData.forEach((scan) => {
+            newList.push(scan);
+          });
+          return newList;
+        }
+        return prev;
+      });
+    }
+  }, [scansData, page, pageSize]);
+
+  const allScans = allLoadedScans.filter(Boolean);
+
+  const filteredScans = (allScans || []).filter((scan) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -50,24 +68,24 @@ export default function ScansManagementPage() {
       ),
     },
     {
-      label: "Location",
-      key: "location",
+      label: "Phone",
+      key: "phoneNumber",
       render: (scan) => (
-        <span className="text-sm text-gray-600">{scan.location || "N/A"}</span>
+        <span className="text-sm text-gray-600">{scan.phoneNumber || "N/A"}</span>
       ),
     },
     {
-      label: "Contact",
-      key: "contact",
+      label: "Address",
+      key: "address",
       render: (scan) => (
-        <span className="text-sm text-gray-600">{scan.contact || "N/A"}</span>
+        <span className="text-sm text-gray-600">{scan.address || "N/A"}</span>
       ),
     },
     {
       label: "Status",
       key: "status",
       render: (scan) => {
-        const status = scan.status || "Pending";
+        const status = scan.isApproved ? "Approved" : "Pending";
         const statusColors = {
           Pending: "bg-yellow-100 text-yellow-800",
           Approved: "bg-green-100 text-green-800",
@@ -89,39 +107,86 @@ export default function ScansManagementPage() {
   const handleView = (scan) => {
     // TODO: Implement view scan details
   };
+  
 
   const handleApprove = async (scan) => {
-    try {
-      // TODO: Replace with actual API call
-      // await axiosInstance.put(`MedicalTestsProvider/Approve/${scan.id}`);
-      toast.success("Scan center approved successfully!");
-    } catch (error) {
-      toast.error("Failed to approve scan center");
-    }
-  };
+    console.log("SCAN OBJECT ", scan);
+    const providerId =
+      scan.profileId ||
+      scan.id ||
+      scan.userId ||
+      scan.appUserId;
 
-  const handleBlock = async (scan) => {
-    try {
-      // TODO: Replace with actual API call
-      // await axiosInstance.put(`MedicalTestsProvider/Block/${scan.id}`);
-      toast.success("Scan center blocked successfully!");
-    } catch (error) {
-      toast.error("Failed to block scan center");
+    if (!providerId) {
+      toast.error("Scan center ID not found for approve/disapprove");
+      return;
     }
-  };
 
-  const handleDelete = async (scan) => {
-    if (window.confirm("Are you sure you want to delete this scan center?")) {
-      try {
-        await adminAPI.deleteAppUser(scan.id);
-        toast.success("Scan center deleted successfully!");
-      } catch (error) {
-        toast.error("Failed to delete scan center");
+    const isCurrentlyApproved = scan.isApproved;
+    const providerType = 2; // 2 = Scan
+
+    try {
+      if (isCurrentlyApproved) {
+        await adminAPI.disapproveProvider(providerType, providerId);
+        toast.success("Scan center disapproved successfully!");
+      } else {
+        await adminAPI.approveProvider(providerType, providerId);
+        toast.success("Scan center approved successfully!");
+      }
+
+      setPage(1);
+      setAllLoadedScans([]);
+      refetch();
+    } catch (error) {
+      if (isCurrentlyApproved) {
+        toast.error("Failed to disapprove scan center");
+      } else {
+        toast.error("Failed to approve scan center");
       }
     }
   };
 
-  const hasMore = scansData?.totalPages && page < scansData.totalPages;
+  const handleBlock = async (scan) => {
+    const userId =
+      scan.id ||
+      scan.userId ||
+      scan.appUserId ||
+      scan.profileId;
+
+    if (!userId) {
+      toast.error("Scan center ID not found for block/unblock");
+      return;
+    }
+
+    const isBlocked = scan.statusType === "Blocked" || scan.isBlocked;
+    const action = isBlocked ? "unblock" : "block";
+    const actionText = isBlocked ? "Unblock" : "Block";
+
+    if (!window.confirm(`Are you sure you want to ${actionText} this user?`)) return;
+
+    try {
+      await adminAPI.deleteAppUser(userId);
+
+      if (isBlocked) {
+        toast.success("User unblocked successfully!");
+      } else {
+        toast.success("User blocked successfully!");
+      }
+
+      setPage(1);
+      setAllLoadedScans([]);
+      refetch();
+    } catch (error) {
+      if (isBlocked) {
+        toast.error("Failed to unblock user");
+      } else {
+        toast.error("Failed to block user");
+      }
+    }
+  };
+
+  const hasMore =
+    scansData && Array.isArray(scansData) && scansData.length === pageSize;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -154,7 +219,6 @@ export default function ScansManagementPage() {
         onView={handleView}
         onApprove={handleApprove}
         onBlock={handleBlock}
-        onDelete={handleDelete}
         showMore={true}
         hasMore={hasMore}
         onShowMore={() => setPage((p) => p + 1)}

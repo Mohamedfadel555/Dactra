@@ -29,10 +29,10 @@ export default function AdminTable({
   const isEmpty = tableData.length === 0;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto -mx-3 sm:mx-0">
-        <table className="w-full min-w-[640px]">
-          <thead className="bg-gray-50">
+        <table className="w-full min-w-[640px] text-left">
+          <thead className="bg-gray-50/80">
             <tr>
               {columns.map((col, index) => (
                 <th
@@ -47,7 +47,7 @@ export default function AdminTable({
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-100">
             {isEmpty ? (
               // Empty state row
               <tr>
@@ -61,7 +61,7 @@ export default function AdminTable({
             ) : (
               // Data rows
               tableData.map((row, rowIndex) => (
-                <tr key={rowIndex} className="hover:bg-gray-50">
+                <tr key={rowIndex} className="hover:bg-gray-50 transition-colors">
                   {columns.map((col, colIndex) => (
                     <td key={colIndex} className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {col.render ? col.render(row) : row[col.key]}
@@ -81,8 +81,12 @@ export default function AdminTable({
                       {onApprove && (
                         <button
                           onClick={() => onApprove(row)}
-                          className="text-green-600 hover:text-green-800 p-1"
-                          title="Approve"
+                          className={`p-1 ${
+                            row.isApproved
+                              ? "text-red-600 hover:text-red-800"
+                              : "text-green-600 hover:text-green-800"
+                          }`}
+                          title={row.isApproved ? "Disapprove" : "Approve"}
                         >
                           <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>

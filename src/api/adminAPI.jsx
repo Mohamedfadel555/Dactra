@@ -61,6 +61,43 @@ export const useAdminAPI = () => {
     });
   };
 
+  // Get all doctors info with pagination
+  const getAllDoctorsInfo = async (pageNumber = 1, pageSize = 10) => {
+    return axiosInstance.get("Admin/allDoctorsInfo", {
+      params: { page: pageNumber, pageSize },
+    });
+  };
+
+  // Get all labs info with pagination
+  const getAllLabsInfo = async (pageNumber = 1, pageSize = 10) => {
+    return axiosInstance.get("Admin/allLabsInfo", {
+      params: { page: pageNumber, pageSize },
+    });
+  };
+
+  // Get all scans info with pagination
+  const getAllScansInfo = async (pageNumber = 1, pageSize = 10) => {
+    return axiosInstance.get("Admin/allScansInfo", {
+      params: { page: pageNumber, pageSize },
+    });
+  };
+
+  // Approve provider (doctor, lab, scan)
+  const approveProvider = async (providerType, providerId) => {
+    return axiosInstance.put("Admin/approve-Provider", {
+      providerType,
+      providerId,
+    });
+  };
+
+  // Disapprove provider (doctor, lab, scan)
+  const disapproveProvider = async (providerType, providerId) => {
+    return axiosInstance.put("Admin/disapprove-Provider", {
+      providerType,
+      providerId,
+    });
+  };
+
   // Get all questions info
   const getAllQuestionsInfo = async () => {
     return axiosInstance.get("Admin/allquestionsInfo");
@@ -88,6 +125,11 @@ export const useAdminAPI = () => {
     getSummary,
     getWeeklySummary,
     getAllPatientInfo,
+    getAllDoctorsInfo,
+    getAllLabsInfo,
+    getAllScansInfo,
+    approveProvider,
+    disapproveProvider,
     getAllQuestionsInfo,
     getAllArticlesInfo,
     seed,

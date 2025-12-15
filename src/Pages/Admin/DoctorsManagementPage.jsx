@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
@@ -13,30 +13,47 @@ export default function DoctorsManagementPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10; // Adjust based on table height
 
-  // TODO: Replace with actual API endpoint when backend is ready
-  const { data: doctorsData, isLoading } = useQuery({
+  // Fetch all doctors info with pagination
+  const { data: doctorsData, isLoading, refetch } = useQuery({
     queryKey: ["admin-doctors", page, pageSize],
     queryFn: async () => {
-      // Placeholder - replace with actual API call
-      // const res = await axiosInstance.get(`Doctor/GetAll?pageNumber=${page}&pageSize=${pageSize}`);
-      return {
-        items: [],
-        totalCount: 0,
-        pageNumber: page,
-        pageSize: pageSize,
-        totalPages: 0,
-      };
+      const res = await adminAPI.getAllDoctorsInfo(page, pageSize);
+      return res.data; // Array of doctors (paginated)
     },
   });
 
-  const filteredDoctors = (doctorsData?.items || []).filter((doctor) => {
+  // Accumulate pages for "Show more"
+  const [allLoadedDoctors, setAllLoadedDoctors] = useState([]);
+
+  useEffect(() => {
+    if (doctorsData && Array.isArray(doctorsData) && doctorsData.length > 0) {
+      setAllLoadedDoctors((prev) => {
+        const existingPageStart = (page - 1) * pageSize;
+        const hasPage = prev.length > existingPageStart && prev[existingPageStart] !== undefined;
+
+        if (!hasPage) {
+          const newList = [...prev];
+          while (newList.length < existingPageStart) {
+            newList.push(undefined);
+          }
+          doctorsData.forEach((doctor) => {
+            newList.push(doctor);
+          });
+          return newList;
+        }
+        return prev;
+      });
+    }
+  }, [doctorsData, page, pageSize]);
+
+  const allDoctors = allLoadedDoctors.filter(Boolean);
+
+  const filteredDoctors = (allDoctors || []).filter((doctor) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      doctor.firstName?.toLowerCase().includes(query) ||
-      doctor.lastName?.toLowerCase().includes(query) ||
-      doctor.email?.toLowerCase().includes(query) ||
-      doctor.phoneNumber?.toLowerCase().includes(query)
+      doctor.name?.toLowerCase().includes(query) ||
+      doctor.email?.toLowerCase().includes(query)
     );
   });
 
@@ -44,35 +61,21 @@ export default function DoctorsManagementPage() {
     {
       label: "Name",
       key: "name",
-      render: (doctor) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-            {doctor.imageUrl ? (
-              <img
-                src={doctor.imageUrl}
-                alt={doctor.firstName}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
+      render: (doctor) => {
+        const initial = doctor.name?.trim()?.[0]?.toUpperCase() || "D";
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-gray-500 text-sm">
-                {doctor.firstName?.[0] || "D"}
+                {initial}
               </span>
-            )}
+            </div>
+            <span className="text-sm font-medium text-gray-900">
+              {doctor.name || "N/A"}
+            </span>
           </div>
-          <span className="text-sm font-medium text-gray-900">
-            {doctor.firstName} {doctor.lastName}
-          </span>
-        </div>
-      ),
-    },
-    {
-      label: "Specialty",
-      key: "specialty",
-      render: (doctor) => (
-        <span className="text-sm text-gray-600">
-          {doctor.specializationName || "N/A"}
-        </span>
-      ),
+        );
+      },
     },
     {
       label: "Email",
@@ -82,19 +85,10 @@ export default function DoctorsManagementPage() {
       ),
     },
     {
-      label: "Phone",
-      key: "phone",
-      render: (doctor) => (
-        <span className="text-sm text-gray-600">
-          {doctor.phoneNumber || "N/A"}
-        </span>
-      ),
-    },
-    {
       label: "Status",
       key: "status",
       render: (doctor) => {
-        const status = doctor.status || "Pending";
+        const status = doctor.isApproved ? "Approved" : "Pending";
         const statusColors = {
           Pending: "bg-yellow-100 text-yellow-800",
           Approved: "bg-green-100 text-green-800",
@@ -118,38 +112,79 @@ export default function DoctorsManagementPage() {
   };
 
   const handleApprove = async (doctor) => {
+    const providerId =
+      doctor.profileId 
+      ;
+
+    if (!providerId) {
+      toast.error("Doctor ID not found for approve/disapprove");
+      return;
+    }
+
+    const isCurrentlyApproved = doctor.isApproved;
+    const providerType = 0; // 0 = Doctor
+
     try {
-      // TODO: Replace with actual API call
-      // await axiosInstance.put(`Doctor/Approve/${doctor.id}`);
-      toast.success("Doctor approved successfully!");
+      if (isCurrentlyApproved) {
+        await adminAPI.disapproveProvider(providerType, providerId);
+        toast.success("Doctor disapproved successfully!");
+      } else {
+        await adminAPI.approveProvider(providerType, providerId);
+        toast.success("Doctor approved successfully!");
+      }
+
+      setPage(1);
+      setAllLoadedDoctors([]);
+      refetch();
     } catch (error) {
-      toast.error("Failed to approve doctor");
+      if (isCurrentlyApproved) {
+        toast.error("Failed to disapprove doctor");
+      } else {
+        toast.error("Failed to approve doctor");
+      }
     }
   };
 
   const handleBlock = async (doctor) => {
-    try {
-      // TODO: Replace with actual API call
-      // await axiosInstance.put(`Doctor/Block/${doctor.id}`);
-      toast.success("Doctor blocked successfully!");
-    } catch (error) {
-      toast.error("Failed to block doctor");
-    }
-  };
+    const userId =
+      doctor.id ||
+      doctor.userId ||
+      doctor.appUserId ||
+      doctor.profileId;
 
-  const handleDelete = async (doctor) => {
-    if (window.confirm("Are you sure you want to delete this doctor?")) {
-      try {
-        await adminAPI.deleteAppUser(doctor.id);
-        toast.success("Doctor deleted successfully!");
-      } catch (error) {
-        toast.error("Failed to delete doctor");
+    if (!userId) {
+      toast.error("Doctor ID not found for block/unblock");
+      return;
+    }
+
+    const isBlocked = doctor.statusType === "Blocked" || doctor.isBlocked;
+    const action = isBlocked ? "unblock" : "block";
+
+    if (!window.confirm(`Are you sure you want to ${action} this doctor?`)) return;
+
+    try {
+      await adminAPI.deleteAppUser(userId);
+
+      if (isBlocked) {
+        toast.success("Doctor unblocked successfully!");
+      } else {
+        toast.success("Doctor blocked successfully!");
+      }
+
+      setPage(1);
+      setAllLoadedDoctors([]);
+      refetch();
+    } catch (error) {
+      if (isBlocked) {
+        toast.error("Failed to unblock doctor");
+      } else {
+        toast.error("Failed to block doctor");
       }
     }
   };
 
   const hasMore =
-    doctorsData?.totalPages && page < doctorsData.totalPages;
+    doctorsData && Array.isArray(doctorsData) && doctorsData.length === pageSize;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -182,7 +217,6 @@ export default function DoctorsManagementPage() {
         onView={handleView}
         onApprove={handleApprove}
         onBlock={handleBlock}
-        onDelete={handleDelete}
         showMore={true}
         hasMore={hasMore}
         onShowMore={() => setPage((p) => p + 1)}

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
-import { SlidersHorizontal } from "lucide-react";
+import { MdFilterList } from "react-icons/md";
 import { FaStar } from "react-icons/fa";
 import { IoIosHeartEmpty } from "react-icons/io";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
@@ -83,7 +83,7 @@ export default function DoctorsListPage() {
               type="button"
               className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm shadow-sm"
             >
-              <SlidersHorizontal className="text-gray-500" />
+              <MdFilterList className="text-gray-500 w-4 h-4" />
               <span className="font-medium">Filter</span>
             </button>
 
@@ -200,7 +200,7 @@ export default function DoctorsListPage() {
                 </div>
               </section>
 
-              {/* Consultation Type */}
+              {/* Consultation Type
               <section>
                 <h3 className="text-xs font-semibold text-gray-500 mb-2">
                   Consultation Type
@@ -216,7 +216,7 @@ export default function DoctorsListPage() {
                   </label>
                 </div>
                 {/* TODO: ask backend to support filtering by consultation type (online / offline) */}
-              </section>
+              {/* </section> */} 
             </aside>
 
             {/* Right content column */}
@@ -341,7 +341,9 @@ export default function DoctorsListPage() {
                                  <div className="flex items-center gap-1">
                                    <FaStar className="text-yellow-400" />
                                    <span className="font-semibold text-gray-700">
-                                     {doctor.averageRating || "4.8"}
+                                     {doctor?.averageRating != null
+                                       ? Number(doctor.averageRating).toFixed(1)
+                                       : "0.0"}
                                    </span>
                                  </div>
 
