@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
 import ProtectedAuth from "./Components/Auth/ProtectedAuth";
+import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
+import DoctorsListPage from "./Pages/DoctorsListPage";
 
 import Profile from "./Pages/Profile/Profile";
 import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
