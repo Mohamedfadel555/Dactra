@@ -45,6 +45,11 @@ export const useLogin = () => {
           position: "top-center",
           closeOnClick: true,
         });
+      } else if (data.status === 404) {
+        toast.error("This user has been blocked , Contact us to help", {
+          position: "top-center",
+          closeOnClick: true,
+        });
       } else if (data.status === 400) {
         console.log(data);
         if (data.response.data.massage === "Registration not Completed") {
