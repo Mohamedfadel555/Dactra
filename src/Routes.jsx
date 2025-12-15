@@ -9,9 +9,8 @@ import DoctorsListPage from "./Pages/DoctorsListPage";
 import Profile from "./Pages/Profile/Profile";
 import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
 
-import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
-import DoctorsListPage from "./Pages/DoctorsListPage";
-
+// import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
+// import DoctorsListPage from "./Pages/DoctorsListPage";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));

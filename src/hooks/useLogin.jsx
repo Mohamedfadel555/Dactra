@@ -31,12 +31,9 @@ export const useLogin = () => {
       // Redirect admin to admin dashboard
       // Check role case-insensitively
       const normalizedRole = role?.toLowerCase();
-      console.log("Normalized role:", normalizedRole); // Debug
       if (normalizedRole === "admin" || normalizedRole === "administrator") {
-        console.log("Redirecting to /admin/dashboard"); // Debug
         navigate("/admin/dashboard", { replace: true });
       } else {
-        console.log("Redirecting to /"); // Debug
         navigate("/", { replace: true });
       }
     },
