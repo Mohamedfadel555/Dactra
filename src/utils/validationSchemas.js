@@ -306,6 +306,10 @@ export const changePasswordValidationSchema = yup.object({
   newPassword: yup
     .string()
     .required("Password is required")
+    .notOneOf(
+      [yup.ref("oldPassword")],
+      "New password must be different from old password"
+    )
     .min(8, "Password must be at least 8 characters")
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,

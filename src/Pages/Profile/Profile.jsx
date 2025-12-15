@@ -321,7 +321,7 @@ export default function Profile() {
                     <FormInputField
                       type="password"
                       name="confirmNewPassword"
-                      label={"Confirm PAssword"}
+                      label={"Confirm Password"}
                       className="pl-[10px]!"
                     />
                     <SubmitButton

@@ -244,7 +244,7 @@ export default function HomePage() {
               <ServiceCard
                 icon={FaHandHoldingMedical}
                 header="Prescription Finder"
-                desc="Find the Right Pharmacy Fast. <br /> Search for your prescribed medicines and instantly see which nearby pharmacies have them available, so you can get your medication without delays."
+                desc="Find the Right Pharmacy Fast. Search for your prescribed medicines and instantly see which nearby pharmacies have them available, so you can get your medication without delays."
                 Big={true}
               />
               <ServiceCard

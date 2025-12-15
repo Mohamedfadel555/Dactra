@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import vector from "../../assets/images/Vector.webp";
 import Group from "../../assets/images/Group27.webp";
-import doctor from "../../assets/images/doctor.webp";
+import doctor from "../../assets/images/homedoctor.webp";
 const patientSteps = [
   {
     header: "Create Your Profile",
@@ -56,7 +56,7 @@ const itemVariants = {
 
 export default function StepsSection({ Role }) {
   return (
-    <div className="flex flex-col lg:flex-row w-[90%]  lg:w-[70%] justify-between gap-[120px] lg:gap-[30px] items-center">
+    <div className="flex flex-col lg:flex-row w-[90%]  lg:w-[70%] justify-between gap-[80px] lg:gap-[30px] items-center">
       {/* هنا غيرت الـdiv اللي فيها الماب ل motion.div بس نفس كل الـclasses */}
       <motion.div
         className="flex flex-col gap-[15px]"
@@ -107,7 +107,7 @@ export default function StepsSection({ Role }) {
         <img
           src={doctor}
           alt="doctor photo"
-          className=" w-[150%] md:w-[200%] object-none h-[350px] md:h-[400px] absolute left-0 bottom-0 "
+          className=" w-full   absolute left-0 bottom-0 "
         />
       </div>
     </div>

@@ -290,7 +290,7 @@ export default function Navbar() {
 
       {/* side nav for mobile */}
       <div
-        className={`h-[calc(100vh-60px)] ${
+        className={`h-[calc(100dvh-60px)] ${
           sidenav ? "left-0" : "left-[-100%]"
         } transition-[1s] w-[280px] sm:w-[400px] z-50 fixed  top-[60px]  md:hidden bg-white flex-col flex gap-0.5 ease-in-out`}
       >
