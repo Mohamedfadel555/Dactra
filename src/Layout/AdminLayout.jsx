@@ -96,8 +96,8 @@ export default function AdminLayout() {
 
       {/* Sidebar */}
       <aside
-        className={` fixed lg:static w-[260px] bg-[#05162C] flex flex-col h-full  z-50 transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        className={`fixed lg:static w-[260px] bg-[#05162C] flex flex-col h-full z-50 transition-all duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Logo */}
@@ -125,10 +125,10 @@ export default function AdminLayout() {
                 to={item.path}
                 onClick={handleNavClick}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 lg:gap-4 h-12 px-3 lg:px-4 rounded-lg transition-colors ${
+                  `flex items-center gap-3 lg:gap-4 h-12 px-3 lg:px-4 rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-[#316BE8] text-white"
-                      : "text-gray-300 hover:bg-gray-800"
+                      ? "bg-[#316BE8] text-white shadow-lg scale-[1.02]"
+                      : "text-gray-300 hover:bg-gray-800 hover:scale-[1.01]"
                   }`
                 }
               >
@@ -143,7 +143,7 @@ export default function AdminLayout() {
         <div className="p-4 border-t border-gray-700">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 lg:gap-4 w-full h-12 px-3 lg:px-4 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-3 lg:gap-4 w-full h-12 px-3 lg:px-4 rounded-lg text-gray-300 hover:bg-gray-800 transition-all duration-200 hover:scale-[1.02]"
           >
             <MdLogout className="w-5 h-5 flex-shrink-0" />
             <span className="text-sm font-medium">Log Out</span>
@@ -154,20 +154,20 @@ export default function AdminLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-0 w-full lg:w-auto">
         {/* Top Bar */}
-        <header className="h-16 lg:h-20 bg-white shadow-sm flex items-center justify-between px-3 sm:px-4 lg:px-6 sticky top-0 z-30">
+        <header className="h-16 lg:h-20 bg-white shadow-sm flex items-center justify-between px-3 sm:px-4 lg:px-6 sticky top-0 z-30 transition-all duration-200">
           {/* Left Side - Menu & Notifications */}
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 text-gray-600 hover:text-[#316BE8] transition-colors"
+              className="lg:hidden p-2 text-gray-600 hover:text-[#316BE8] transition-all duration-200 hover:scale-110 active:scale-95"
             >
               <MdMenu className="w-6 h-6" />
             </button>
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-[#316BE8] transition-colors">
+            <button className="relative p-2 text-gray-600 hover:text-[#316BE8] transition-all duration-200 hover:scale-110 active:scale-95">
               <MdNotificationsNone className="w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
             </button>
           </div>
 

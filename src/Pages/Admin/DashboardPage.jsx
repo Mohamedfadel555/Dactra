@@ -68,6 +68,31 @@ export default function DashboardPage() {
     0
   );
 
+  const weekdaysAppointments = weeklyChartData
+    .filter((d) =>
+      ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"].includes(d.day)
+    )
+    .reduce((sum, d) => sum + (d.appointments || 0), 0);
+
+  const weekendAppointments = weeklyChartData
+    .filter((d) => ["Friday", "Saturday"].includes(d.day))
+    .reduce((sum, d) => sum + (d.appointments || 0), 0);
+
+  const weekdaysPercentage = totalAppointments > 0 
+    ? Math.round((weekdaysAppointments / totalAppointments) * 100) 
+    : 0;
+  const weekendPercentage = totalAppointments > 0 
+    ? Math.round((weekendAppointments / totalAppointments) * 100) 
+    : 0;
+
+  // SVG circle calculations for 3 segments (weekdays, weekend, remaining)
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
+  const weekdaysDash = (weekdaysPercentage / 100) * circumference;
+  const weekendDash = (weekendPercentage / 100) * circumference;
+  const weekdaysOffset = circumference - weekdaysDash;
+  const weekendStartOffset = weekdaysOffset;
+
   const statCards = [
     {
       title: "Total Doctors",
@@ -112,7 +137,7 @@ export default function DashboardPage() {
           return (
             <div
               key={index}
-              className="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex items-center justify-between"
+              className="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex items-center justify-between transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-default"
             >
               <div>
                 <p className="text-xs sm:text-sm text-gray-500 mb-1">{card.title}</p>
@@ -155,65 +180,96 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Extra summary card next to appointments chart */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex flex-col justify-between">
-          <div>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
-              Weekly Activity Overview
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 mb-4">
-              Quick summary of this week&apos;s appointments.
-            </p>
-          </div>
-
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs sm:text-sm text-gray-600">Total Appointments</span>
-              <span className="text-sm sm:text-base font-semibold text-gray-900">
-                {weeklyLoading ? "..." : totalAppointments}
-              </span>
+        {/* Circular progress chart card */}
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
+            Weekly Activity Overview
+          </h2>
+          
+          <div className="flex flex-col items-center justify-center gap-4">
+            {/* Circular Progress Chart with 3 colors */}
+            <div className="relative">
+              <svg width="180" height="180" className="transform -rotate-90">
+                {/* Background circle */}
+                <circle
+                  cx="90"
+                  cy="90"
+                  r={radius}
+                  stroke="#e5e7eb"
+                  strokeWidth="14"
+                  fill="none"
+                />
+                {/* Weekdays segment (green) */}
+                <circle
+                  cx="90"
+                  cy="90"
+                  r={radius}
+                  stroke="#10b981"
+                  strokeWidth="14"
+                  fill="none"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={weekdaysOffset}
+                  strokeLinecap="round"
+                  className="transition-all duration-500"
+                />
+                {/* Weekend segment (blue) - starts after weekdays */}
+                <circle
+                  cx="90"
+                  cy="90"
+                  r={radius}
+                  stroke="#3b82f6"
+                  strokeWidth="14"
+                  fill="none"
+                  strokeDasharray={`${weekendDash} ${circumference}`}
+                  strokeDashoffset={weekendStartOffset}
+                  strokeLinecap="round"
+                  className="transition-all duration-500"
+                />
+                {/* Remaining segment (purple) - if any */}
+                {weekdaysPercentage + weekendPercentage < 100 && (
+                  <circle
+                    cx="90"
+                    cy="90"
+                    r={radius}
+                    stroke="#a855f7"
+                    strokeWidth="14"
+                    fill="none"
+                    strokeDasharray={`${((100 - weekdaysPercentage - weekendPercentage) / 100) * circumference} ${circumference}`}
+                    strokeDashoffset={weekendStartOffset - weekendDash}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                  />
+                )}
+              </svg>
+              {/* Center text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-800">
+                  {weeklyLoading ? "..." : totalAppointments}
+                </span>
+                <span className="text-xs text-gray-500">Total</span>
+              </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Legend */}
+            <div className="w-full space-y-2">
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-green-400" />
+                  <span className="w-3 h-3 rounded-full bg-green-500" />
                   Weekdays
                 </span>
-                <span className="font-medium text-gray-800">
-                  {weeklyLoading
-                    ? "..."
-                    : weeklyChartData
-                        .filter((d) =>
-                          ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"].includes(
-                            d.day
-                          )
-                        )
-                        .reduce((sum, d) => sum + (d.appointments || 0), 0)}
+                <span className="font-semibold text-gray-800">
+                  {weeklyLoading ? "..." : `${weekdaysAppointments} (${weekdaysPercentage}%)`}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-blue-400" />
+                  <span className="w-3 h-3 rounded-full bg-blue-500" />
                   Weekend
                 </span>
-                <span className="font-medium text-gray-800">
-                  {weeklyLoading
-                    ? "..."
-                    : weeklyChartData
-                        .filter((d) => ["Friday", "Saturday"].includes(d.day))
-                        .reduce((sum, d) => sum + (d.appointments || 0), 0)}
+                <span className="font-semibold text-gray-800">
+                  {weeklyLoading ? "..." : `${weekendAppointments} (${weekendPercentage}%)`}
                 </span>
               </div>
-            </div>
-
-            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-green-400 via-blue-400 to-purple-400"
-                style={{
-                  width: totalAppointments > 0 ? "100%" : "0%",
-                }}
-              />
             </div>
           </div>
         </div>

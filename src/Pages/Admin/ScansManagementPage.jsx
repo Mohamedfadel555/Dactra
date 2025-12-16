@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
 import { MdSearch } from "react-icons/md";
@@ -7,6 +8,7 @@ import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
 
 export default function ScansManagementPage() {
+  const navigate = useNavigate();
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,17 +107,18 @@ export default function ScansManagementPage() {
   ];
 
   const handleView = (scan) => {
-    // TODO: Implement view scan details
+    const scanId = scan.profileId || scan.id || scan.userId || scan.appUserId;
+    if (scanId) {
+      navigate(`/scan/profile/${scanId}`);
+    } else {
+      toast.error("Scan center ID not found");
+    }
   };
-  
 
   const handleApprove = async (scan) => {
-    console.log("SCAN OBJECT ", scan);
     const providerId =
-      scan.profileId ||
-      scan.id ||
-      scan.userId ||
-      scan.appUserId;
+      
+      scan.id ;
 
     if (!providerId) {
       toast.error("Scan center ID not found for approve/disapprove");
@@ -218,7 +221,6 @@ export default function ScansManagementPage() {
         isLoading={isLoading}
         onView={handleView}
         onApprove={handleApprove}
-        onBlock={handleBlock}
         showMore={true}
         hasMore={hasMore}
         onShowMore={() => setPage((p) => p + 1)}

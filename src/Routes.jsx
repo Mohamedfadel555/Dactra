@@ -9,8 +9,7 @@ import DoctorsListPage from "./Pages/DoctorsListPage";
 import Profile from "./Pages/Profile/Profile";
 import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
 
-import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
-import DoctorsListPage from "./Pages/DoctorsListPage";
+
 
 
 const Layout = lazy(() => import("./Layout/Layout"));
@@ -93,6 +92,38 @@ export const route = createBrowserRouter([
             <ProtectedRoutes>
               <Profile />
             </ProtectedRoutes>
+          </Suspense>
+        ),
+      },
+      {
+        path: "doctor/profile/:id",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <Profile />
+          </Suspense>
+        ),
+      },
+      {
+        path: "patient/profile/:id",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <Profile />
+          </Suspense>
+        ),
+      },
+      {
+        path: "lab/profile/:id",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <Profile />
+          </Suspense>
+        ),
+      },
+      {
+        path: "scan/profile/:id",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <Profile />
           </Suspense>
         ),
       },

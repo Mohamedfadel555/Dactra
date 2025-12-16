@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
 import { MdSearch } from "react-icons/md";
@@ -7,6 +8,7 @@ import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
 
 export default function DoctorsManagementPage() {
+  const navigate = useNavigate();
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,7 +110,12 @@ export default function DoctorsManagementPage() {
   ];
 
   const handleView = (doctor) => {
-    // TODO: Implement view doctor details
+    const doctorId = doctor.profileId || doctor.id || doctor.userId || doctor.appUserId;
+    if (doctorId) {
+      navigate(`/doctor/profile/${doctorId}`);
+    } else {
+      toast.error("Doctor ID not found");
+    }
   };
 
   const handleApprove = async (doctor) => {
@@ -216,7 +223,6 @@ export default function DoctorsManagementPage() {
         isLoading={isLoading}
         onView={handleView}
         onApprove={handleApprove}
-        onBlock={handleBlock}
         showMore={true}
         hasMore={hasMore}
         onShowMore={() => setPage((p) => p + 1)}

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { MdFilterList } from "react-icons/md";
 import { FaStar } from "react-icons/fa";
@@ -10,6 +11,7 @@ import { useDoctors } from "../hooks/useDoctors";
 import { useMajors } from "../hooks/useMajors";
 
 export default function DoctorsListPage() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGender, setSelectedGender] = useState("all");
   const [selectedSpecializationId, setSelectedSpecializationId] = useState(null);
@@ -17,6 +19,13 @@ export default function DoctorsListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
   const specialtiesRef = useRef(null);
+
+  const handleDoctorClick = (doctor) => {
+    const doctorId = doctor.id || doctor.profileId || doctor.userId;
+    if (doctorId) {
+      navigate(`/doctor/profile/${doctorId}`);
+    }
+  };
 
   // Use Search API with pagination and filters
   const genderValue = selectedGender === "all" ? null : (selectedGender === "male" ? 0 : 1);
@@ -324,14 +333,20 @@ export default function DoctorsListPage() {
                          <div className="p-4 flex flex-col flex-1 gap-3">
                            {/* Top: image + name/speciality + favourite */}
                            <div className="flex items-center gap-3">
-                             {/* Image placeholder */}
-                             <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
+                             {/* Image placeholder - clickable */}
+                             <div 
+                              onClick={() => handleDoctorClick(doctor)}
+                              className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                            >
                                {/* TODO: replace with doctor image when backend provides imageUrl */}
                                <span className="text-3xl text-gray-400">👨‍⚕️</span>
                              </div>
 
                              <div className="flex-1">
-                               <h3 className="text-sm font-semibold text-gray-800">
+                               <h3 
+                                 onClick={() => handleDoctorClick(doctor)}
+                                 className="text-sm font-semibold text-gray-800 cursor-pointer hover:text-[#316BE8] transition-colors"
+                               >
                                  {doctor.name || `${doctor.firstName || ""} ${doctor.lastName || ""}`.trim() || "N/A"}
                                </h3>
                                <p className="text-xs text-gray-500 mt-1">
@@ -361,6 +376,7 @@ export default function DoctorsListPage() {
                           {/* Button */}
                            <button
                              type="button"
+                             onClick={() => handleDoctorClick(doctor)}
                              className="mt-2 w-full py-2 rounded-lg bg-[#316BE8] text-white text-xs font-semibold hover:bg-[#2552c1] transition"
                            >
                              Book appointment
