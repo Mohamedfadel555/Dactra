@@ -62,6 +62,25 @@ export const useUserAPI = () => {
     return res.data;
   };
 
+  const getMyAllergies = async () => {
+    const res = await axiosInstance.get("Patient/allergies");
+    return res.data;
+  };
+
+  const getMyChronic = async () => {
+    const res = await axiosInstance.get("Patient/chronic-diseases");
+    return res.data;
+  };
+
+  const editAllergies = async (data) => {
+    const res = await axiosInstance.put("Patient/allergies", data);
+    return res;
+  };
+  const editchronics = async (data) => {
+    const res = await axiosInstance.put("Patient/chronic-diseases", data);
+    return res;
+  };
+
   return {
     getMePatient,
     getMeDoctor,
@@ -75,5 +94,9 @@ export const useUserAPI = () => {
     getMyRatings,
     addVital,
     getVitals,
+    getMyAllergies,
+    getMyChronic,
+    editAllergies,
+    editchronics,
   };
 };

@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 
 export default function ProtectedAdmin({ children }) {
   const { accessToken, role } = useAuth();
-
   if (!accessToken) {
     toast.error("Please login to access admin panel", {
       position: "top-center",
@@ -26,4 +25,3 @@ export default function ProtectedAdmin({ children }) {
 
   return children;
 }
-

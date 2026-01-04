@@ -31,12 +31,9 @@ export const useLogin = () => {
       // Redirect admin to admin dashboard
       // Check role case-insensitively
       const normalizedRole = role?.toLowerCase();
-      console.log("Normalized role:", normalizedRole); // Debug
       if (normalizedRole === "admin" || normalizedRole === "administrator") {
-        console.log("Redirecting to /admin/dashboard"); // Debug
         navigate("/admin/dashboard", { replace: true });
       } else {
-        console.log("Redirecting to /"); // Debug
         navigate("/", { replace: true });
       }
     },
@@ -45,6 +42,11 @@ export const useLogin = () => {
       console.log(data);
       if (data.status === 401) {
         toast.error("Email or password is invalid!", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+      } else if (data.status === 404) {
+        toast.error("This user has been blocked , Contact us to help", {
           position: "top-center",
           closeOnClick: true,
         });
