@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
 import { MdFilterList } from "react-icons/md";
 import { FaStar } from "react-icons/fa";
@@ -12,14 +12,16 @@ import { useMajors } from "../hooks/useMajors";
 export default function DoctorsListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGender, setSelectedGender] = useState("all");
-  const [selectedSpecializationId, setSelectedSpecializationId] = useState(null);
+  const [selectedSpecializationId, setSelectedSpecializationId] =
+    useState(null);
   const [sortedByRating, setSortedByRating] = useState(null); // null = default, true = highest, false = lowest
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
   const specialtiesRef = useRef(null);
 
   // Use Search API with pagination and filters
-  const genderValue = selectedGender === "all" ? null : (selectedGender === "male" ? 0 : 1);
+  const genderValue =
+    selectedGender === "all" ? null : selectedGender === "male" ? 0 : 1;
   const { data: doctorsResponse, isLoading: doctorsLoading } = useDoctors(
     currentPage,
     pageSize,
@@ -28,25 +30,22 @@ export default function DoctorsListPage() {
     genderValue,
     sortedByRating
   );
-  
+
   // Extract doctors list from response
   const doctors = doctorsResponse?.doctors || [];
-  
+
   // Extract pagination info from backend
   const totalPages = doctorsResponse?.totalPages || 1;
   const hasNext = doctorsResponse?.hasNext || false;
   const hasPrevious = doctorsResponse?.hasPrevious || false;
-  
-  const {
-    data: majors = [],
-    isLoading: majorsLoading,
-  } = useMajors("doctor");
+
+  const { data: majors = [], isLoading: majorsLoading } = useMajors("doctor");
 
   // Backend handles all filtering and pagination, so use doctors directly
   const filteredDoctors = doctors;
-  
+
   const currentPageSafe = Math.min(currentPage, totalPages);
-  
+
   // Backend already paginated, so use doctors directly
   const paginatedDoctors = filteredDoctors;
 
@@ -112,18 +111,17 @@ export default function DoctorsListPage() {
                   Gender
                 </h3>
                 <div className="flex gap-2">
-
-                <button
-    type="button"
-    onClick={() => setSelectedGender("all")}
-    className={`flex-1 py-1.5 text-xs rounded-full border ${
-      selectedGender === "all"
-        ? "bg-[#316BE8] text-white border-[#316BE8]"
-        : "bg-gray-50 text-gray-600 border-gray-200"
-    }`}
-  >
-    All
-  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGender("all")}
+                    className={`flex-1 py-1.5 text-xs rounded-full border ${
+                      selectedGender === "all"
+                        ? "bg-[#316BE8] text-white border-[#316BE8]"
+                        : "bg-gray-50 text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    All
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -162,9 +160,9 @@ export default function DoctorsListPage() {
                 </h3>
                 <div className="space-y-2 text-xs text-gray-600">
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="sort" 
+                    <input
+                      type="radio"
+                      name="sort"
                       checked={sortedByRating === null}
                       onChange={() => {
                         setSortedByRating(null);
@@ -174,9 +172,9 @@ export default function DoctorsListPage() {
                     <span>Most recommended</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="sort" 
+                    <input
+                      type="radio"
+                      name="sort"
                       checked={sortedByRating === true}
                       onChange={() => {
                         setSortedByRating(true);
@@ -186,9 +184,9 @@ export default function DoctorsListPage() {
                     <span>Highest Rating</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="sort" 
+                    <input
+                      type="radio"
+                      name="sort"
                       checked={sortedByRating === false}
                       onChange={() => {
                         setSortedByRating(false);
@@ -216,7 +214,7 @@ export default function DoctorsListPage() {
                   </label>
                 </div>
                 {/* TODO: ask backend to support filtering by consultation type (online / offline) */}
-              {/* </section> */} 
+              {/* </section> */}
             </aside>
 
             {/* Right content column */}
@@ -249,7 +247,9 @@ export default function DoctorsListPage() {
                 >
                   <div className="inline-flex gap-2 whitespace-nowrap pr-2">
                     {majorsLoading ? (
-                      <p className="text-sm text-gray-500">Loading specialties...</p>
+                      <p className="text-sm text-gray-500">
+                        Loading specialties...
+                      </p>
                     ) : (
                       majors?.map((major) => (
                         <button
@@ -257,12 +257,15 @@ export default function DoctorsListPage() {
                           type="button"
                           onClick={() => {
                             setSelectedSpecializationId(
-                              selectedSpecializationId === major.id ? null : major.id
+                              selectedSpecializationId === major.id
+                                ? null
+                                : major.id
                             );
                             setCurrentPage(1);
                           }}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs ${
-                            String(selectedSpecializationId) === String(major.id)
+                            String(selectedSpecializationId) ===
+                            String(major.id)
                               ? "bg-[#316BE8] text-white border-[#316BE8]"
                               : "bg-white text-gray-700 border-gray-200"
                           }`}
@@ -298,8 +301,8 @@ export default function DoctorsListPage() {
                 </button>
               </div>
 
-               {/* Doctors grid */}
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+              {/* Doctors grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
                 {doctorsLoading ? (
                   <p className="text-sm text-gray-500 col-span-full">
                     Loading doctors...
@@ -319,53 +322,59 @@ export default function DoctorsListPage() {
                     return (
                       <article
                         key={doctor.id}
-                         className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden flex flex-col"
+                        className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden flex flex-col"
                       >
-                         <div className="p-4 flex flex-col flex-1 gap-3">
-                           {/* Top: image + name/speciality + favourite */}
-                           <div className="flex items-center gap-3">
-                             {/* Image placeholder */}
-                             <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
-                               {/* TODO: replace with doctor image when backend provides imageUrl */}
-                               <span className="text-3xl text-gray-400">👨‍⚕️</span>
-                             </div>
+                        <div className="p-4 flex flex-col flex-1 gap-3">
+                          {/* Top: image + name/speciality + favourite */}
+                          <div className="flex items-center gap-3">
+                            {/* Image placeholder */}
+                            <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
+                              {/* TODO: replace with doctor image when backend provides imageUrl */}
+                              <span className="text-3xl text-gray-400">👨‍⚕️</span>
+                            </div>
 
-                             <div className="flex-1">
-                               <h3 className="text-sm font-semibold text-gray-800">
-                                 {doctor.name || `${doctor.firstName || ""} ${doctor.lastName || ""}`.trim() || "N/A"}
-                               </h3>
-                               <p className="text-xs text-gray-500 mt-1">
-                                 {doctor.specialization || specialization?.name || "N/A"}
-                               </p>
-                               <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
-                                 <div className="flex items-center gap-1">
-                                   <FaStar className="text-yellow-400" />
-                                   <span className="font-semibold text-gray-700">
-                                     {doctor?.averageRating != null
-                                       ? Number(doctor.averageRating).toFixed(1)
-                                       : "0.0"}
-                                   </span>
-                                 </div>
+                            <div className="flex-1">
+                              <h3 className="text-sm font-semibold text-gray-800">
+                                {doctor.name ||
+                                  `${doctor.firstName || ""} ${
+                                    doctor.lastName || ""
+                                  }`.trim() ||
+                                  "N/A"}
+                              </h3>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {doctor.specialization ||
+                                  specialization?.name ||
+                                  "N/A"}
+                              </p>
+                              <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                                <div className="flex items-center gap-1">
+                                  <FaStar className="text-yellow-400" />
+                                  <span className="font-semibold text-gray-700">
+                                    {doctor?.averageRating != null
+                                      ? Number(doctor.averageRating).toFixed(1)
+                                      : "0.0"}
+                                  </span>
+                                </div>
 
-                                 {/* Favourite icon aligned with rating */}
-                                 <button
-                                   type="button"
-                                   className="text-[#316BE8] hover:text-[#274fb3]"
-                                 >
-                                   <IoIosHeartEmpty className="w-5 h-5" />
-                                 </button>
-                               </div>
-                             </div>
+                                {/* Favourite icon aligned with rating */}
+                                <button
+                                  type="button"
+                                  className="text-[#316BE8] hover:text-[#274fb3]"
+                                >
+                                  <IoIosHeartEmpty className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
 
                           {/* Button */}
-                           <button
-                             type="button"
-                             className="mt-2 w-full py-2 rounded-lg bg-[#316BE8] text-white text-xs font-semibold hover:bg-[#2552c1] transition"
-                           >
-                             Book appointment
-                           </button>
-                         </div>
+                          <button
+                            type="button"
+                            className="mt-2 w-full py-2 rounded-lg bg-[#316BE8] text-white text-xs font-semibold hover:bg-[#2552c1] transition"
+                          >
+                            Book appointment
+                          </button>
+                        </div>
                       </article>
                     );
                   })
@@ -397,12 +406,10 @@ export default function DoctorsListPage() {
             </section>
           </div>
         </div>
-       </main>
+      </main>
 
       {/* Common footer */}
       <Footer />
     </div>
   );
 }
-
-

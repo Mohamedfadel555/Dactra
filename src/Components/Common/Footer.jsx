@@ -38,7 +38,7 @@ export default function Footer() {
 
   return (
     <motion.footer
-      className="bg-gray-900 text-gray-300 w-full absolute bottom-0 left-0"
+      className="bg-gray-900 text-gray-300 w-full"
       initial="hidden"
       whileInView="show" // هنا استخدمنا whileInView
       viewport={{ once: true, amount: 0.2 }} // يظهر الانيميشن لما يبقى 20% من الفوتر ظاهر

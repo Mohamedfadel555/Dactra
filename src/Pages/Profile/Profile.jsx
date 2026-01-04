@@ -9,12 +9,14 @@ import BarComp from "../../Components/Common/BarComp";
 import { IoTrashOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
+import { GiMedicines } from "react-icons/gi";
 import { Form, Formik } from "formik";
 import FormInputField from "./../../Components/Auth/FormInputField";
 import SubmitButton from "../../Components/Auth/SubmitButton";
 import { IoCloseSharp } from "react-icons/io5";
 import CommentCard from "../../Components/Common/CommentCard";
 import { motion, AnimatePresence } from "framer-motion";
+import { PiWarningCircle } from "react-icons/pi";
 import {
   changePasswordValidationSchema,
   deleteAccValidationSchema,
@@ -33,6 +35,13 @@ import { useGetVitals } from "../../hooks/useGetVitals";
 import { useGetMyRatings } from "../../hooks/useGetMyRatings";
 import ReviewsDetailsSection from "./../../Components/Common/ReviewsDetailsSection";
 import SwiperComponent from "../../Components/Common/SwiperComponent";
+import { useGetMyAllergies } from "../../hooks/useGetMyAllergies";
+import { useGetMyChronic } from "../../hooks/useGetMyChronic";
+import PatientSection from "../../Components/Profile/PatientSection";
+import { useGetAllAllergies } from "../../hooks/useGetAllAllergies";
+import { useGetAllChronic } from "../../hooks/useGetAllChronic";
+import { useEditAllergies } from "../../hooks/useEditAllergies";
+import { useEditChronics } from "../../hooks/useEditChronics";
 
 const genderData = ["Male", "Female"];
 
@@ -63,24 +72,19 @@ export default function Profile() {
   const { data: quals } = useGetMyQualifications();
   const { data: vitals } = useGetVitals();
   const { data: ratings } = useGetMyRatings();
-  console.log(ratings);
-
+  const { data: allergies } = useGetMyAllergies();
+  const { data: chronics } = useGetMyChronic();
+  const { data: allAllergies } = useGetAllAllergies();
+  const { data: allchronics } = useGetAllChronic();
   const { role } = useAuth();
-  console.log(user);
-  console.log({
-    firstName: user?.firstName,
-    lastName: user?.lastName,
-    phoneNamber: user?.phoneNumber,
-    address: user?.address,
-    about: user?.about,
-  });
 
+  console.log(chronics);
+
+  //transforming vitals data
   useEffect(() => {
     if (!vitals) return;
-
     let newg = vitals.reduce((acc, item) => {
       let id = item.vitalSignTypeId;
-      console.log(id);
       if (!acc[id]) acc[id] = [];
       if (id === 1) {
         acc[1].unshift({
@@ -118,15 +122,24 @@ export default function Profile() {
 
   const useAddVitalMutation = useAddVitals();
 
+  const editAllergiesMutation = useEditAllergies();
+
+  const editChronicsMutation = useEditChronics();
+
   const addVitals = async (values) => {
     const FormData = {
       vitalSignTypeId: values.vitalSignTypeId,
       value: values.systolic ?? values.heartRate ?? values.glucose,
       value2: values.diastolic ?? null,
     };
-
-    console.log(FormData);
     await useAddVitalMutation.mutateAsync(FormData);
+  };
+
+  const editAllergies = (values) => {
+    editAllergiesMutation.mutate(values);
+  };
+  const editchronics = (values) => {
+    editChronicsMutation.mutate(values);
   };
 
   const deleteAccountHandle = () => {
@@ -533,7 +546,7 @@ export default function Profile() {
           </>
         )}
       </AnimatePresence>
-      <div className="flex flex-col gap-[70px] justify-center ">
+      <div className="flex flex-col gap-[70px] justify-center pb-[20px]">
         <div
           className="pt-[100px] w-full overflow-hidden pb-[10px] px-4 md:px-[30px] lg:px-[50px] min-h-screen font-english 
       flex flex-col lg:flex-row gap-[30px] lg:gap-[50px] justify-center"
@@ -728,6 +741,25 @@ export default function Profile() {
 
             {role === "Patient" && (
               <>
+                <motion.div variants={rightItem} className="w-full">
+                  <div className="w-full md:flex-row flex-col flex justify-center items-start gap-[20px]">
+                    <PatientSection
+                      Icon={PiWarningCircle}
+                      title="Allergies"
+                      data={allergies}
+                      alldata={allAllergies}
+                      submitfn={editAllergies}
+                    />
+
+                    <PatientSection
+                      Icon={GiMedicines}
+                      title={"Chronic Diseases"}
+                      data={chronics}
+                      alldata={allchronics}
+                      submitfn={editchronics}
+                    />
+                  </div>
+                </motion.div>
                 <motion.div
                   variants={rightItem}
                   className="w-full"
