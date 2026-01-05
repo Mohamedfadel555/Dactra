@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MdVisibility, MdDelete, MdBlock, MdCheckCircle } from "react-icons/md";
+import { MdVisibility, MdDelete, MdBlock, MdCheckCircle, MdCancel } from "react-icons/md";
 
 export default function AdminTable({
   columns,
@@ -18,8 +18,11 @@ export default function AdminTable({
   // Show loading state
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-8">
-        <p className="text-center text-sm sm:text-base text-gray-500">Loading...</p>
+      <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 sm:p-8 animate-pulse">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-4 h-4 border-2 border-[#316BE8] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-center text-sm sm:text-base text-gray-500">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -61,7 +64,10 @@ export default function AdminTable({
             ) : (
               // Data rows
               tableData.map((row, rowIndex) => (
-                <tr key={rowIndex} className="hover:bg-gray-50 transition-colors">
+                <tr 
+                  key={rowIndex} 
+                  className="hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                >
                   {columns.map((col, colIndex) => (
                     <td key={colIndex} className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {col.render ? col.render(row) : row[col.key]}
@@ -72,7 +78,7 @@ export default function AdminTable({
                       {onView && (
                         <button
                           onClick={() => onView(row)}
-                          className="text-blue-600 hover:text-blue-800 p-1"
+                          className="text-blue-600 hover:text-blue-800 p-1 transition-all duration-200 hover:scale-110"
                           title="View"
                         >
                           <MdVisibility className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -81,14 +87,18 @@ export default function AdminTable({
                       {onApprove && (
                         <button
                           onClick={() => onApprove(row)}
-                          className={`p-1 ${
+                          className={`p-1 transition-all duration-200 ${
                             row.isApproved
-                              ? "text-red-600 hover:text-red-800"
-                              : "text-green-600 hover:text-green-800"
+                              ? "text-red-600 hover:text-red-800 hover:scale-110"
+                              : "text-green-600 hover:text-green-800 hover:scale-110"
                           }`}
                           title={row.isApproved ? "Disapprove" : "Approve"}
                         >
-                          <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                          {row.isApproved ? (
+                            <MdCancel className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : (
+                            <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                          )}
                         </button>
                       )}
                       {onBlock && (
@@ -125,7 +135,7 @@ export default function AdminTable({
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200">
           <button
             onClick={onShowMore}
-            className="w-full py-2 text-center text-sm sm:text-base text-[#316BE8] hover:text-[#274fb3] font-medium"
+            className="w-full py-2 text-center text-sm sm:text-base text-[#316BE8] hover:text-[#274fb3] font-medium transition-all duration-200 hover:bg-blue-50 rounded-lg"
           >
             Show more
           </button>

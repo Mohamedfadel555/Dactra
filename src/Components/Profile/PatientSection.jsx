@@ -11,7 +11,6 @@ export default function PatientSection({
   submitfn,
   alldata = [],
 }) {
-  console.log(data);
   const [selected, setSelected] = useState([]);
   const [initialSelected, setInitialSelected] = useState([]);
   const [flag, setFlag] = useState(false);

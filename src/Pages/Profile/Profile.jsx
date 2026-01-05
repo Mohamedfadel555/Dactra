@@ -8,6 +8,7 @@ import { useAuth } from "../../Context/AuthContext";
 import BarComp from "../../Components/Common/BarComp";
 import { IoTrashOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
+import { FaFileCirclePlus } from "react-icons/fa6";
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
 import { GiMedicines } from "react-icons/gi";
 import { Form, Formik } from "formik";
@@ -17,6 +18,7 @@ import { IoCloseSharp } from "react-icons/io5";
 import CommentCard from "../../Components/Common/CommentCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { PiWarningCircle } from "react-icons/pi";
+import { FaFileMedicalAlt } from "react-icons/fa";
 import {
   changePasswordValidationSchema,
   deleteAccValidationSchema,
@@ -42,6 +44,7 @@ import { useGetAllAllergies } from "../../hooks/useGetAllAllergies";
 import { useGetAllChronic } from "../../hooks/useGetAllChronic";
 import { useEditAllergies } from "../../hooks/useEditAllergies";
 import { useEditChronics } from "../../hooks/useEditChronics";
+import { IoWarningOutline } from "react-icons/io5";
 
 const genderData = ["Male", "Female"];
 
@@ -77,8 +80,6 @@ export default function Profile() {
   const { data: allAllergies } = useGetAllAllergies();
   const { data: allchronics } = useGetAllChronic();
   const { role } = useAuth();
-
-  console.log(chronics);
 
   //transforming vitals data
   useEffect(() => {
@@ -176,58 +177,102 @@ export default function Profile() {
     }
   };
 
+  // ================= POPUP =================
   const popupVariants = {
-    hidden: { opacity: 0, scale: 0.85, y: 30 },
+    hidden: {
+      opacity: 0,
+      scale: 0.92,
+      y: 20,
+    },
     show: {
       opacity: 1,
       scale: 1,
       y: 0,
       transition: {
-        duration: 0.35,
         type: "spring",
-        stiffness: 160,
-        damping: 18,
+        stiffness: 120,
+        damping: 22,
+        mass: 0.9,
       },
     },
-    exit: { opacity: 0, scale: 0.85, y: 30 },
+    exit: {
+      opacity: 0,
+      scale: 0.92,
+      y: 20,
+      transition: { duration: 0.2 },
+    },
   };
 
+  // ================= OVERLAY =================
   const overlayVariants = {
     hidden: { opacity: 0 },
-    show: { opacity: 1 },
-    exit: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { duration: 0.25 },
+    },
+    exit: {
+      opacity: 0,
+      transition: { duration: 0.2 },
+    },
   };
 
+  // ================= RIGHT CONTAINER =================
   const rightContainer = {
     hidden: {},
     show: {
       transition: {
-        staggerChildren: 0.12,
-        when: "beforeChildren",
+        staggerChildren: 0.05,
+        delayChildren: 0.05,
       },
     },
   };
 
+  // ================= RIGHT ITEM =================
   const rightItem = {
-    hidden: { opacity: 0, x: 60 },
+    hidden: {
+      opacity: 0,
+      x: 25,
+    },
     show: {
       opacity: 1,
       x: 0,
-      transition: { duration: 0.55, ease: "easeOut" },
+      transition: {
+        duration: 0.4,
+        ease: "easeOut",
+      },
     },
-    exit: { opacity: 0, x: 40, transition: { duration: 0.25 } },
+    exit: {
+      opacity: 0,
+      x: 20,
+      transition: { duration: 0.2 },
+    },
   };
 
+  // ================= SIDEBAR CONTAINER =================
   const sidebarContainer = {
     hidden: {},
     show: {
-      transition: { staggerChildren: 0.06, delayChildren: 0.06 },
+      transition: {
+        staggerChildren: 0.04,
+        delayChildren: 0.04,
+      },
     },
   };
 
+  // ================= SIDEBAR ITEM =================
   const sidebarItem = {
-    hidden: { opacity: 0, x: -40 },
-    show: { opacity: 1, x: 0, transition: { duration: 0.45, ease: "easeOut" } },
+    hidden: {
+      opacity: 0,
+      x: -20,
+    },
+    show: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.35,
+        ease: "easeOut",
+      },
+    },
   };
 
   return (
@@ -553,7 +598,7 @@ export default function Profile() {
         >
           {/* Sidebar */}
           <motion.div
-            className="w-full lg:w-[350px] flex-shrink-0 "
+            className="w-full lg:w-[350px] flex flex-col gap-[20px] flex-shrink-0 "
             variants={sidebarContainer}
             initial="hidden"
             animate="show"
@@ -564,7 +609,7 @@ export default function Profile() {
           gap-[15px] p-[16px] rounded-[10px] bg-[#F5F6F7] shadow-md"
             >
               <motion.div
-                variants={sidebarItem}
+                // variants={sidebarItem}
                 className="absolute size-[30px] rounded-full bg-white top-[10px] right-[10px] flex justify-center items-center"
               >
                 <motion.div
@@ -579,7 +624,7 @@ export default function Profile() {
               </motion.div>
 
               <motion.div
-                variants={sidebarItem}
+                // variants={sidebarItem}
                 className="w-[150px] h-[150px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] 
             rounded-full overflow-hidden relative flex justify-center items-center bg-gray-200"
                 whileHover={{ scale: 1.03 }}
@@ -592,7 +637,7 @@ export default function Profile() {
               </motion.div>
 
               <motion.div
-                variants={sidebarItem}
+                // variants={sidebarItem}
                 className="flex flex-col gap-[5px] items-center"
               >
                 <p className="text-2xl md:text-3xl font-bold">
@@ -604,23 +649,23 @@ export default function Profile() {
               <hr className="w-full text-[rgb(193,193,193)]" />
 
               <motion.div
-                variants={sidebarItem}
+                // variants={sidebarItem}
                 className="flex flex-col w-full gap-[15px] text-[#404448]"
               >
                 <motion.div
-                  variants={sidebarItem}
+                  // variants={sidebarItem}
                   className="flex items-center gap-[10px]"
                 >
                   <FaPhone /> {user?.phoneNumber}
                 </motion.div>
                 <motion.div
-                  variants={sidebarItem}
+                  // variants={sidebarItem}
                   className="flex items-center gap-[10px]"
                 >
                   <FaEnvelope /> {user?.email}
                 </motion.div>
                 <motion.div
-                  variants={sidebarItem}
+                  // variants={sidebarItem}
                   className="flex items-center gap-[10px]"
                 >
                   <FaMapMarkerAlt />{" "}
@@ -631,11 +676,11 @@ export default function Profile() {
               <hr className="w-full text-[rgb(193,193,193)]" />
 
               <motion.div
-                variants={sidebarItem}
+                // variants={sidebarItem}
                 className=" w-full gap-[15px]  flex flex-col md:flex-row lg:flex-col"
               >
                 <motion.button
-                  variants={sidebarItem}
+                  // variants={sidebarItem}
                   onClick={() => setEdit(true)}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
@@ -645,7 +690,7 @@ export default function Profile() {
                   <FaRegEdit /> Edit
                 </motion.button>
                 <motion.button
-                  variants={sidebarItem}
+                  // variants={sidebarItem}
                   onClick={() => setchangePass(true)}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
@@ -655,6 +700,50 @@ export default function Profile() {
                   <MdOutlinePassword /> Change Password
                 </motion.button>
               </motion.div>
+            </motion.div>
+            <motion.div
+              variants={sidebarItem}
+              className=" relative  flex flex-col  
+          gap-[20px] p-[16px] rounded-[10px] bg-white shadow-md"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl ">Medical Reports Archieve </h3>
+                <FaFileCirclePlus className="size-[20px] text-blue-600 cursor-pointer " />
+              </div>
+              <div className="flex flex-col gap-[15px]">
+                {[
+                  "Complete Blood Count Report",
+                  "Liver Function Report",
+                  "Kidney Function Report",
+                  "Blood Sugar Report",
+                ].length !== 0 ? (
+                  [
+                    "Complete Blood Count Report",
+                    "Liver Function Report",
+                    "Kidney Function Report",
+                    "Blood Sugar Report",
+                  ].map((report, ind) => (
+                    <div className="flex justify-between items-center">
+                      <div id={ind} className="flex gap-2 items-center">
+                        <FaFileMedicalAlt className="size-[25px] text-blue-600" />{" "}
+                        {report}
+                      </div>
+                      <IoTrashOutline className="size-[20px] text-red-600 cursor-pointer " />
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex gap-2">
+                    <IoWarningOutline className="text-blue-600 size-[30px] shrink-0" />
+                    <div className="flex flex-col gap-1 max-w-[250px]">
+                      <p className="font-bold">No medical reports yet</p>
+                      <p className="text-[12px]">
+                        Upload your medical reports to keep your health history
+                        complete and help doctors make better decisions
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </motion.div>
           {/* right */}

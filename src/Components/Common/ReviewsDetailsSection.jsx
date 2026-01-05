@@ -39,7 +39,7 @@ export default function ReviewsDetailsSection({
       <div className="flex flex-col md:flex-row w-full justify-between items-center gap-8 md:gap-[100px] mt-4">
         <div className="md:flex-3 flex flex-col justify-between items-center w-full md:w-[300px] lg:w-[400px]">
           {Object.entries(data).map(([key, value]) => (
-            <Bar number={key} percent={value} />
+            <Bar id={key} number={value.num} percent={value.percent} />
           ))}
         </div>
 

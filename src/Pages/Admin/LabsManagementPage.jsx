@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
 import { MdSearch } from "react-icons/md";
@@ -7,6 +8,7 @@ import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
 
 export default function LabsManagementPage() {
+  const navigate = useNavigate();
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,7 +107,12 @@ export default function LabsManagementPage() {
   ];
 
   const handleView = (lab) => {
-    // TODO: Implement view lab details
+    const labId = lab.profileId || lab.id || lab.userId || lab.appUserId;
+    if (labId) {
+      navigate(`/lab/profile/${labId}`);
+    } else {
+      toast.error("Lab ID not found");
+    }
   };
 
   const handleApprove = async (lab) => {
@@ -146,10 +153,7 @@ export default function LabsManagementPage() {
 
   const handleBlock = async (lab) => {
     const userId =
-      lab.id ||
-      lab.userId ||
-      lab.appUserId ||
-      lab.profileId;
+      lab.id ;
 
     if (!userId) {
       toast.error("Lab ID not found for block/unblock");
@@ -214,7 +218,6 @@ export default function LabsManagementPage() {
         isLoading={isLoading}
         onView={handleView}
         onApprove={handleApprove}
-        onBlock={handleBlock}
         showMore={true}
         hasMore={hasMore}
         onShowMore={() => setPage((p) => p + 1)}

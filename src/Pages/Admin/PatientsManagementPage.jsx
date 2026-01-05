@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
 import { MdSearch } from "react-icons/md";
@@ -7,6 +8,7 @@ import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
 
 export default function PatientsManagementPage() {
+  const navigate = useNavigate();
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
@@ -118,7 +120,12 @@ export default function PatientsManagementPage() {
   ];
 
   const handleView = (patient) => {
-    // TODO: Implement view patient details
+    const patientId = patient.id || patient.userId || patient.appUserId;
+    if (patientId) {
+      navigate(`/patient/profile/${patientId}`);
+    } else {
+      toast.error("Patient ID not found");
+    }
   };
 
   const handleBlock = async (patient) => {
