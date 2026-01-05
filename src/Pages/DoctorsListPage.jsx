@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { FiSearch } from "react-icons/fi";
 import { MdFilterList } from "react-icons/md";
 import { FaStar } from "react-icons/fa";
