@@ -68,30 +68,30 @@ export default function DashboardPage() {
     0
   );
 
-  const weekdaysAppointments = weeklyChartData
+  const onlineAppointments = weeklyChartData
     .filter((d) =>
       ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"].includes(d.day)
     )
     .reduce((sum, d) => sum + (d.appointments || 0), 0);
 
-  const weekendAppointments = weeklyChartData
+  const offlineAppointments = weeklyChartData
     .filter((d) => ["Friday", "Saturday"].includes(d.day))
     .reduce((sum, d) => sum + (d.appointments || 0), 0);
 
-  const weekdaysPercentage = totalAppointments > 0 
-    ? Math.round((weekdaysAppointments / totalAppointments) * 100) 
+  const onlinePercentage = totalAppointments > 0 
+    ? Math.round((onlineAppointments / totalAppointments) * 100) 
     : 0;
-  const weekendPercentage = totalAppointments > 0 
-    ? Math.round((weekendAppointments / totalAppointments) * 100) 
+  const offlinePercentage = totalAppointments > 0 
+    ? Math.round((offlineAppointments / totalAppointments) * 100) 
     : 0;
 
-  // SVG circle calculations for 3 segments (weekdays, weekend, remaining)
+  // SVG circle calculations for 3 segments (online, offline, remaining)
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
-  const weekdaysDash = (weekdaysPercentage / 100) * circumference;
-  const weekendDash = (weekendPercentage / 100) * circumference;
-  const weekdaysOffset = circumference - weekdaysDash;
-  const weekendStartOffset = weekdaysOffset;
+  const onlineDash = (onlinePercentage / 100) * circumference;
+  const offlineDash = (offlinePercentage / 100) * circumference;
+  const onlineOffset = circumference - onlineDash;
+  const offlineStartOffset = onlineOffset;
 
   const statCards = [
     {
@@ -199,7 +199,7 @@ export default function DashboardPage() {
                   strokeWidth="14"
                   fill="none"
                 />
-                {/* Weekdays segment (green) */}
+                {/* Online segment (green) */}
                 <circle
                   cx="90"
                   cy="90"
@@ -208,11 +208,11 @@ export default function DashboardPage() {
                   strokeWidth="14"
                   fill="none"
                   strokeDasharray={circumference}
-                  strokeDashoffset={weekdaysOffset}
+                  strokeDashoffset={onlineOffset}
                   strokeLinecap="round"
                   className="transition-all duration-500"
                 />
-                {/* Weekend segment (blue) - starts after weekdays */}
+                {/* Offline segment (blue) - starts after online */}
                 <circle
                   cx="90"
                   cy="90"
@@ -220,13 +220,13 @@ export default function DashboardPage() {
                   stroke="#3b82f6"
                   strokeWidth="14"
                   fill="none"
-                  strokeDasharray={`${weekendDash} ${circumference}`}
-                  strokeDashoffset={weekendStartOffset}
+                  strokeDasharray={`${offlineDash} ${circumference}`}
+                  strokeDashoffset={offlineStartOffset}
                   strokeLinecap="round"
                   className="transition-all duration-500"
                 />
                 {/* Remaining segment (purple) - if any */}
-                {weekdaysPercentage + weekendPercentage < 100 && (
+                {onlinePercentage + offlinePercentage < 100 && (
                   <circle
                     cx="90"
                     cy="90"
@@ -234,8 +234,8 @@ export default function DashboardPage() {
                     stroke="#a855f7"
                     strokeWidth="14"
                     fill="none"
-                    strokeDasharray={`${((100 - weekdaysPercentage - weekendPercentage) / 100) * circumference} ${circumference}`}
-                    strokeDashoffset={weekendStartOffset - weekendDash}
+                    strokeDasharray={`${((100 - onlinePercentage - offlinePercentage) / 100) * circumference} ${circumference}`}
+                    strokeDashoffset={offlineStartOffset - offlineDash}
                     strokeLinecap="round"
                     className="transition-all duration-500"
                   />
@@ -255,19 +255,19 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-green-500" />
-                  Weekdays
+                  Online
                 </span>
                 <span className="font-semibold text-gray-800">
-                  {weeklyLoading ? "..." : `${weekdaysAppointments} (${weekdaysPercentage}%)`}
+                  {weeklyLoading ? "..." : `${onlineAppointments} (${onlinePercentage}%)`}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-blue-500" />
-                  Weekend
+                  Offline
                 </span>
                 <span className="font-semibold text-gray-800">
-                  {weeklyLoading ? "..." : `${weekendAppointments} (${weekendPercentage}%)`}
+                  {weeklyLoading ? "..." : `${offlineAppointments} (${offlinePercentage}%)`}
                 </span>
               </div>
             </div>

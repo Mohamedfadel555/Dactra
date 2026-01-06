@@ -122,11 +122,9 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .oneOf(["0", "1", "2", "3"], "Select a valid marital status")
         .required("Marital status is required"),
       chronicDisease: yup
-        .string()
-        .min(2, "Chronic disease details must be at least 2 characters"),
+        .string(),
       allergies: yup
-        .string()
-        .min(2, "Allergy details must be at least 2 characters"),
+        .string(),
     });
   }
 

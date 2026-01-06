@@ -143,10 +143,10 @@ export default function AdminLayout() {
         <div className="p-4 border-t border-gray-700">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 lg:gap-4 w-full h-12 px-3 lg:px-4 rounded-lg text-gray-300 hover:bg-gray-800 transition-all duration-200 hover:scale-[1.02]"
+            className="flex items-center gap-3 lg:gap-4 w-full h-12 px-3 lg:px-4 rounded-lg text-red-500 hover:bg-red-900/20 transition-all duration-200 hover:scale-[1.02] font-bold"
           >
             <MdLogout className="w-5 h-5 flex-shrink-0" />
-            <span className="text-sm font-medium">Log Out</span>
+            <span className="text-sm font-bold">Log Out</span>
           </button>
         </div>
       </aside>
