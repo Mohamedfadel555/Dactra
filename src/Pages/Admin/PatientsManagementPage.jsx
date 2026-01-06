@@ -30,6 +30,8 @@ export default function PatientsManagementPage() {
     retry: 2,
   });
 
+  console.log(patientsData);
+
   // Backend pagination - accumulate all loaded patients for "show more"
   const [allLoadedPatients, setAllLoadedPatients] = useState([]);
 
@@ -133,7 +135,8 @@ export default function PatientsManagementPage() {
   ];
 
   const handleView = (patient) => {
-    const patientId = patient.id || patient.userId || patient.appUserId;
+    console.log(patient);
+    const patientId = patient.profileId;
     if (patientId) {
       navigate(`/patient/profile/${patientId}`);
     } else {

@@ -6,7 +6,6 @@ import { FaStar } from "react-icons/fa";
 import { IoIosHeartEmpty } from "react-icons/io";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 
-import Footer from "../Components/Common/Footer";
 import { useDoctors } from "../hooks/useDoctors";
 import { useMajors } from "../hooks/useMajors";
 

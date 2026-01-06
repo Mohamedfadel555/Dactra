@@ -33,6 +33,8 @@ import {
   FaBuilding,
 } from "react-icons/fa";
 import { useMajors } from "../../hooks/useMajors";
+import { useGetAllAllergiesForSignup } from "../../hooks/useGetAllAllergiesForSignup";
+import { useGetAllChronicForSignup } from "../../hooks/useGetAllChronicForSignup";
 
 export default function CompleteSignupPage() {
   const { state } = useLocation();
@@ -50,6 +52,16 @@ export default function CompleteSignupPage() {
     isLoading: majorsLoading,
     isError: majorsError,
   } = useMajors(userType);
+
+  const {
+    data: allergies = [],
+    isLoading: allergiesLoading,
+  } = useGetAllAllergiesForSignup();
+
+  const {
+    data: chronicDiseases = [],
+    isLoading: chronicDiseasesLoading,
+  } = useGetAllChronicForSignup();
 
   useEffect(() => {
     if (!email) {
@@ -123,7 +135,11 @@ export default function CompleteSignupPage() {
                           userType,
                           majors,
                           majorsLoading,
-                          majorsError
+                          majorsError,
+                          allergies,
+                          allergiesLoading,
+                          chronicDiseases,
+                          chronicDiseasesLoading
                         )}
                       </div>
 
@@ -155,7 +171,16 @@ export default function CompleteSignupPage() {
   );
 }
 
-function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
+function renderFieldsByUserType(
+  userType,
+  majors,
+  majorsLoading,
+  majorsError,
+  allergies = [],
+  allergiesLoading = false,
+  chronicDiseases = [],
+  chronicDiseasesLoading = false
+) {
   if (userType === "patient") {
     return (
       <>
@@ -251,15 +276,29 @@ function renderFieldsByUserType(userType, majors, majorsLoading, majorsError) {
         <FormInputField
           name="chronicDisease"
           label="Chronic Diseases"
-          type="text"
-          placeholder="List chronic diseases"
+          type="select"
+          placeholder={chronicDiseasesLoading ? "Loading..." : "Select chronic disease (optional)"}
+          options={[
+            { value: "", label: "None" },
+            ...chronicDiseases.map((disease) => ({
+              value: String(disease.id),
+              label: disease.name,
+            })),
+          ]}
           icon={MdLocalHospital}
         />
         <FormInputField
           name="allergies"
           label="Allergies"
-          type="text"
-          placeholder="List allergies"
+          type="select"
+          placeholder={allergiesLoading ? "Loading..." : "Select allergy (optional)"}
+          options={[
+            { value: "", label: "None" },
+            ...allergies.map((allergy) => ({
+              value: String(allergy.id),
+              label: allergy.name,
+            })),
+          ]}
           icon={MdScience}
         />
       </>
@@ -402,8 +441,8 @@ function buildPayload({ email, userType, values }) {
       bloodType: Number(values.bloodType),
       is_Smoking: values.smokingStatus === "smoker",
       maritalStatus: Number(values.maritalStatus),
-      chronicDisease: values.chronicDisease,
-      allergies: values.allergies,
+      chronicDisease: values.chronicDisease && values.chronicDisease !== "" ? Number(values.chronicDisease) : null,
+      allergies: values.allergies && values.allergies !== "" ? Number(values.allergies) : null,
     };
   }
 

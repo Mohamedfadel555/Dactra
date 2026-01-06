@@ -76,21 +76,13 @@ export default function Profile({ role }) {
 
   const { data: user } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
-  const { data: quals } = useGetMyQualifications();
-  const { data: vitals } = useGetVitals();
-  const { data: ratings } = useGetMyRatings();
-  const { data: allergies } = useGetMyAllergies();
-  const { data: chronics } = useGetMyChronic();
-  const { data: allAllergies } = useGetAllAllergies();
-  const { data: allchronics } = useGetAllChronic();
-  console.log(ratings);
   console.log(role);
   console.log(user);
 
   //transforming vitals data
   useEffect(() => {
-    if (!user) return;
-    let newg = user.vitalSigns.reduce((acc, item) => {
+    if (!user || role === "Doctor") return;
+    let newg = user?.vitalSigns.reduce((acc, item) => {
       let id = item.vitalSignTypeId;
       if (!acc[id]) acc[id] = [];
       if (id === 1) {
@@ -354,7 +346,6 @@ export default function Profile({ role }) {
               >
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl ">Medical Reports Archieve </h3>
-                  {/* <FaFileCirclePlus className="size-[20px] text-blue-600 cursor-pointer " /> */}
                 </div>
                 <div className="flex flex-col gap-[15px]">
                   {[
@@ -371,10 +362,9 @@ export default function Profile({ role }) {
                     ].map((report, ind) => (
                       <div className="flex justify-between items-center">
                         <div id={ind} className="flex gap-2 items-center">
-                          {/* <FaFileMedicalAlt className="size-[25px] text-blue-600" />{" "} */}
+                          <FaFileMedicalAlt className="size-[25px] text-blue-600" />{" "}
                           {report}
                         </div>
-                        <IoTrashOutline className="size-[20px] text-red-600 cursor-pointer " />
                       </div>
                     ))
                   ) : (
@@ -383,9 +373,7 @@ export default function Profile({ role }) {
                       <div className="flex flex-col gap-1 max-w-[250px]">
                         <p className="font-bold">No medical reports yet</p>
                         <p className="text-[12px]">
-                          Upload your medical reports to keep your health
-                          history complete and help doctors make better
-                          decisions
+                          This Patient has not shared Medical reports yet
                         </p>
                       </div>
                     </div>
@@ -455,7 +443,7 @@ export default function Profile({ role }) {
                   <p className="pt-[5px]">
                     {user?.about !== ""
                       ? user?.about
-                      : "Add a short bio to personalize your profile"}
+                      : "The doctor has not shared an about section yet"}
                   </p>
                 </motion.div>
 
@@ -579,7 +567,7 @@ export default function Profile({ role }) {
         {role === "Doctor" && (
           <>
             <div className="w-[80%] flex flex-col gap-10 m-auto ">
-              {user.ratings && (
+              {user?.ratings && (
                 <>
                   {/* <motion.div
                     variants={rightItem}

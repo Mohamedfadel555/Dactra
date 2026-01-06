@@ -12,9 +12,9 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={client}>
       <AuthProvider>
-        <PasswordGate>
-          <App />
-        </PasswordGate>
+        {/* <PasswordGate> */}
+        <App />
+        {/* </PasswordGate> */}
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>

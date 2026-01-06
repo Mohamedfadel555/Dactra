@@ -20,7 +20,6 @@ export default function AdminTable({
   hasMore = false,
 }) {
   const [expandedRow, setExpandedRow] = useState(null);
-  console.log(tableData);
   // Show loading state
   if (isLoading) {
     return (

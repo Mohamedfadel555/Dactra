@@ -3,10 +3,12 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
 import ProtectedAuth from "./Components/Auth/ProtectedAuth";
+
+import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
+
 import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
 import DoctorsListPage from "./Pages/DoctorsListPage";
 
-import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
 import MyProfile from "./Pages/Profile/MyProfile";
 import Profile from "./Pages/Profile/Profile";
 
@@ -105,7 +107,9 @@ export const route = createBrowserRouter([
         path: "patient/profile/:id",
         element: (
           <Suspense fallback={<Loader />}>
-            <Profile role={"Patient"} />
+            <ProtectedRoutes>
+              <Profile role={"Patient"} />
+            </ProtectedRoutes>
           </Suspense>
         ),
       },
