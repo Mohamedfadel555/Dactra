@@ -10,17 +10,21 @@ export default function PatientSection({
   data = [],
   submitfn,
   alldata = [],
+  editFlag = true,
 }) {
   const [selected, setSelected] = useState([]);
   const [initialSelected, setInitialSelected] = useState([]);
   const [flag, setFlag] = useState(false);
 
   useEffect(() => {
-    const initialIds =
-      alldata?.filter((opt) => data.includes(opt.name)).map((opt) => opt.id) ||
-      [];
-    setSelected(initialIds);
-    setInitialSelected(initialIds);
+    if (editFlag) {
+      const initialIds =
+        alldata
+          ?.filter((opt) => data.includes(opt.name))
+          .map((opt) => opt.id) || [];
+      setSelected(initialIds);
+      setInitialSelected(initialIds);
+    }
   }, [alldata, data]);
 
   const isChanged = () => {
@@ -36,10 +40,12 @@ export default function PatientSection({
     >
       <h3 className="text-xl flex justify-between items-center">
         {title}
-        <FaEdit
-          onClick={() => setFlag((prev) => !prev)}
-          className="text-blue-600 cursor-pointer"
-        />
+        {editFlag && (
+          <FaEdit
+            onClick={() => setFlag((prev) => !prev)}
+            className="text-blue-600 cursor-pointer"
+          />
+        )}
       </h3>
 
       <div className="flex flex-col gap-2">
@@ -61,7 +67,7 @@ export default function PatientSection({
         )}
       </div>
 
-      {flag && (
+      {flag && editFlag && (
         <>
           <Select
             isMulti

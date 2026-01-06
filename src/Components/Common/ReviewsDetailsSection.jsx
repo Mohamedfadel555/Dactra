@@ -10,6 +10,7 @@ export default function ReviewsDetailsSection({
   addFlag = true,
   data,
 }) {
+  console.log(data);
   return (
     <div
       className="w-full flex flex-col gap-5 justify-center items-center 
@@ -37,9 +38,10 @@ export default function ReviewsDetailsSection({
       </div>
 
       <div className="flex flex-col md:flex-row w-full justify-between items-center gap-8 md:gap-[100px] mt-4">
-        <div className="md:flex-3 flex flex-col justify-between items-center w-full md:w-[300px] lg:w-[400px]">
+        <div className="md:flex-3  flex flex-col  items-center w-full md:w-[300px] lg:w-[400px]">
           {Object.entries(data).map(([key, value]) => (
-            <Bar id={key} number={value.num} percent={value.percent} />
+            // console.log(key + "===" + value)
+            <Bar id={key} number={key} percent={value} />
           ))}
         </div>
 

@@ -19,7 +19,7 @@ import { useAddQualifications } from "../../hooks/useAddQualifications";
 import SubmitButton from "../Auth/SubmitButton";
 import { useDeleteQualification } from "../../hooks/useDeleteQualification";
 
-export default function DoctorSection({ title, info }) {
+export default function DoctorSection({ title, info, editFlag = true }) {
   const [form, setForm] = useState(false);
   const [loading, setLoading] = useState(null);
   const useQualificationMutation = useAddQualifications();
@@ -88,10 +88,12 @@ export default function DoctorSection({ title, info }) {
       <div className="flex gap-[10px] justify-between items-center ">
         <p className="text-[20px] font-bold  ">{title}</p>
         <motion.div whileTap={{ scale: 0.94 }} whileHover={{ scale: 1.06 }}>
-          <BiSolidEditAlt
-            className="text-blue-600 text-[25px] cursor-pointer"
-            onClick={() => setForm((prev) => !prev)}
-          />
+          {editFlag && (
+            <BiSolidEditAlt
+              className="text-blue-600 text-[25px] cursor-pointer"
+              onClick={() => setForm((prev) => !prev)}
+            />
+          )}
         </motion.div>
       </div>
 
@@ -160,9 +162,13 @@ export default function DoctorSection({ title, info }) {
                 <IoWarningOutline className="text-[40px] animate-bounce  text-blue-600" />
                 <div className="text-sm text-[#445]">
                   {title === "Qualifications"
-                    ? "Adding your qualifiactions helps build greater trust with patients and enhances your profile credibility"
+                    ? editFlag
+                      ? "Adding your qualifiactions helps build greater trust with patients and enhances your profile credibility"
+                      : "This doctor has not shared qualifications details yet"
                     : title === "Experience"
-                    ? "Add your experience to help patients make informed desicions with confidence"
+                    ? editFlag
+                      ? "Add your experience to help patients make informed desicions with confidence"
+                      : "This doctor has not shared experience details yet"
                     : null}
                 </div>
               </motion.div>

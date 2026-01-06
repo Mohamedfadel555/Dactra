@@ -423,9 +423,6 @@ export default function DoctorsListPage() {
           </div>
         </div>
       </main>
-
-      {/* Common footer */}
-      <Footer />
     </div>
   );
 }

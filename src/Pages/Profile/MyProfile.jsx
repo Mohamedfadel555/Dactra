@@ -45,9 +45,6 @@ import { useGetAllChronic } from "../../hooks/useGetAllChronic";
 import { useEditAllergies } from "../../hooks/useEditAllergies";
 import { useEditChronics } from "../../hooks/useEditChronics";
 import { IoWarningOutline } from "react-icons/io5";
-import { useGetDoctorProfile } from "../../hooks/useGetDoctorProfile";
-import { useParams } from "react-router-dom";
-import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 
 const genderData = ["Male", "Female"];
 
@@ -67,15 +64,14 @@ const appointmentData = [
   { date: "2025-01-07", count: 14 },
 ];
 
-export default function Profile({ role }) {
+export default function MyProfile() {
   const [edit, setEdit] = useState(false);
   const [changePass, setchangePass] = useState(false);
   const [deleteAcc, setDeleteAcc] = useState(false);
   const [grouped, setGrouped] = useState([]);
-  const { id } = useParams();
 
-  const { data: user } =
-    role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
+  const { data: user } = useGetUser();
+  const { data: cities } = useCities();
   const { data: quals } = useGetMyQualifications();
   const { data: vitals } = useGetVitals();
   const { data: ratings } = useGetMyRatings();
@@ -84,13 +80,13 @@ export default function Profile({ role }) {
   const { data: allAllergies } = useGetAllAllergies();
   const { data: allchronics } = useGetAllChronic();
   console.log(ratings);
+  const { role } = useAuth();
   console.log(role);
-  console.log(user);
 
   //transforming vitals data
   useEffect(() => {
-    if (!user) return;
-    let newg = user.vitalSigns.reduce((acc, item) => {
+    if (!vitals) return;
+    let newg = vitals.reduce((acc, item) => {
       let id = item.vitalSignTypeId;
       if (!acc[id]) acc[id] = [];
       if (id === 1) {
@@ -119,9 +115,7 @@ export default function Profile({ role }) {
       return acc;
     }, {});
     setGrouped(newg);
-  }, [user]);
-
-  console.log(grouped);
+  }, [vitals]);
 
   const deleteAccMutation = useDeleteMyAcc();
 
@@ -279,6 +273,320 @@ export default function Profile({ role }) {
 
   return (
     <>
+      <AnimatePresence>
+        {deleteAcc && (
+          <>
+            <motion.div
+              className="w-full h-screen fixed top-0 left-0 z-50 bg-[#0000008f] flex justify-center items-center"
+              variants={overlayVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={() => setDeleteAcc(false)}
+            />
+            <motion.div
+              className="w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
+                   -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
+              variants={popupVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IoCloseSharp
+                className="absolute top-3 right-3 text-3xl cursor-pointer"
+                onClick={() => setDeleteAcc(false)}
+              />
+
+              <p className="text-4xl font-bold text-red-500 ">Delete Account</p>
+              <Formik
+                initialValues={{ confirm: "" }}
+                validationSchema={deleteAccValidationSchema}
+                onSubmit={deleteAccountHandle}
+              >
+                {({ isValid, dirty, isSubmitting }) => (
+                  <Form className="flex flex-col gap-[30px]">
+                    <FormInputField
+                      name={"confirm"}
+                      label={'Enter "Delete my account"'}
+                      className="pl-[10px]!"
+                    />
+                    <SubmitButton
+                      text="Delete"
+                      isLoading={isSubmitting}
+                      disabled={!isValid || !dirty}
+                      className="bg-red-500!"
+                    />
+                  </Form>
+                )}
+              </Formik>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {changePass && (
+          <>
+            <motion.div
+              className="w-full h-screen fixed top-0 left-0 z-50 bg-[#0000008f] flex justify-center items-center"
+              variants={overlayVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={() => setchangePass(false)}
+            />
+
+            <motion.div
+              className="w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
+                   -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
+              variants={popupVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IoCloseSharp
+                className="absolute top-3 right-3 text-3xl cursor-pointer"
+                onClick={() => setchangePass(false)}
+              />
+
+              <p className="text-4xl font-bold ">Change Password</p>
+
+              <Formik
+                onSubmit={changePasswordSubmitting}
+                initialValues={changePasswordInitialValues}
+                validationSchema={changePasswordValidationSchema}
+              >
+                {({ isValid, dirty, isSubmitting }) => (
+                  <Form className="flex flex-col gap-[8px] w-full px-[20px]">
+                    <FormInputField
+                      type="password"
+                      name="oldPassword"
+                      label={"Old Password"}
+                      className="pl-[10px]!"
+                    />
+                    <FormInputField
+                      type="password"
+                      name="newPassword"
+                      label={"New Password"}
+                      className="pl-[10px]!"
+                    />
+                    <FormInputField
+                      type="password"
+                      name="confirmNewPassword"
+                      label={"Confirm Password"}
+                      className="pl-[10px]!"
+                    />
+                    <SubmitButton
+                      text="Change"
+                      disabled={!isValid || !dirty}
+                      isLoading={isSubmitting}
+                      loadingText="Changing"
+                      className="mt-[20px]!"
+                    />
+                  </Form>
+                )}
+              </Formik>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {edit && (
+          <>
+            <motion.div
+              className="w-full h-screen fixed top-0 left-0 z-50 bg-[#0000008f] flex justify-center items-center"
+              variants={overlayVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={() => setEdit(false)}
+            />
+
+            <motion.div
+              className=" w-full md:w-[60%] lg:w-2/5 p-[20px] bg-white flex flex-col gap-[30px] max-h-screen overflow-auto fixed top-1/2 left-1/2 
+                   -translate-x-1/2 -translate-y-1/2 z-[60] rounded-xl shadow-lg"
+              variants={popupVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IoCloseSharp
+                className="absolute top-3 right-3 text-3xl cursor-pointer"
+                onClick={() => setEdit(false)}
+              />
+
+              <div className="flex justify-between items-center">
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 260 }}
+                >
+                  <AvatarIcon size={90} />
+                </motion.div>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="py-[5px] font-bold cursor-pointer border-blue-600 border-2 rounded-[10px] text-blue-600 px-[10px] flex justify-center items-center"
+                >
+                  Upload image
+                </motion.button>
+              </div>
+
+              <Formik
+                onSubmit={editSubmitting}
+                validationSchema={
+                  role === "Patient"
+                    ? editPatientProfileValidationSchema
+                    : editDoctorProfileValidationSchema
+                }
+                initialValues={
+                  role === "Patient"
+                    ? {
+                        firstName: user?.firstName,
+                        lastName: user?.lastName,
+                        phoneNamber: user?.phoneNumber,
+                        addressId: user?.addressId ? `${user.addressId}` : "",
+                        height: user?.height,
+                        weight: user?.weight,
+                        smokingStatus: `${user?.smokingStatus}`,
+                        maritalStatus: `${user?.maritalStatus}`,
+                        bloodType: `${user?.bloodType}`,
+                      }
+                    : {
+                        firstName: user?.firstName,
+                        lastName: user?.lastName,
+                        phoneNumber: user?.phoneNumber,
+                        address: user?.address,
+                        about: user?.about,
+                      }
+                }
+                enableReinitialize={true}
+              >
+                {({ isValid, dirty, isSubmitting }) => (
+                  <Form className="flex flex-col gap-[8px] w-full px-[20px]">
+                    <div className="flex gap-1.5 items-center w-full">
+                      <FormInputField
+                        name={"firstName"}
+                        label={"FirstName*"}
+                        className=" !pl-2"
+                      />
+                      <FormInputField
+                        name={"lastName"}
+                        label={"LastName*"}
+                        className=" !pl-2"
+                      />
+                    </div>
+                    {role === "Doctor" && (
+                      <>
+                        <FormInputField
+                          name={"address"}
+                          label={"Address*"}
+                          className=" !pl-2"
+                        />
+                        <FormInputField
+                          name={"phoneNumber"}
+                          label={"Phone Number*"}
+                          className="pl-[10px]!"
+                        />
+
+                        <FormInputField
+                          name={"about"}
+                          label={"About*"}
+                          type="text area"
+                          className="pl-[10px]!"
+                        />
+                      </>
+                    )}
+
+                    {role === "Patient" && (
+                      <>
+                        <FormInputField
+                          name={"phoneNamber"}
+                          label={"Phone Number"}
+                          className="pl-[10px]!"
+                        />
+                        <FormInputField
+                          name={"addressId"}
+                          label={"Address"}
+                          placeholder={"Select City"}
+                          className="pl-[10px]!"
+                          options={cities.map(({ id, name }) => ({
+                            value: id,
+                            label: name,
+                          }))}
+                        />
+
+                        <div className="flex gap-1.5 items-center w-full">
+                          <FormInputField
+                            name={"height"}
+                            label={"Height"}
+                            type="number"
+                            className="pl-[10px]!"
+                          />
+                          <FormInputField
+                            name={"weight"}
+                            label={"Weight"}
+                            type="number"
+                            className="pl-[10px]!"
+                          />
+                        </div>
+
+                        <div className="flex gap-1.5 items-center w-full">
+                          <FormInputField
+                            name={"smokingStatus"}
+                            label={"Smoking"}
+                            options={[
+                              { value: 0, label: "Non-smoker" },
+                              { value: 1, label: "Smoker" },
+                              { value: 2, label: "Former" },
+                            ]}
+                          />
+
+                          <FormInputField
+                            name={"maritalStatus"}
+                            label={"Martial status"}
+                            options={[
+                              { value: "0", label: "Single" },
+                              { value: "1", label: "Married" },
+                              { value: "2", label: "Divorced" },
+                              { value: "3", label: "Widowed" },
+                            ]}
+                          />
+                        </div>
+
+                        <FormInputField
+                          name={"bloodType"}
+                          label={"Blood Type"}
+                          options={[
+                            { value: 0, label: "A+" },
+                            { value: 1, label: "A-" },
+                            { value: 2, label: "B+" },
+                            { value: 3, label: "B-" },
+                            { value: 4, label: "AB+" },
+                            { value: 5, label: "AB-" },
+                            { value: 6, label: "O+" },
+                            { value: 7, label: "O-" },
+                          ]}
+                        />
+                      </>
+                    )}
+
+                    <SubmitButton
+                      text="Edit"
+                      disabled={!isValid || !dirty}
+                      isLoading={isSubmitting}
+                      loadingText="Editing"
+                      className="mt-[20px]!"
+                    />
+                  </Form>
+                )}
+              </Formik>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       <div className="flex flex-col gap-[70px] justify-center pb-[50px]">
         <div
           className="pt-[100px] w-full overflow-hidden pb-[10px] px-4 md:px-[30px] lg:px-[50px] min-h-screen font-english 
@@ -296,6 +604,22 @@ export default function Profile({ role }) {
               className=" relative flex flex-col justify-center items-center 
           gap-[15px] p-[16px] rounded-[10px] bg-[#F5F6F7] shadow-md"
             >
+              <motion.div
+                // variants={sidebarItem}
+                className="absolute size-[30px] rounded-full bg-white top-[10px] right-[10px] flex justify-center items-center"
+              >
+                <motion.button
+                  whileHover={{ rotate: 10, scale: 1.08 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Delete Account"
+                >
+                  <IoTrashOutline
+                    onClick={() => setDeleteAcc((prev) => !prev)}
+                    className="size-[20px] text-red-500 cursor-pointer "
+                  />
+                </motion.button>
+              </motion.div>
+
               <motion.div
                 // variants={sidebarItem}
                 className="w-[150px] h-[150px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] 
@@ -345,6 +669,34 @@ export default function Profile({ role }) {
                   {user?.address ? user?.address : "Not Specified"}
                 </motion.div>
               </motion.div>
+
+              <hr className="w-full text-[rgb(193,193,193)]" />
+
+              <motion.div
+                // variants={sidebarItem}
+                className=" w-full gap-[15px]  flex flex-col md:flex-row lg:flex-col"
+              >
+                <motion.button
+                  // variants={sidebarItem}
+                  onClick={() => setEdit(true)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full h-[40px] cursor-pointer text-white font-bold text-[18px] bg-blue-600 
+            rounded-[10px] flex justify-center items-center gap-[10px]"
+                >
+                  <FaRegEdit /> Edit
+                </motion.button>
+                <motion.button
+                  // variants={sidebarItem}
+                  onClick={() => setchangePass(true)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full border-2 cursor-pointer border-blue-600 h-[40px] text-blue-600 font-bold text-[18px] bg-white
+            rounded-[10px] flex justify-center items-center gap-[10px]"
+                >
+                  <MdOutlinePassword /> Change Password
+                </motion.button>
+              </motion.div>
             </motion.div>
             {role === "Patient" && (
               <motion.div
@@ -354,7 +706,7 @@ export default function Profile({ role }) {
               >
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl ">Medical Reports Archieve </h3>
-                  {/* <FaFileCirclePlus className="size-[20px] text-blue-600 cursor-pointer " /> */}
+                  <FaFileCirclePlus className="size-[20px] text-blue-600 cursor-pointer " />
                 </div>
                 <div className="flex flex-col gap-[15px]">
                   {[
@@ -371,7 +723,7 @@ export default function Profile({ role }) {
                     ].map((report, ind) => (
                       <div className="flex justify-between items-center">
                         <div id={ind} className="flex gap-2 items-center">
-                          {/* <FaFileMedicalAlt className="size-[25px] text-blue-600" />{" "} */}
+                          <FaFileMedicalAlt className="size-[25px] text-blue-600" />{" "}
                           {report}
                         </div>
                         <IoTrashOutline className="size-[20px] text-red-600 cursor-pointer " />
@@ -462,13 +814,12 @@ export default function Profile({ role }) {
                 <motion.div variants={rightItem} className="w-full">
                   <DoctorSection
                     title={"Qualifications"}
-                    info={user && user.qualifications}
-                    editFlag={false}
+                    info={quals && quals}
                   />
                 </motion.div>
 
                 <motion.div variants={rightItem} className="w-full">
-                  <DoctorSection title={"Experience"} editFlag={false} />
+                  <DoctorSection title={"Experience"} />
                 </motion.div>
 
                 <motion.div variants={rightItem} className="w-full">
@@ -484,15 +835,17 @@ export default function Profile({ role }) {
                     <PatientSection
                       Icon={PiWarningCircle}
                       title="Allergies"
-                      data={user && user.allergies}
-                      editFlag={false}
+                      data={allergies}
+                      alldata={allAllergies}
+                      submitfn={editAllergies}
                     />
 
                     <PatientSection
                       Icon={GiMedicines}
                       title={"Chronic Diseases"}
-                      data={user && user.chronicDiseases}
-                      editFlag={false}
+                      data={chronics}
+                      alldata={allchronics}
+                      submitfn={editchronics}
                     />
                   </div>
                 </motion.div>
@@ -506,7 +859,7 @@ export default function Profile({ role }) {
                     title="Blood Pressure"
                     data={grouped[1] ? grouped[1] : []}
                     domain={[40, 200]}
-                    editFlag={false}
+                    onAdd={addVitals}
                     fields={[
                       {
                         key: "systolic",
@@ -545,7 +898,7 @@ export default function Profile({ role }) {
                         color: "#ff7a45",
                       },
                     ]}
-                    editFlag={false}
+                    onAdd={addVitals}
                   />
                 </motion.div>
 
@@ -559,7 +912,7 @@ export default function Profile({ role }) {
                     title="Glucose"
                     data={grouped[3] ? grouped[3] : []}
                     domain={[40, 180]}
-                    editFlag={false}
+                    onAdd={addVitals}
                     fields={[
                       {
                         key: "glucose",
@@ -579,33 +932,9 @@ export default function Profile({ role }) {
         {role === "Doctor" && (
           <>
             <div className="w-[80%] flex flex-col gap-10 m-auto ">
-              {user.ratings && (
+              {ratings && (
                 <>
-                  {/* <motion.div
-                    variants={rightItem}
-                    initial={{ opacity: 0, x: 80 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className=""
-                  >
-                    {/* <ReviewsDetailsSection
-                      NumOfReviews={ratings && ratings.totalRatings}
-                      avgRating={ratings && ratings.averageRating}
-                      addFlag={false}
-                      data={
-                        ratings
-                          ? ratings.scoreCounts
-                          : [
-                              { num: 1, percent: 0 },
-                              { num: 2, percent: 0 },
-                              { num: 3, percent: 0 },
-                              { num: 4, percent: 0 },
-                              { num: 5, percent: 0 },
-                            ]
-                      }
-                    />
-                  </motion.div> */}
-
-                  {user.ratings?.length > 0 && (
+                  {ratings?.ratings?.length > 0 && (
                     <motion.div
                       variants={rightItem}
                       initial={{ opacity: 0, x: 80 }}

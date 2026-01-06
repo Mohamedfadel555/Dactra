@@ -17,6 +17,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [popup, setPopup] = useState(false);
   const { data: user } = useGetUser();
+  const { role } = useAuth();
 
   const popupRef = useRef();
   const avatarRef = useRef();
@@ -65,27 +66,42 @@ export default function Navbar() {
     return () => (document.body.style.overflow = "auto");
   }, [sidenav]);
 
-  const NavLinks = [
-    { to: "/", label: "Home" },
-    { to: "/fav", label: "Favourite" },
-    {
-      label: "Services",
-      Links: [
-        { to: "/service1", label: "- Service1" },
-        { to: "/service2", label: "- Service2" },
-        { to: "/service3", label: "- Service3" },
-      ],
-    },
-    { to: "/doctors", label: "Doctors" },
-    {
-      label: "Community",
-      Links: [
-        { to: "/posts", label: "- Posts" },
-        { to: "/questions", label: "- Questions" },
-      ],
-    },
-    { to: "/aboutus", label: "About US" },
-  ];
+  console.log(role);
+  const NavLinks =
+    role === "Patient" || role === null
+      ? [
+          { to: "/", label: "Home" },
+          { to: "/fav", label: "Favourite" },
+          {
+            label: "Services",
+            Links: [
+              { to: "/service1", label: "- Service1" },
+              { to: "/service2", label: "- Service2" },
+              { to: "/service3", label: "- Service3" },
+            ],
+          },
+          { to: "/doctors", label: "Doctors" },
+          {
+            label: "Community",
+            Links: [
+              { to: "/posts", label: "- Posts" },
+              { to: "/questions", label: "- Questions" },
+            ],
+          },
+          { to: "/aboutus", label: "About US" },
+        ]
+      : [
+          { to: "/", label: "Home" },
+          { to: "/fav", label: "Favourite" },
+          {
+            label: "Community",
+            Links: [
+              { to: "/posts", label: "- Posts" },
+              { to: "/questions", label: "- Questions" },
+            ],
+          },
+          { to: "/aboutus", label: "About US" },
+        ];
 
   async function handleLogout() {
     logoutMutation.mutate();

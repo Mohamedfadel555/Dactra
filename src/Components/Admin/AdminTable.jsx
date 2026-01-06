@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { MdVisibility, MdDelete, MdBlock, MdCheckCircle, MdCancel } from "react-icons/md";
+import {
+  MdVisibility,
+  MdDelete,
+  MdBlock,
+  MdCheckCircle,
+  MdCancel,
+} from "react-icons/md";
 
 export default function AdminTable({
   columns,
@@ -14,14 +20,16 @@ export default function AdminTable({
   hasMore = false,
 }) {
   const [expandedRow, setExpandedRow] = useState(null);
-
+  console.log(tableData);
   // Show loading state
   if (isLoading) {
     return (
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 sm:p-8 animate-pulse">
         <div className="flex items-center justify-center gap-2">
           <div className="w-4 h-4 border-2 border-[#316BE8] border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-center text-sm sm:text-base text-gray-500">Loading...</p>
+          <p className="text-center text-sm sm:text-base text-gray-500">
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -64,12 +72,15 @@ export default function AdminTable({
             ) : (
               // Data rows
               tableData.map((row, rowIndex) => (
-                <tr 
-                  key={rowIndex} 
+                <tr
+                  key={rowIndex}
                   className="hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
                 >
                   {columns.map((col, colIndex) => (
-                    <td key={colIndex} className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <td
+                      key={colIndex}
+                      className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap"
+                    >
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
@@ -105,11 +116,19 @@ export default function AdminTable({
                         <button
                           onClick={() => onBlock(row)}
                           className={`p-1 ${
-                            row.isDeleted || row.statusType === "Blocked" || row.isBlocked
+                            row.isDeleted ||
+                            row.statusType === "Blocked" ||
+                            row.isBlocked
                               ? "text-green-600 hover:text-green-800"
                               : "text-orange-600 hover:text-orange-800"
                           }`}
-                          title={row.isDeleted || row.statusType === "Blocked" || row.isBlocked ? "Unblock" : "Block"}
+                          title={
+                            row.isDeleted ||
+                            row.statusType === "Blocked" ||
+                            row.isBlocked
+                              ? "Unblock"
+                              : "Block"
+                          }
                         >
                           <MdBlock className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
@@ -144,4 +163,3 @@ export default function AdminTable({
     </div>
   );
 }
-

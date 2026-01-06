@@ -81,6 +81,15 @@ export const useUserAPI = () => {
     return res;
   };
 
+  const getDoctorProfile = async (Id) => {
+    const res = await axiosInstance.get(`Doctor/${Id}`);
+    return res.data;
+  };
+  const getPatientProfile = async (Id) => {
+    const res = await axiosInstance.get(`Patient/${Id}`);
+    return res.data;
+  };
+
   return {
     getMePatient,
     getMeDoctor,
@@ -98,5 +107,7 @@ export const useUserAPI = () => {
     getMyChronic,
     editAllergies,
     editchronics,
+    getDoctorProfile,
+    getPatientProfile,
   };
 };

@@ -595,13 +595,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 className="w-[80%] m-auto flex flex-col justify-center items-center gap-10"
               >
                 <ReviewsDetailsSection
-                  data={[
-                    { num: 1, percent: 30 },
-                    { num: 2, percent: 40 },
-                    { num: 3, percent: 10 },
-                    { num: 4, percent: 60 },
-                    { num: 5, percent: 70 },
-                  ]}
+                  data={{ 1: 10, 2: 30, 3: 90, 4: 60, 5: 70 }}
                   NumOfReviews={500}
                   avgRating={"5.0"}
                 />

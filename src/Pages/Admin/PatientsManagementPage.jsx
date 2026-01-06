@@ -16,7 +16,11 @@ export default function PatientsManagementPage() {
   const pageSize = 10;
 
   // Fetch all patient info from API with pagination
-  const { data: patientsData, isLoading, refetch } = useQuery({
+  const {
+    data: patientsData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-patients-info", page, pageSize],
     queryFn: async () => {
       const res = await adminAPI.getAllPatientInfo(page, pageSize);
@@ -28,15 +32,21 @@ export default function PatientsManagementPage() {
 
   // Backend pagination - accumulate all loaded patients for "show more"
   const [allLoadedPatients, setAllLoadedPatients] = useState([]);
-  
+
   // When new data arrives, add it to the accumulated list
   useEffect(() => {
-    if (patientsData && Array.isArray(patientsData) && patientsData.length > 0) {
+    if (
+      patientsData &&
+      Array.isArray(patientsData) &&
+      patientsData.length > 0
+    ) {
       setAllLoadedPatients((prev) => {
         // Check if this page is already loaded
         const existingPageStart = (page - 1) * pageSize;
-        const hasPage = prev.length > existingPageStart && prev[existingPageStart] !== undefined;
-        
+        const hasPage =
+          prev.length > existingPageStart &&
+          prev[existingPageStart] !== undefined;
+
         if (!hasPage) {
           // Add new patients to the list
           const newList = [...prev];
@@ -99,7 +109,10 @@ export default function PatientsManagementPage() {
         // Status يتغير حسب الـ id - الباك يتحقق من الـ id ويحدد الحالة
         // إذا كان blocked يكون Blocked، وإلا Active
         // isDeleted يعني Blocked في الباك
-        const isBlocked = patient.isDeleted || patient.statusType === "Blocked" || patient.isBlocked;
+        const isBlocked =
+          patient.isDeleted ||
+          patient.statusType === "Blocked" ||
+          patient.isBlocked;
         const status = isBlocked ? "Blocked" : "Active";
         const statusColors = {
           Active: "bg-green-100 text-green-800",
@@ -130,12 +143,16 @@ export default function PatientsManagementPage() {
 
   const handleBlock = async (patient) => {
     // تحديد الحالة الحالية: isDeleted أو statusType === "Blocked" يعني Blocked
-    const isBlocked = patient.isDeleted || patient.statusType === "Blocked" || patient.isBlocked;
+    const isBlocked =
+      patient.isDeleted ||
+      patient.statusType === "Blocked" ||
+      patient.isBlocked;
     const action = isBlocked ? "unblock" : "block";
     const actionText = isBlocked ? "Unblock " : "Block";
-    
-    if (!window.confirm(`Are you sure you want to${actionText}  this user?`)) return;
-  
+
+    if (!window.confirm(`Are you sure you want to${actionText}  this user?`))
+      return;
+
     try {
       await adminAPI.deleteAppUser(patient.id);
       // Toast message يتغير حسب الحالة
@@ -150,6 +167,7 @@ export default function PatientsManagementPage() {
       refetch(); // Refresh the list
     } catch (error) {
       // Toast error يتغير حسب الحالة
+      console.log(error);
       if (isBlocked) {
         toast.error("Failed to unblock user");
       } else {

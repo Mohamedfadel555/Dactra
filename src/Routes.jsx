@@ -6,8 +6,9 @@ import ProtectedAuth from "./Components/Auth/ProtectedAuth";
 import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
 import DoctorsListPage from "./Pages/DoctorsListPage";
 
-import Profile from "./Pages/Profile/Profile";
 import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
+import MyProfile from "./Pages/Profile/MyProfile";
+import Profile from "./Pages/Profile/Profile";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -87,7 +88,7 @@ export const route = createBrowserRouter([
         element: (
           <Suspense fallback={<Loader />}>
             <ProtectedRoutes>
-              <Profile />
+              <MyProfile />
             </ProtectedRoutes>
           </Suspense>
         ),
@@ -96,7 +97,7 @@ export const route = createBrowserRouter([
         path: "doctor/profile/:id",
         element: (
           <Suspense fallback={<Loader />}>
-            <Profile />
+            <Profile role={"Doctor"} />
           </Suspense>
         ),
       },
@@ -104,26 +105,26 @@ export const route = createBrowserRouter([
         path: "patient/profile/:id",
         element: (
           <Suspense fallback={<Loader />}>
-            <Profile />
+            <Profile role={"Patient"} />
           </Suspense>
         ),
       },
-      {
-        path: "lab/profile/:id",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <Profile />
-          </Suspense>
-        ),
-      },
-      {
-        path: "scan/profile/:id",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <Profile />
-          </Suspense>
-        ),
-      },
+      // {
+      //   path: "lab/profile/:id",
+      //   element: (
+      //     <Suspense fallback={<Loader />}>
+      //       <Profile />
+      //     </Suspense>
+      //   ),
+      // },
+      // {
+      //   path: "scan/profile/:id",
+      //   element: (
+      //     <Suspense fallback={<Loader />}>
+      //       <Profile />
+      //     </Suspense>
+      //   ),
+      // },
     ],
   },
   {
