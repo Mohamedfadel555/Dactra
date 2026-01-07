@@ -97,7 +97,9 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside
         className={`fixed lg:static w-[260px] bg-[#05162C] flex flex-col h-full z-50 transition-all duration-300 ease-in-out ${
-          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+          sidebarOpen
+            ? "translate-x-0 shadow-2xl"
+            : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Logo */}
@@ -133,7 +135,9 @@ export default function AdminLayout() {
                 }
               >
                 <IconComponent className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm font-medium truncate">{item.label}</span>
+                <span className="text-sm font-medium truncate">
+                  {item.label}
+                </span>
               </NavLink>
             );
           })}
@@ -177,7 +181,9 @@ export default function AdminLayout() {
               <p className="text-xs sm:text-sm font-semibold text-gray-800">
                 {getAdminName()}
               </p>
-              <p className="text-[10px] sm:text-xs text-gray-500">Administrator</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">
+                Administrator
+              </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#316BE8] flex items-center justify-center text-white font-semibold text-sm sm:text-base">
               {getAdminName()[0].toUpperCase()}
@@ -193,4 +199,3 @@ export default function AdminLayout() {
     </div>
   );
 }
-

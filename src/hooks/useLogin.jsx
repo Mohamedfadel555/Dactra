@@ -22,14 +22,11 @@ export const useLogin = () => {
     onSuccess: async (data) => {
       const tokenPayload = JSON.parse(atob(data.data.token.split(".")[1]));
       const role = tokenPayload.role;
-      console.log("Login role:", role); // Debug: Check actual role value
       await login(data.data.token, role);
       toast.success("Logged in successfully!", {
         position: "top-center",
         closeOnClick: true,
       });
-      // Redirect admin to admin dashboard
-      // Check role case-insensitively
       const normalizedRole = role?.toLowerCase();
       if (normalizedRole === "admin" || normalizedRole === "administrator") {
         navigate("/admin/dashboard", { replace: true });

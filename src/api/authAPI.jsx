@@ -82,7 +82,7 @@ export const useRefreshApi = () => {
   const axiosInstance = useAxios();
 
   const refreshApi = async () => {
-    return axiosInstance.post("account/refresh");
+    return await axiosInstance.post("account/refresh");
   };
 
   return { refreshApi };
