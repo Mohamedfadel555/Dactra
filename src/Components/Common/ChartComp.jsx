@@ -24,19 +24,16 @@ export default function ChartComp({
   editFlag = true,
 }) {
   const [showForm, setShowForm] = useState(false);
-
-  if (editFlag) {
-    const validationsch = yup.object(
-      fields.reduce((acc, field) => {
-        acc[field.key] = yup
-          .number()
-          .min(field.min, "Too low")
-          .max(field.max, "Too high")
-          .required("required");
-        return acc;
-      }, {})
-    );
-  }
+  const validationsch = yup.object(
+    fields.reduce((acc, field) => {
+      acc[field.key] = yup
+        .number()
+        .min(field.min, "Too low")
+        .max(field.max, "Too high")
+        .required("required");
+      return acc;
+    }, {})
+  );
 
   return (
     <div className="duration-700 w-full flex flex-col gap-4 bg-white shadow-md rounded-xl p-5">
