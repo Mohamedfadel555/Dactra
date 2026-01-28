@@ -48,6 +48,7 @@ import { IoWarningOutline } from "react-icons/io5";
 import { useGetDoctorProfile } from "../../hooks/useGetDoctorProfile";
 import { useParams } from "react-router-dom";
 import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
+import Schedule from "../../Components/Profile/Schedule";
 
 const genderData = ["Male", "Female"];
 
@@ -163,7 +164,7 @@ export default function Profile({ role }) {
 
     if (role === "Patient") {
       ["addressId", "bloodType", "maritalStatus", "smokingStatus"].forEach(
-        (key) => (values[key] = Number(values[key]))
+        (key) => (values[key] = Number(values[key])),
       );
     }
     try {
@@ -457,6 +458,66 @@ export default function Profile({ role }) {
 
                 <motion.div variants={rightItem} className="w-full">
                   <DoctorSection title={"Experience"} editFlag={false} />
+                </motion.div>
+                <motion.div
+                  variants={rightItem}
+                  className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
+                >
+                  <Schedule
+                    title={"Appointment booking"}
+                    subtitle={"Select time slot"}
+                    timeSlots={{
+                      "28/1/2026": [
+                        "4:00 pm",
+                        "5:00 pm",
+                        "7:00 pm",
+                        "10:00 pm",
+                        "11:00 pm",
+                        "12:00 pm",
+                      ],
+                      "29/1/2026": [
+                        "2:00 pm",
+                        "3:00 pm",
+                        "6:00 pm",
+                        "8:00 pm",
+                        "9:00 pm",
+                      ],
+                      "21/1/2026": [
+                        "3:00 pm",
+                        "4:00 pm",
+                        "6:00 pm",
+                        "8:00 pm",
+                        "9:00 pm",
+                      ],
+                      "22/1/2026": [
+                        "1:00 pm",
+                        "2:00 pm",
+                        "4:00 pm",
+                        "6:00 pm",
+                        "10:00 pm",
+                      ],
+                      "23/1/2026": [
+                        "5:00 pm",
+                        "7:00 pm",
+                        "9:00 pm",
+                        "11:00 pm",
+                      ],
+                      "24/1/2026": [
+                        "2:00 pm",
+                        "4:00 pm",
+                        "6:00 pm",
+                        "8:00 pm",
+                        "9:00 pm",
+                      ],
+                      "25/1/2026": [
+                        "3:00 pm",
+                        "5:00 pm",
+                        "7:00 pm",
+                        "9:00 pm",
+                        "10:00 pm",
+                      ],
+                    }}
+                  />
                 </motion.div>
 
                 <motion.div variants={rightItem} className="w-full">

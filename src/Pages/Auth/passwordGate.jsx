@@ -2,10 +2,10 @@ import React, { useState } from "react";
 
 export default function PasswordGate({ children }) {
   localStorage.removeItem("auth");
-  const correctPassword = "12345678dactra"; // ← غيّر الباسورد اللي انت عايزه
+  const correctPassword = "123^Dactra&123"; // ← غيّر الباسورد اللي انت عايزه
   const [input, setInput] = useState("");
   const [authorized, setAuthorized] = useState(
-    localStorage.getItem("auth") === "true"
+    localStorage.getItem("auth") === "true",
   );
 
   const handleSubmit = (e) => {

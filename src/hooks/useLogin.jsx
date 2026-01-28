@@ -9,18 +9,15 @@ import { useNavigate } from "react-router-dom";
 import { useSendOTP } from "./useSendOTP";
 import { useAuth } from "../Context/AuthContext";
 
-let message = "";
-
-//make the hook of login
 export const useLogin = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const sendOTPMutation = useSendOTP();
   return useMutation({
-    //function of aoi
     mutationFn: LoginAPI,
     onSuccess: async (data) => {
       const tokenPayload = JSON.parse(atob(data.data.token.split(".")[1]));
+      console.log(data);
       const role = tokenPayload.role;
       await login(data.data.token, role);
       toast.success("Logged in successfully!", {
