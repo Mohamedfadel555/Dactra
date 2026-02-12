@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAdminAPI } from "../../api/adminAPI";
-import { MdLocalHospital, MdPeople, MdScience, MdScanner } from "react-icons/md";
+import {
+  MdLocalHospital,
+  MdPeople,
+  MdScience,
+  MdMedicalServices,
+} from "react-icons/md";
 import {
   BarChart,
   Bar,
@@ -9,6 +14,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+ 
+
 } from "recharts";
 
 export default function DashboardPage() {
@@ -109,7 +116,8 @@ export default function DashboardPage() {
     {
       title: "Total Scans",
       value: stats?.scanCount || 0,
-      icon: MdScanner,
+      icon: MdMedicalServices
+      ,
       color: "bg-purple-100 text-purple-600",
     },
     {
@@ -121,13 +129,23 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-5 sm:space-y-7">
       {/* Page Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-sm sm:text-base text-gray-500 mt-1">
-          Welcome Back To Your Management System
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 tracking-tight">
+            Admin Dashboard
+          </h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">
+            Overview of providers, patients, and weekly activity.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs sm:text-sm">
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 text-[#316BE8] font-medium border border-blue-100">
+            <span className="w-2 h-2 rounded-full bg-[#316BE8] animate-pulse" />
+            Live data (last 7 days)
+          </span>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -137,15 +155,19 @@ export default function DashboardPage() {
           return (
             <div
               key={index}
-              className="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex items-center justify-between transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-default"
+              className="group bg-white rounded-2xl shadow-sm p-4 sm:p-6 flex items-center justify-between transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-default border border-transparent hover:border-blue-100"
             >
               <div>
-                <p className="text-xs sm:text-sm text-gray-500 mb-1">{card.title}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                  {card.title}
+                </p>
                 <p className="text-xl sm:text-2xl font-bold text-gray-800">
                   {statsLoading ? "..." : card.value}
                 </p>
               </div>
-              <div className={`${card.color} p-2 sm:p-3 rounded-lg`}>
+              <div
+                className={`${card.color} p-2 sm:p-3 rounded-2xl transform transition-transform duration-300 group-hover:scale-110`}
+              >
                 <IconComponent className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
             </div>
@@ -155,7 +177,7 @@ export default function DashboardPage() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-transparent hover:border-blue-100">
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
             Appointments per Day
           </h2>
@@ -181,7 +203,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Circular progress chart card */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-transparent hover:border-blue-100">
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
             Weekly Activity Overview
           </h2>

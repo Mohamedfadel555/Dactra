@@ -51,6 +51,15 @@ const ScansManagementPage = lazy(() =>
 const ComplaintsReportsPage = lazy(() =>
   import("./Pages/Admin/ComplaintsReportsPage")
 );
+const AllergiesManagementPage = lazy(() =>
+  import("./Pages/Admin/AllergiesManagementPage")
+);
+const ChronicDiseasesManagementPage = lazy(() =>
+  import("./Pages/Admin/ChronicDiseasesManagementPage")
+);
+const MajorsManagementPage = lazy(() =>
+  import("./Pages/Admin/MajorsManagementPage")
+);
 
 export const route = createBrowserRouter([
   {
@@ -228,6 +237,14 @@ export const route = createBrowserRouter([
         ),
       },
       {
+        path: "doctors/new",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <DoctorsManagementPage />
+          </Suspense>
+        ),
+      },
+      {
         path: "patients",
         element: (
           <Suspense fallback={<Loader />}>
@@ -244,7 +261,23 @@ export const route = createBrowserRouter([
         ),
       },
       {
+        path: "labs/new",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <LabsManagementPage />
+          </Suspense>
+        ),
+      },
+      {
         path: "scans",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ScansManagementPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "scans/new",
         element: (
           <Suspense fallback={<Loader />}>
             <ScansManagementPage />
@@ -256,6 +289,30 @@ export const route = createBrowserRouter([
         element: (
           <Suspense fallback={<Loader />}>
             <ComplaintsReportsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "allergies",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <AllergiesManagementPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "chronic-diseases",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ChronicDiseasesManagementPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "majors",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <MajorsManagementPage />
           </Suspense>
         ),
       },

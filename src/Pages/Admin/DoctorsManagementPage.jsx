@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
 import { MdSearch } from "react-icons/md";
@@ -9,54 +9,63 @@ import { useAdminAPI } from "../../api/adminAPI";
 
 export default function DoctorsManagementPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isNewRoute = location.pathname.endsWith("/new");
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 10; // Adjust based on table height
+  const [statusFilter, setStatusFilter] = useState(
+    isNewRoute ? "0" : ""
+  ); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
+  const pageSize = 100; // نجيب لحد 100 في الصفحة الواحدة ونلغى الـ pagination المعقد
 
-  // Fetch all doctors info with pagination
+  // Fetch all doctors info with search + status filter
   const { data: doctorsData, isLoading, refetch } = useQuery({
-    queryKey: ["admin-doctors", page, pageSize],
+    queryKey: ["admin-doctors", pageSize, searchQuery, statusFilter],
     queryFn: async () => {
-      const res = await adminAPI.getAllDoctorsInfo(page, pageSize);
-      return res.data; // Array of doctors (paginated)
+      const res = await adminAPI.getAllDoctorsInfo(
+        1,
+        pageSize,
+        searchQuery || null,
+        statusFilter === "" ? null : Number(statusFilter)
+      );
+      const raw = res.data;
+
+      // Handle different possible shapes from backend (array, {items}, {$values}, etc.)
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.items)) return raw.items;
+      if (Array.isArray(raw?.data)) return raw.data;
+      if (Array.isArray(raw?.$values)) return raw.$values;
+
+      return [];
     },
   });
 
-  // Accumulate pages for "Show more"
-  const [allLoadedDoctors, setAllLoadedDoctors] = useState([]);
-
+  // When route changes between /doctors and /doctors/new, sync default filter
   useEffect(() => {
-    if (doctorsData && Array.isArray(doctorsData) && doctorsData.length > 0) {
-      setAllLoadedDoctors((prev) => {
-        const existingPageStart = (page - 1) * pageSize;
-        const hasPage = prev.length > existingPageStart && prev[existingPageStart] !== undefined;
+    setStatusFilter(isNewRoute ? "0" : "");
+  }, [isNewRoute]);
 
-        if (!hasPage) {
-          const newList = [...prev];
-          while (newList.length < existingPageStart) {
-            newList.push(undefined);
-          }
-          doctorsData.forEach((doctor) => {
-            newList.push(doctor);
-          });
-          return newList;
-        }
-        return prev;
-      });
-    }
-  }, [doctorsData, page, pageSize]);
+  // Reset pagination when search or status filter changes
+  useEffect(() => {
+    // مجرد تغيير الـ key بتاع useQuery بيعمل refetch تلقائى
+  }, [searchQuery, statusFilter]);
 
-  const allDoctors = allLoadedDoctors.filter(Boolean);
+  // Normalise data + نحدد isApproved boolean عشان الـ table يعرف يغيّر الزرار Approve/Disapprove
+  const allDoctors = (doctorsData || []).map((doctor) => {
+    const approvalStatus =
+      typeof doctor.approvalStatus === "number" ? doctor.approvalStatus : null;
 
-  const filteredDoctors = (allDoctors || []).filter((doctor) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      doctor.name?.toLowerCase().includes(query) ||
-      doctor.email?.toLowerCase().includes(query)
-    );
+    const isApprovedBool =
+      approvalStatus === 1 ||
+      doctor.isApproved === true ||
+      doctor.status === "Approved" ||
+      doctor.statusType === "Approved";
+
+    return {
+      ...doctor,
+      isApproved: isApprovedBool,
+    };
   });
 
   const columns = [
@@ -87,14 +96,43 @@ export default function DoctorsManagementPage() {
       ),
     },
     {
+      label: "License No.",
+      key: "licenceNo",
+      render: (doctor) => (
+        <span className="text-sm text-gray-600">
+          {doctor.licenceNo || doctor.licenseNumber || "N/A"}
+        </span>
+      ),
+    },
+    {
       label: "Status",
       key: "status",
       render: (doctor) => {
-        const status = doctor.isApproved ? "Approved" : "Pending";
+        const approvalStatus =
+          typeof doctor.approvalStatus === "number" ? doctor.approvalStatus : null;
+
+        let status;
+        if (
+          approvalStatus === 1 ||
+          doctor.isApproved === true ||
+          doctor.status === "Approved" ||
+          doctor.statusType === "Approved"
+        ) {
+          status = "Approved";
+        } else if (
+          approvalStatus === 2 ||
+          doctor.status === "Rejected" ||
+          doctor.statusType === "Rejected"
+        ) {
+          status = "Rejected";
+        } else {
+          status = "Pending";
+        }
+
         const statusColors = {
           Pending: "bg-yellow-100 text-yellow-800",
           Approved: "bg-green-100 text-green-800",
-          Blocked: "bg-red-100 text-red-800",
+          Rejected: "bg-red-100 text-red-800",
         };
         return (
           <span
@@ -140,8 +178,7 @@ export default function DoctorsManagementPage() {
         toast.success("Doctor approved successfully!");
       }
 
-      setPage(1);
-      setAllLoadedDoctors([]);
+      // Refetch واحد بس بعد ما الريكوست يخلص
       refetch();
     } catch (error) {
       if (isCurrentlyApproved) {
@@ -178,8 +215,6 @@ export default function DoctorsManagementPage() {
         toast.success("Doctor blocked successfully!");
       }
 
-      setPage(1);
-      setAllLoadedDoctors([]);
       refetch();
     } catch (error) {
       if (isBlocked) {
@@ -199,10 +234,10 @@ export default function DoctorsManagementPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Doctors Management
+            {isNewRoute ? "New Doctors" : "Doctors Management"}
           </h1>
         </div>
-        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-4">
+        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-4 space-y-2">
           <div className="relative">
             <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
             <input
@@ -213,19 +248,33 @@ export default function DoctorsManagementPage() {
               className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#316BE8] focus:border-transparent"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs sm:text-sm text-gray-600">
+              Status:
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="flex-1 sm:flex-none sm:w-48 px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#316BE8] focus:border-transparent bg-white"
+            >
+              <option value="">All</option>
+              <option value="0">New / Pending</option>
+              <option value="1">Approved</option>
+              <option value="2">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Table */}
       <AdminTable
         columns={columns}
-        data={filteredDoctors}
+        data={allDoctors}
         isLoading={isLoading}
         onView={handleView}
         onApprove={handleApprove}
-        showMore={true}
-        hasMore={hasMore}
-        onShowMore={() => setPage((p) => p + 1)}
+        showMore={false}
+        hasMore={false}
       />
     </div>
   );

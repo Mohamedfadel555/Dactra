@@ -21,10 +21,14 @@ export default function PatientsManagementPage() {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["admin-patients-info", page, pageSize],
+    queryKey: ["admin-patients-info", page, pageSize, searchQuery],
     queryFn: async () => {
-      const res = await adminAPI.getAllPatientInfo(page, pageSize);
-      return res.data; // Array of patient objects (paginated from backend)
+      const res = await adminAPI.getAllPatientInfo(
+        page,
+        pageSize,
+        searchQuery || null
+      );
+      return res.data; // Array of patient objects (paginated from backend, filtered by search if provided)
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 2,
@@ -34,6 +38,12 @@ export default function PatientsManagementPage() {
 
   // Backend pagination - accumulate all loaded patients for "show more"
   const [allLoadedPatients, setAllLoadedPatients] = useState([]);
+
+  // Reset pagination when search query changes
+  useEffect(() => {
+    setPage(1);
+    setAllLoadedPatients([]);
+  }, [searchQuery]);
 
   // When new data arrives, add it to the accumulated list
   useEffect(() => {
@@ -69,16 +79,6 @@ export default function PatientsManagementPage() {
 
   // Use accumulated patients for display (show all loaded pages)
   const allPatients = allLoadedPatients.filter(Boolean); // Remove undefined entries
-
-  // Client-side filtering (on all loaded patients)
-  const filteredPatients = (allPatients || []).filter((patient) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      patient.fullName?.toLowerCase().includes(query) ||
-      patient.email?.toLowerCase().includes(query)
-    );
-  });
 
   const columns = [
     {
@@ -209,7 +209,7 @@ export default function PatientsManagementPage() {
       {/* Table */}
       <AdminTable
         columns={columns}
-        data={filteredPatients}
+        data={allPatients}
         isLoading={isLoading}
         onView={handleView}
         onBlock={handleBlock}
