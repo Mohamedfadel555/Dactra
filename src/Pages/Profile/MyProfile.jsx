@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { FaFileCirclePlus } from "react-icons/fa6";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
 import { GiMedicines } from "react-icons/gi";
-import { Form, Formik } from "formik";
+import { ErrorMessage, Field, Form, Formik } from "formik";
 import FormInputField from "../../Components/Auth/FormInputField";
 import SubmitButton from "../../Components/Auth/SubmitButton";
 import { IoCloseSharp } from "react-icons/io5";
@@ -24,6 +24,7 @@ import {
   deleteAccValidationSchema,
   editDoctorProfileValidationSchema,
   editPatientProfileValidationSchema,
+  saveWorkDetailsValidationSchema,
 } from "../../utils/validationSchemas";
 import { changePasswordInitialValues } from "../../utils/formInitialValues";
 import { useCities } from "../../hooks/useCities";
@@ -45,8 +46,12 @@ import { useGetAllChronic } from "../../hooks/useGetAllChronic";
 import { useEditAllergies } from "../../hooks/useEditAllergies";
 import { useEditChronics } from "../../hooks/useEditChronics";
 import { IoWarningOutline } from "react-icons/io5";
-import { BiChevronLeft, BiChevronRight } from "react-icons/bi";
+import { BiChevronLeft, BiChevronRight, BiSolidEditAlt } from "react-icons/bi";
 import Schedule from "../../Components/Profile/Schedule";
+import { useGetWorkingDetails } from "../../hooks/useGetWorkingDetails";
+import { RiErrorWarningLine } from "react-icons/ri";
+import { useSaveWorkDetails } from "../../hooks/useSaveWorkDetails";
+import { useGetSlots } from "../../hooks/useGetSlots";
 
 const genderData = ["Male", "Female"];
 
@@ -71,6 +76,7 @@ export default function MyProfile() {
   const [changePass, setchangePass] = useState(false);
   const [deleteAcc, setDeleteAcc] = useState(false);
   const [grouped, setGrouped] = useState([]);
+  const [editWorkDetails, setEditWorkDetails] = useState(false);
 
   const { data: user } = useGetUser();
   const { data: cities } = useCities();
@@ -81,6 +87,15 @@ export default function MyProfile() {
   const { data: chronics } = useGetMyChronic();
   const { data: allAllergies } = useGetAllAllergies();
   const { data: allchronics } = useGetAllChronic();
+  const { data: workingDetails } = useGetWorkingDetails();
+  const { data: Slots } = useGetSlots();
+  console.log(Slots);
+  // console.log(workingDetails);
+  if (workingDetails) {
+    var isWorkingDetailsEmpty = Object.values(workingDetails).every(
+      (v) => v === null,
+    );
+  }
 
   // const temp = new Date(weekDays.at(6));
   // console.log(
@@ -141,6 +156,8 @@ export default function MyProfile() {
 
   const editChronicsMutation = useEditChronics();
 
+  const saveWorkDetailsMutation = useSaveWorkDetails();
+
   const addVitals = async (values) => {
     const FormData = {
       vitalSignTypeId: values.vitalSignTypeId,
@@ -148,6 +165,12 @@ export default function MyProfile() {
       value2: values.diastolic ?? null,
     };
     await useAddVitalMutation.mutateAsync(FormData);
+  };
+
+  const saveWorkDetails = async (values, { setSubmitting }) => {
+    console.log(values);
+    await saveWorkDetailsMutation.mutateAsync(values);
+    setSubmitting(false);
   };
 
   const editAllergies = (values) => {
@@ -848,89 +871,194 @@ export default function MyProfile() {
                   whileHover={{ y: -6 }}
                   className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
                 >
-                  <Schedule
-                    title={"My Schedule"}
-                    subtitle={"Select your available time slots"}
-                    role={role}
-                    data={{
-                      "19/1/2026": [
-                        "4:00 pm",
-                        "5:00 pm",
-                        "7:00 pm",
-                        "10:00 pm",
-                        "11:00 pm",
-                        "12:00 pm",
-                      ],
-                      "20/1/2026": [
-                        "2:00 pm",
-                        "3:00 pm",
-                        "6:00 pm",
-                        "8:00 pm",
-                        "9:00 pm",
-                      ],
-                      "21/1/2026": [
-                        "3:00 pm",
-                        "4:00 pm",
-                        "6:00 pm",
-                        "8:00 pm",
-                        "9:00 pm",
-                      ],
-                      "22/1/2026": [
-                        "1:00 pm",
-                        "2:00 pm",
-                        "4:00 pm",
-                        "6:00 pm",
-                        "10:00 pm",
-                      ],
-                      "23/1/2026": [
-                        "5:00 pm",
-                        "7:00 pm",
-                        "9:00 pm",
-                        "11:00 pm",
-                      ],
-                      "24/1/2026": [
-                        "2:00 pm",
-                        "4:00 pm",
-                        "6:00 pm",
-                        "8:00 pm",
-                        "9:00 pm",
-                      ],
-                      "25/1/2026": [
-                        "3:00 pm",
-                        "5:00 pm",
-                        "7:00 pm",
-                        "9:00 pm",
-                        "10:00 pm",
-                      ],
-                    }}
-                    timeSlots={[
-                      "12:00 am",
-                      "1:00 am",
-                      "2:00 am",
-                      "3:00 am",
-                      "4:00 am",
-                      "5:00 am",
-                      "6:00 am",
-                      "7:00 am",
-                      "8:00 am",
-                      "9:00 am",
-                      "10:00 am",
-                      "11:00 am",
-                      "12:00 pm",
-                      "1:00 pm",
-                      "2:00 pm",
-                      "3:00 pm",
-                      "4:00 pm",
-                      "5:00 pm",
-                      "6:00 pm",
-                      "7:00 pm",
-                      "8:00 pm",
-                      "9:00 pm",
-                      "10:00 pm",
-                      "11:00 pm",
-                    ]}
-                  />
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <p className="text-[20px] font-bold">Work Details</p>
+                      <BiSolidEditAlt
+                        className="text-blue-600 text-[25px] cursor-pointer"
+                        onClick={() => setEditWorkDetails((prev) => !prev)}
+                      />
+                    </div>
+
+                    <div className="text-sm flex gap-[5px] items-center text-[#6D7379] ">
+                      {isWorkingDetailsEmpty && (
+                        <>
+                          <RiErrorWarningLine className="text-lg  " />
+                          <p>
+                            Fill in the details to display available time slots
+                            for booking.
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    <Formik
+                      onSubmit={saveWorkDetails}
+                      validationSchema={saveWorkDetailsValidationSchema}
+                      enableReinitialize
+                      initialValues={{
+                        workingStartTime:
+                          workingDetails?.workingStartTime.slice(0, 5) || "",
+                        workingEndTime:
+                          workingDetails?.workingEndTime.slice(0, 5) || "",
+                        consultationDurationMinutes:
+                          workingDetails?.consultationDurationMinutes || "",
+                        consultationPrice:
+                          workingDetails?.consultationPrice || "",
+                      }}
+                    >
+                      {({ values, isValid, dirty, isSubmitting }) => (
+                        <Form
+                          className="flex flex-col  "
+                          onClick={() =>
+                            console.log({
+                              workingStartTime:
+                                workingDetails?.workingStartTime,
+                              workingEndTime: workingDetails?.workingEndTime,
+                              consultationDurationMinutes:
+                                workingDetails?.consultationDurationMinutes,
+                              consultationPrice:
+                                workingDetails?.consultationPrice,
+                            })
+                          }
+                        >
+                          <table className="w-full border-separate border-spacing-y-3">
+                            <tbody>
+                              <tr className="bg-gray-50 rounded-lg">
+                                <td className="w-1/4 font-medium py-3 px-4">
+                                  Start Time
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Field
+                                    id="workingStartTime"
+                                    name="workingStartTime"
+                                    readOnly={!editWorkDetails}
+                                    type="time"
+                                    className={`w-full h-full focus:outline-none rounded px-2 py-1
+                      ${editWorkDetails ? "bg-white" : "bg-gray-50"}`}
+                                  />
+                                  {editWorkDetails && (
+                                    <ErrorMessage
+                                      name="workingStartTime"
+                                      component="div"
+                                      className="text-red-500 text-xs"
+                                    />
+                                  )}
+                                </td>
+                              </tr>
+
+                              <tr className="bg-gray-50 rounded-lg">
+                                <td className="font-medium py-3 px-4">
+                                  End Time
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Field
+                                    id="workingEndTime"
+                                    name="workingEndTime"
+                                    readOnly={!editWorkDetails}
+                                    type="time"
+                                    className={`w-full h-full focus:outline-none rounded px-2 py-1
+                      ${editWorkDetails ? "bg-white" : "bg-gray-50"}`}
+                                  />
+                                  {editWorkDetails && (
+                                    <ErrorMessage
+                                      name="workingEndTime"
+                                      component="div"
+                                      className="text-red-500 text-xs"
+                                    />
+                                  )}
+                                </td>
+                              </tr>
+
+                              <tr className="bg-gray-50 rounded-lg">
+                                <td className="font-medium py-3 px-4">
+                                  Duration
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Field
+                                    id="consultationDurationMinutes"
+                                    name="consultationDurationMinutes"
+                                    // disabled={!editWorkDetails}
+                                    readOnly={!editWorkDetails}
+                                    as="select"
+                                    className={`w-full h-full pr-[5px] focus:outline-none  rounded px-2 py-1
+                      ${editWorkDetails ? "bg-white cursor-pointer " : " cursor-default appearance-none"}`}
+                                  >
+                                    <option value="">Select Duration</option>
+                                    <option value="30">30 min</option>
+                                    <option value="45">45 min</option>
+                                    <option value="60">60 min</option>
+                                  </Field>
+                                  {editWorkDetails && (
+                                    <ErrorMessage
+                                      name="consultationDurationMinutes"
+                                      component="div"
+                                      className="text-red-500 text-xs"
+                                    />
+                                  )}
+                                </td>
+                              </tr>
+
+                              <tr className="bg-gray-50 rounded-lg">
+                                <td className="font-medium py-3 px-4">Price</td>
+                                <td className="py-3 px-4 flex justify-between items-center pr-[20px]">
+                                  <div>
+                                    <Field
+                                      id="consultationPrice"
+                                      name="consultationPrice"
+                                      readOnly={!editWorkDetails}
+                                      type="number"
+                                      className={`focus:outline-none rounded px-2 py-1 w-[100px] sm:w-[150px]
+                                    [&::-webkit-inner-spin-button]:appearance-none
+                      [&::-webkit-outer-spin-button]:appearance-none
+                      [&::-moz-appearance]:textfield
+                      ${editWorkDetails ? "bg-white cursor-text" : " cursor-default"}`}
+                                    />
+                                    {editWorkDetails && (
+                                      <ErrorMessage
+                                        name="consultationPrice"
+                                        component="div"
+                                        className="text-red-500 text-xs "
+                                      />
+                                    )}
+                                  </div>
+                                  LE
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          {editWorkDetails && (
+                            <SubmitButton
+                              text="save"
+                              disabled={!isValid || !dirty}
+                              isLoading={isSubmitting}
+                              loadingText="Saving"
+                              className=" h-[40px] w-full sm:w-[120px] bg-blue-600 self-end"
+                            />
+                          )}
+                        </Form>
+                      )}
+                    </Formik>
+                  </div>
                 </motion.div>
+                {!isWorkingDetailsEmpty && (
+                  <motion.div
+                    variants={rightItem}
+                    whileHover={{ y: -6 }}
+                    className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
+                  >
+                    {Slots && (
+                      <Schedule
+                        title={"My Schedule"}
+                        subtitle={"Select your available time slots"}
+                        role={role}
+                        start={workingDetails?.workingStartTime}
+                        end={workingDetails?.workingEndTime}
+                        data={Slots}
+                      />
+                    )}
+                  </motion.div>
+                )}
 
                 <motion.div
                   variants={rightItem}
@@ -1042,8 +1170,8 @@ export default function MyProfile() {
             )}
           </motion.div>
         </div>
-
-        {role === "Doctor" && (
+        {console.log(ratings)}
+        {role === "Doctor" && ratings && ratings.totalRatings !== 0 && (
           <>
             <div className="w-[80%] flex flex-col gap-10 m-auto ">
               {ratings && (

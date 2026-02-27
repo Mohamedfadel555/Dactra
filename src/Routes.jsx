@@ -11,6 +11,7 @@ import DoctorsListPage from "./Pages/DoctorsListPage";
 
 import MyProfile from "./Pages/Profile/MyProfile";
 import Profile from "./Pages/Profile/Profile";
+import CommunityContainer from "./Pages/Community/CommunityContainer";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -19,15 +20,15 @@ const CallBack = lazy(() => import("./Pages/Auth/CallBack"));
 
 const LoginPage = lazy(() => import("./Pages/Auth/LoginPage"));
 const SignupPage = lazy(() => import("./Pages/Auth/SignupPage"));
-const ForgotPasswordPage = lazy(() =>
-  import("./Pages/Auth/ForgotPasswordPage")
+const ForgotPasswordPage = lazy(
+  () => import("./Pages/Auth/ForgotPasswordPage"),
 );
 const OTPPage = lazy(() => import("./Pages/Auth/OTPPage"));
-const CompleteSignupPage = lazy(() =>
-  import("./Pages/Auth/CompleteSignupPage")
+const CompleteSignupPage = lazy(
+  () => import("./Pages/Auth/CompleteSignupPage"),
 );
-const UpdatePasswordPage = lazy(() =>
-  import("./Pages/Auth/UpdatePasswordPage")
+const UpdatePasswordPage = lazy(
+  () => import("./Pages/Auth/UpdatePasswordPage"),
 );
 
 const ERR404 = lazy(() => import("./Pages/Error/Error404"));
@@ -36,20 +37,20 @@ const ERR403 = lazy(() => import("./Pages/Error/Error403"));
 // Admin Layout and Pages
 const AdminLayout = lazy(() => import("./Layout/AdminLayout"));
 const DashboardPage = lazy(() => import("./Pages/Admin/DashboardPage"));
-const DoctorsManagementPage = lazy(() =>
-  import("./Pages/Admin/DoctorsManagementPage")
+const DoctorsManagementPage = lazy(
+  () => import("./Pages/Admin/DoctorsManagementPage"),
 );
-const PatientsManagementPage = lazy(() =>
-  import("./Pages/Admin/PatientsManagementPage")
+const PatientsManagementPage = lazy(
+  () => import("./Pages/Admin/PatientsManagementPage"),
 );
-const LabsManagementPage = lazy(() =>
-  import("./Pages/Admin/LabsManagementPage")
+const LabsManagementPage = lazy(
+  () => import("./Pages/Admin/LabsManagementPage"),
 );
-const ScansManagementPage = lazy(() =>
-  import("./Pages/Admin/ScansManagementPage")
+const ScansManagementPage = lazy(
+  () => import("./Pages/Admin/ScansManagementPage"),
 );
-const ComplaintsReportsPage = lazy(() =>
-  import("./Pages/Admin/ComplaintsReportsPage")
+const ComplaintsReportsPage = lazy(
+  () => import("./Pages/Admin/ComplaintsReportsPage"),
 );
 
 export const route = createBrowserRouter([
@@ -68,6 +69,10 @@ export const route = createBrowserRouter([
             <HomePage />
           </Suspense>
         ),
+      },
+      {
+        path: "Community",
+        element: <CommunityContainer />,
       },
       {
         path: "doctors",

@@ -9,14 +9,17 @@ import { useAdminAPI } from "../../api/adminAPI";
 
 export default function DoctorsManagementPage() {
   const navigate = useNavigate();
-  const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10; // Adjust based on table height
 
   // Fetch all doctors info with pagination
-  const { data: doctorsData, isLoading, refetch } = useQuery({
+  const {
+    data: doctorsData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-doctors", page, pageSize],
     queryFn: async () => {
       const res = await adminAPI.getAllDoctorsInfo(page, pageSize);
@@ -31,7 +34,9 @@ export default function DoctorsManagementPage() {
     if (doctorsData && Array.isArray(doctorsData) && doctorsData.length > 0) {
       setAllLoadedDoctors((prev) => {
         const existingPageStart = (page - 1) * pageSize;
-        const hasPage = prev.length > existingPageStart && prev[existingPageStart] !== undefined;
+        const hasPage =
+          prev.length > existingPageStart &&
+          prev[existingPageStart] !== undefined;
 
         if (!hasPage) {
           const newList = [...prev];
@@ -68,9 +73,7 @@ export default function DoctorsManagementPage() {
         return (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500 text-sm">
-                {initial}
-              </span>
+              <span className="text-gray-500 text-sm">{initial}</span>
             </div>
             <span className="text-sm font-medium text-gray-900">
               {doctor.name || "N/A"}
@@ -110,7 +113,8 @@ export default function DoctorsManagementPage() {
   ];
 
   const handleView = (doctor) => {
-    const doctorId = doctor.profileId || doctor.id || doctor.userId || doctor.appUserId;
+    const doctorId =
+      doctor.profileId || doctor.id || doctor.userId || doctor.appUserId;
     if (doctorId) {
       navigate(`/doctor/profile/${doctorId}`);
     } else {
@@ -119,10 +123,7 @@ export default function DoctorsManagementPage() {
   };
 
   const handleApprove = async (doctor) => {
-    const providerId =
-      doctor.profileId 
-      ;
-
+    const providerId = doctor.profileId;
     if (!providerId) {
       toast.error("Doctor ID not found for approve/disapprove");
       return;
@@ -154,10 +155,7 @@ export default function DoctorsManagementPage() {
 
   const handleBlock = async (doctor) => {
     const userId =
-      doctor.id ||
-      doctor.userId ||
-      doctor.appUserId ||
-      doctor.profileId;
+      doctor.id || doctor.userId || doctor.appUserId || doctor.profileId;
 
     if (!userId) {
       toast.error("Doctor ID not found for block/unblock");
@@ -167,7 +165,8 @@ export default function DoctorsManagementPage() {
     const isBlocked = doctor.statusType === "Blocked" || doctor.isBlocked;
     const action = isBlocked ? "unblock" : "block";
 
-    if (!window.confirm(`Are you sure you want to ${action} this doctor?`)) return;
+    if (!window.confirm(`Are you sure you want to ${action} this doctor?`))
+      return;
 
     try {
       await adminAPI.deleteAppUser(userId);
@@ -191,7 +190,9 @@ export default function DoctorsManagementPage() {
   };
 
   const hasMore =
-    doctorsData && Array.isArray(doctorsData) && doctorsData.length === pageSize;
+    doctorsData &&
+    Array.isArray(doctorsData) &&
+    doctorsData.length === pageSize;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -230,4 +231,3 @@ export default function DoctorsManagementPage() {
     </div>
   );
 }
-

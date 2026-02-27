@@ -17,7 +17,7 @@ export default function DoctorsListPage() {
     useState(null);
   const [sortedByRating, setSortedByRating] = useState(null); // null = default, true = highest, false = lowest
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 6;
+  const pageSize = 9;
   const specialtiesRef = useRef(null);
 
   const handleDoctorClick = (doctor) => {
@@ -36,7 +36,7 @@ export default function DoctorsListPage() {
     searchTerm,
     selectedSpecializationId,
     genderValue,
-    sortedByRating
+    sortedByRating,
   );
 
   // Extract doctors list from response
@@ -267,7 +267,7 @@ export default function DoctorsListPage() {
                             setSelectedSpecializationId(
                               selectedSpecializationId === major.id
                                 ? null
-                                : major.id
+                                : major.id,
                             );
                             setCurrentPage(1);
                           }}

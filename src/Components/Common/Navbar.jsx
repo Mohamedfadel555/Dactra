@@ -84,7 +84,7 @@ export default function Navbar() {
           {
             label: "Community",
             Links: [
-              { to: "/posts", label: "- Posts" },
+              { to: "/Community", label: "- Posts" },
               { to: "/questions", label: "- Questions" },
             ],
           },
@@ -190,7 +190,7 @@ export default function Navbar() {
                   )}
                 </AnimatePresence>
               </li>
-            )
+            ),
           )}
         </ul>
 
@@ -369,7 +369,7 @@ export default function Navbar() {
                 ))}
               </div>
             </div>
-          )
+          ),
         )}
         {/* Logout Button */}
         {accessToken && (

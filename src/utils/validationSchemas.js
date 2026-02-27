@@ -13,7 +13,7 @@ export const getSignupValidationSchema = () =>
       .min(8, "Password must be at least 8 characters")
       .matches(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
-        "Password must have upper, lower, number & symbol"
+        "Password must have upper, lower, number & symbol",
       ),
     confirmPassword: yup
       .string()
@@ -110,7 +110,7 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .string()
         .oneOf(
           ["0", "1", "2", "3", "4", "5", "6", "7"],
-          "Select a valid blood type"
+          "Select a valid blood type",
         )
         .required("Blood type is required"),
       smokingStatus: yup
@@ -121,10 +121,8 @@ export const getCompleteSignupValidationSchema = (userType) => {
         .string()
         .oneOf(["0", "1", "2", "3"], "Select a valid marital status")
         .required("Marital status is required"),
-      chronicDisease: yup
-        .string(),
-      allergies: yup
-        .string(),
+      chronicDisease: yup.string(),
+      allergies: yup.string(),
     });
   }
 
@@ -199,7 +197,7 @@ export const updatePasswordValidationSchema = yup.object({
     .min(8, "Password must be at least 8 characters")
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
-      "Password must have upper, lower, number & symbol"
+      "Password must have upper, lower, number & symbol",
     ),
   confirm_password: yup
     .string()
@@ -238,7 +236,7 @@ export const editPatientProfileValidationSchema = yup.object({
     .string()
     .oneOf(
       ["0", "1", "2", "3", "4", "5", "6", "7"],
-      "Select a valid blood type"
+      "Select a valid blood type",
     )
     .required("Blood type is required"),
   addressId: yup
@@ -272,7 +270,7 @@ export const editPatientProfileValidationSchema = yup.object({
         "25",
         "26",
       ],
-      "select a valid city"
+      "select a valid city",
     )
     .required("address is required"),
 });
@@ -306,12 +304,12 @@ export const changePasswordValidationSchema = yup.object({
     .required("Password is required")
     .notOneOf(
       [yup.ref("oldPassword")],
-      "New password must be different from old password"
+      "New password must be different from old password",
     )
     .min(8, "Password must be at least 8 characters")
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
-      "Password must have upper, lower, number & symbol"
+      "Password must have upper, lower, number & symbol",
     ),
   confirmNewPassword: yup
     .string()
@@ -337,4 +335,20 @@ export const experienceValidationSchema = yup.object({
 
 export const deleteAccValidationSchema = yup.object({
   confirm: yup.string().oneOf(["Delete my account"]),
+});
+
+export const saveWorkDetailsValidationSchema = yup.object({
+  workingStartTime: yup.string().required("Start time is required"),
+
+  workingEndTime: yup.string().required("End time is required"),
+  consultationDurationMinutes: yup
+    .string()
+    .required("Duration is required")
+    .oneOf(["30", "45", "60"], "Invalid duration selected"),
+
+  consultationPrice: yup
+    .number()
+    .required("Price is required")
+    .typeError("Price must be a number")
+    .positive("Price must be greater than 0"),
 });

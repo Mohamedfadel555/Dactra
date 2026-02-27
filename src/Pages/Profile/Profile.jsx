@@ -1,47 +1,21 @@
 import { IoPersonSharp } from "react-icons/io5";
-import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaRegEdit } from "react-icons/fa";
+import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
 import ChartComp from "../../Components/Common/ChartComp";
-import { useGetUser } from "../../hooks/useGetUser";
-import { MdOutlinePassword } from "react-icons/md";
 import profilePhoto from "../../assets/images/profile.webp";
-import { useAuth } from "../../Context/AuthContext";
 import BarComp from "../../Components/Common/BarComp";
-import { IoTrashOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
-import { FaFileCirclePlus } from "react-icons/fa6";
-import AvatarIcon from "../../Components/Common/AvatarIcon1";
 import { GiMedicines } from "react-icons/gi";
-import { Form, Formik } from "formik";
-import FormInputField from "../../Components/Auth/FormInputField";
-import SubmitButton from "../../Components/Auth/SubmitButton";
-import { IoCloseSharp } from "react-icons/io5";
 import CommentCard from "../../Components/Common/CommentCard";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { PiWarningCircle } from "react-icons/pi";
 import { FaFileMedicalAlt } from "react-icons/fa";
-import {
-  changePasswordValidationSchema,
-  deleteAccValidationSchema,
-  editDoctorProfileValidationSchema,
-  editPatientProfileValidationSchema,
-} from "../../utils/validationSchemas";
-import { changePasswordInitialValues } from "../../utils/formInitialValues";
-import { useCities } from "../../hooks/useCities";
 import { useEditPatientProfile } from "../../hooks/useEditPatientProfile";
 import { useChangePassword } from "../../hooks/useChangePassword";
 import DoctorSection from "../../Components/Profile/DoctorSection";
-import { useGetMyQualifications } from "../../hooks/useGetMyQualifications";
 import { useDeleteMyAcc } from "../../hooks/useDeleteMyAcc";
 import { useAddVitals } from "../../hooks/useAddVitals";
-import { useGetVitals } from "../../hooks/useGetVitals";
-import { useGetMyRatings } from "../../hooks/useGetMyRatings";
-import ReviewsDetailsSection from "../../Components/Common/ReviewsDetailsSection";
 import SwiperComponent from "../../Components/Common/SwiperComponent";
-import { useGetMyAllergies } from "../../hooks/useGetMyAllergies";
-import { useGetMyChronic } from "../../hooks/useGetMyChronic";
 import PatientSection from "../../Components/Profile/PatientSection";
-import { useGetAllAllergies } from "../../hooks/useGetAllAllergies";
-import { useGetAllChronic } from "../../hooks/useGetAllChronic";
 import { useEditAllergies } from "../../hooks/useEditAllergies";
 import { useEditChronics } from "../../hooks/useEditChronics";
 import { IoWarningOutline } from "react-icons/io5";
@@ -49,6 +23,7 @@ import { useGetDoctorProfile } from "../../hooks/useGetDoctorProfile";
 import { useParams } from "react-router-dom";
 import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 import Schedule from "../../Components/Profile/Schedule";
+import { useGetDoctorSlots } from "../../hooks/useGetDoctorSlots";
 
 const genderData = ["Male", "Female"];
 
@@ -69,16 +44,14 @@ const appointmentData = [
 ];
 
 export default function Profile({ role }) {
-  const [edit, setEdit] = useState(false);
-  const [changePass, setchangePass] = useState(false);
-  const [deleteAcc, setDeleteAcc] = useState(false);
   const [grouped, setGrouped] = useState([]);
   const { id } = useParams();
 
+  const { data: slotsToBook } = useGetDoctorSlots(id);
+  console.log(slotsToBook);
+
   const { data: user } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
-  console.log(role);
-  console.log(user);
 
   //transforming vitals data
   useEffect(() => {
@@ -113,70 +86,6 @@ export default function Profile({ role }) {
     }, {});
     setGrouped(newg);
   }, [user]);
-
-  console.log(grouped);
-
-  const deleteAccMutation = useDeleteMyAcc();
-
-  const editPatientMutation = useEditPatientProfile();
-
-  const changePasswordMutation = useChangePassword();
-
-  const useAddVitalMutation = useAddVitals();
-
-  const editAllergiesMutation = useEditAllergies();
-
-  const editChronicsMutation = useEditChronics();
-
-  const addVitals = async (values) => {
-    const FormData = {
-      vitalSignTypeId: values.vitalSignTypeId,
-      value: values.systolic ?? values.heartRate ?? values.glucose,
-      value2: values.diastolic ?? null,
-    };
-    await useAddVitalMutation.mutateAsync(FormData);
-  };
-
-  const editAllergies = (values) => {
-    editAllergiesMutation.mutate(values);
-  };
-  const editchronics = (values) => {
-    editChronicsMutation.mutate(values);
-  };
-
-  const deleteAccountHandle = () => {
-    deleteAccMutation.mutate();
-  };
-
-  const changePasswordSubmitting = async (values, { setSubmitting }) => {
-    try {
-      const res = await changePasswordMutation.mutateAsync(values);
-      res.status === 200 && setchangePass(false);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const editSubmitting = async (values, { setSubmitting }) => {
-    console.log(values);
-
-    if (role === "Patient") {
-      ["addressId", "bloodType", "maritalStatus", "smokingStatus"].forEach(
-        (key) => (values[key] = Number(values[key])),
-      );
-    }
-    try {
-      const res = await editPatientMutation.mutateAsync(values);
-      console.log(res);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setSubmitting(false);
-      setEdit(false);
-    }
-  };
 
   const popupVariants = {
     hidden: {
@@ -463,61 +372,14 @@ export default function Profile({ role }) {
                   variants={rightItem}
                   className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
                 >
-                  <Schedule
-                    title={"Appointment booking"}
-                    subtitle={"Select time slot"}
-                    timeSlots={{
-                      "28/1/2026": [
-                        "4:00 pm",
-                        "5:00 pm",
-                        "7:00 pm",
-                        "10:00 pm",
-                        "11:00 pm",
-                        "12:00 pm",
-                      ],
-                      "29/1/2026": [
-                        "2:00 pm",
-                        "3:00 pm",
-                        "6:00 pm",
-                        "8:00 pm",
-                        "9:00 pm",
-                      ],
-                      "21/1/2026": [
-                        "3:00 pm",
-                        "4:00 pm",
-                        "6:00 pm",
-                        "8:00 pm",
-                        "9:00 pm",
-                      ],
-                      "22/1/2026": [
-                        "1:00 pm",
-                        "2:00 pm",
-                        "4:00 pm",
-                        "6:00 pm",
-                        "10:00 pm",
-                      ],
-                      "23/1/2026": [
-                        "5:00 pm",
-                        "7:00 pm",
-                        "9:00 pm",
-                        "11:00 pm",
-                      ],
-                      "24/1/2026": [
-                        "2:00 pm",
-                        "4:00 pm",
-                        "6:00 pm",
-                        "8:00 pm",
-                        "9:00 pm",
-                      ],
-                      "25/1/2026": [
-                        "3:00 pm",
-                        "5:00 pm",
-                        "7:00 pm",
-                        "9:00 pm",
-                        "10:00 pm",
-                      ],
-                    }}
-                  />
+                  {slotsToBook && (
+                    <Schedule
+                      title={"Appointment booking"}
+                      subtitle={"Select appointment"}
+                      role={"NOt a doctor"}
+                      timeSlots={slotsToBook}
+                    />
+                  )}
                 </motion.div>
 
                 <motion.div variants={rightItem} className="w-full">
