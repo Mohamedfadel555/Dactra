@@ -14,7 +14,7 @@ export default function ProtectedAdmin({ children }) {
   console.log(accessToken);
   if (!accessToken) {
     useEffect(() => {
-      toast.error("Please login to access admin panel", {
+      toast.error( {
         position: "top-center",
         closeOnClick: true,
       });

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import {
   MdDashboard,
   MdPeople,
   MdLocalHospital,
   MdScience,
-  MdScanner,
+  MdMedicalServices,
   MdReportProblem,
   MdLogout,
   MdNotificationsNone,
@@ -14,13 +14,15 @@ import {
   MdClose,
 } from "react-icons/md";
 import Icon from "../assets/images/icons/dactraIcon.webp";
-import { LogoutAPI } from "../api/authAPI";
-import { toast } from "react-toastify";
+import { useLogout } from "../hooks/useLogout";
 
 export default function AdminLayout() {
-  const { logout, role, accessToken } = useAuth();
+  const { role, accessToken } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
+  const location = useLocation();
+  const logoutMutation = useLogout();
 
   // Extract admin name from token
   const getAdminName = () => {
@@ -34,35 +36,53 @@ export default function AdminLayout() {
   };
 
   const handleLogout = async () => {
-    try {
-      await LogoutAPI();
-      logout();
-      navigate("/auth/Login");
-      toast.success("Logged out successfully!", {
-        position: "top-center",
-        closeOnClick: true,
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-      logout();
-      navigate("/auth/Login");
-    }
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate("/auth/Login");
+      },
+    });
   };
 
   const navItems = [
     { path: "/admin/dashboard", label: "Dashboard", icon: MdDashboard },
     {
-      path: "/admin/doctors",
       label: "Doctors Management",
       icon: MdLocalHospital,
+      children: [
+        { path: "/admin/doctors", label: "All Doctors" },
+        { path: "/admin/doctors/new", label: "New Doctors" },
+      ],
     },
     { path: "/admin/patients", label: "Patients Management", icon: MdPeople },
-    { path: "/admin/labs", label: "Labs", icon: MdScience },
-    { path: "/admin/scans", label: "Scans", icon: MdScanner },
+    {
+      label: "Labs",
+      icon: MdScience,
+      children: [
+        { path: "/admin/labs", label: "All Labs" },
+        { path: "/admin/labs/new", label: "New Labs" },
+      ],
+    },
+    {
+      label: "Scans",
+      icon: MdMedicalServices,
+      children: [
+        { path: "/admin/scans", label: "All Scans" },
+        { path: "/admin/scans/new", label: "New Scans" },
+      ],
+    },
     {
       path: "/admin/complaints",
       label: "Complaints/Reports",
       icon: MdReportProblem,
+    },
+    {
+      label: "Master Data",
+      icon: MdScience,
+      children: [
+        { path: "/admin/majors", label: "Majors" },
+        { path: "/admin/allergies", label: "Allergies" },
+        { path: "/admin/chronic-diseases", label: "Chronic Diseases" },
+      ],
     },
   ];
 
@@ -121,24 +141,89 @@ export default function AdminLayout() {
         <nav className="flex-1 px-2 lg:px-4 py-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const IconComponent = item.icon;
+            const hasChildren = Array.isArray(item.children);
+
+            if (!hasChildren) {
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={handleNavClick}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 lg:gap-4 h-12 px-3 lg:px-4 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? "bg-[#316BE8] text-white shadow-lg scale-[1.02]"
+                        : "text-gray-300 hover:bg-gray-800 hover:scale-[1.01]"
+                    }`
+                  }
+                >
+                  <IconComponent className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {item.label}
+                  </span>
+                </NavLink>
+              );
+            }
+
+            const isParentActive = item.children.some((child) =>
+              location.pathname.startsWith(child.path)
+            );
+            const isOpen = openMenu === item.label || isParentActive;
+
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={handleNavClick}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 lg:gap-4 h-12 px-3 lg:px-4 rounded-lg transition-all duration-200 ${
-                    isActive
+              <div key={item.label} className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenMenu((prev) => (prev === item.label ? null : item.label))
+                  }
+                  className={`flex items-center justify-between gap-3 lg:gap-4 w-full h-12 px-3 lg:px-4 rounded-lg transition-all duration-200 ${
+                    isParentActive
                       ? "bg-[#316BE8] text-white shadow-lg scale-[1.02]"
                       : "text-gray-300 hover:bg-gray-800 hover:scale-[1.01]"
-                  }`
-                }
-              >
-                <IconComponent className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm font-medium truncate">
-                  {item.label}
-                </span>
-              </NavLink>
+                  }`}
+                >
+                  <div className="flex items-center gap-3 lg:gap-4">
+                    <IconComponent className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">
+                      {item.label}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-xs transition-transform duration-200 ${
+                      isOpen ? "rotate-90" : ""
+                    }`}
+                  >
+                    ▸
+                  </span>
+                </button>
+
+                {isOpen && (
+                  <div className="ml-8 space-y-1">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.path}
+                        to={child.path}
+                        end={
+                          child.path === "/admin/doctors" ||
+                          child.path === "/admin/labs" ||
+                          child.path === "/admin/scans"
+                        }
+                        onClick={handleNavClick}
+                        className={({ isActive }) =>
+                          `flex items-center h-9 px-3 rounded-lg text-xs sm:text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-[#316BE8] text-white shadow"
+                              : "text-gray-300 hover:bg-gray-800"
+                          }`
+                        }
+                      >
+                        <span className="truncate">{child.label}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>

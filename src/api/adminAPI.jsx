@@ -54,31 +54,102 @@ export const useAdminAPI = () => {
     return axiosInstance.get("Admin/weekly-summary");
   };
 
-  // Get all patient info with pagination
-  const getAllPatientInfo = async (pageNumber = 1, pageSize = 10) => {
+  // Get all patient info with pagination + optional search
+  const getAllPatientInfo = async (
+    pageNumber = 1,
+    pageSize = 10,
+    searchTerm = null
+  ) => {
+    const params = {
+      page: pageNumber,
+      pageSize,
+    };
+
+    // Optional search parameter (nullable on backend)
+    if (searchTerm) {
+      params.SearchTerm = searchTerm;
+    }
+
     return axiosInstance.get("Admin/allPetientInfo", {
-      params: { page: pageNumber, pageSize },
+      params,
     });
   };
 
-  // Get all doctors info with pagination
-  const getAllDoctorsInfo = async (pageNumber = 1, pageSize = 10) => {
+
+  // Get all doctors info with pagination + optional search & approvalStatus filter
+  const getAllDoctorsInfo = async (
+    pageNumber = 1,
+    pageSize = 10,
+    searchTerm = null,
+    status = null
+  ) => {
+    const params = {
+      page: pageNumber,
+      pageSize,
+    };
+
+    if (searchTerm) {
+      // Swagger: searchName
+      params.searchName = searchTerm;
+    }
+
+    // approvalStatus: null = all, 0 = new/pending, 1 = approved, 2 = rejected
+    if (status !== null && status !== undefined && status !== "") {
+      params.approvalStatus = status;
+    }
+
     return axiosInstance.get("Admin/allDoctorsInfo", {
-      params: { page: pageNumber, pageSize },
+      params,
     });
   };
 
-  // Get all labs info with pagination
-  const getAllLabsInfo = async (pageNumber = 1, pageSize = 10) => {
+  // Get all labs info with pagination + optional search & approvalStatus filter
+  const getAllLabsInfo = async (
+    pageNumber = 1,
+    pageSize = 10,
+    searchTerm = null,
+    status = null
+  ) => {
+    const params = {
+      page: pageNumber,
+      pageSize,
+    };
+
+    if (searchTerm) {
+      params.searchName = searchTerm;
+    }
+
+    if (status !== null && status !== undefined && status !== "") {
+      params.approvalStatus = status;
+    }
+
     return axiosInstance.get("Admin/allLabsInfo", {
-      params: { page: pageNumber, pageSize },
+      params,
     });
   };
 
-  // Get all scans info with pagination
-  const getAllScansInfo = async (pageNumber = 1, pageSize = 10) => {
+  // Get all scans info with pagination + optional search & approvalStatus filter
+  const getAllScansInfo = async (
+    pageNumber = 1,
+    pageSize = 10,
+    searchTerm = null,
+    status = null
+  ) => {
+    const params = {
+      page: pageNumber,
+      pageSize,
+    };
+
+    if (searchTerm) {
+      params.searchName = searchTerm;
+    }
+
+    if (status !== null && status !== undefined && status !== "") {
+      params.approvalStatus = status;
+    }
+
     return axiosInstance.get("Admin/allScansInfo", {
-      params: { page: pageNumber, pageSize },
+      params,
     });
   };
 
@@ -97,6 +168,7 @@ export const useAdminAPI = () => {
       providerId,
     });
   };
+
 
   // Get all questions info
   const getAllQuestionsInfo = async () => {
@@ -130,6 +202,7 @@ export const useAdminAPI = () => {
     getAllScansInfo,
     approveProvider,
     disapproveProvider,
+
     getAllQuestionsInfo,
     getAllArticlesInfo,
     seed,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
 import { MdSearch } from "react-icons/md";
@@ -9,54 +9,60 @@ import { useAdminAPI } from "../../api/adminAPI";
 
 export default function ScansManagementPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isNewRoute = location.pathname.endsWith("/new");
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [statusFilter, setStatusFilter] = useState(
+    isNewRoute ? "0" : ""
+  ); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
+  const pageSize = 100;
 
-  // Fetch all scans info with pagination
+  // Fetch all scans info مع search + status
   const { data: scansData, isLoading, refetch } = useQuery({
-    queryKey: ["admin-scans", page, pageSize],
+    queryKey: ["admin-scans", pageSize, searchQuery, statusFilter],
     queryFn: async () => {
-      const res = await adminAPI.getAllScansInfo(page, pageSize);
-      return res.data; // Array of scans
+      const res = await adminAPI.getAllScansInfo(
+        1,
+        pageSize,
+        searchQuery || null,
+        statusFilter === "" ? null : Number(statusFilter)
+      );
+      const raw = res.data;
+
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.items)) return raw.items;
+      if (Array.isArray(raw?.data)) return raw.data;
+      if (Array.isArray(raw?.$values)) return raw.$values;
+
+      return [];
     },
   });
 
-  const [allLoadedScans, setAllLoadedScans] = useState([]);
-
+  // When route changes بين /scans و /scans/new
   useEffect(() => {
-    if (scansData && Array.isArray(scansData) && scansData.length > 0) {
-      setAllLoadedScans((prev) => {
-        const existingPageStart = (page - 1) * pageSize;
-        const hasPage = prev.length > existingPageStart && prev[existingPageStart] !== undefined;
+    setStatusFilter(isNewRoute ? "0" : "");
+  }, [isNewRoute]);
 
-        if (!hasPage) {
-          const newList = [...prev];
-          while (newList.length < existingPageStart) {
-            newList.push(undefined);
-          }
-          scansData.forEach((scan) => {
-            newList.push(scan);
-          });
-          return newList;
-        }
-        return prev;
-      });
-    }
-  }, [scansData, page, pageSize]);
+  // Reset pagination when search or status filter changes
+  useEffect(() => {
+  }, [searchQuery, statusFilter]);
 
-  const allScans = allLoadedScans.filter(Boolean);
+  const allScans = (scansData || []).map((scan) => {
+    const approvalStatus =
+      typeof scan.approvalStatus === "number" ? scan.approvalStatus : null;
 
-  const filteredScans = (allScans || []).filter((scan) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      scan.name?.toLowerCase().includes(query) ||
-      scan.location?.toLowerCase().includes(query) ||
-      scan.contact?.toLowerCase().includes(query)
-    );
+    const isApprovedBool =
+      approvalStatus === 1 ||
+      scan.isApproved === true ||
+      scan.status === "Approved" ||
+      scan.statusType === "Approved";
+
+    return {
+      ...scan,
+      isApproved: isApprovedBool,
+    };
   });
 
   const columns = [
@@ -77,6 +83,15 @@ export default function ScansManagementPage() {
       ),
     },
     {
+      label: "License No.",
+      key: "licenceNo",
+      render: (scan) => (
+        <span className="text-sm text-gray-600">
+          {scan.licenceNo || scan.licenseNumber || "N/A"}
+        </span>
+      ),
+    },
+    {
       label: "Address",
       key: "address",
       render: (scan) => (
@@ -87,11 +102,31 @@ export default function ScansManagementPage() {
       label: "Status",
       key: "status",
       render: (scan) => {
-        const status = scan.isApproved ? "Approved" : "Pending";
+        const approvalStatus =
+          typeof scan.approvalStatus === "number" ? scan.approvalStatus : null;
+
+        let status;
+        if (
+          approvalStatus === 1 ||
+          scan.isApproved === true ||
+          scan.status === "Approved" ||
+          scan.statusType === "Approved"
+        ) {
+          status = "Approved";
+        } else if (
+          approvalStatus === 2 ||
+          scan.status === "Rejected" ||
+          scan.statusType === "Rejected"
+        ) {
+          status = "Rejected";
+        } else {
+          status = "Pending";
+        }
+
         const statusColors = {
           Pending: "bg-yellow-100 text-yellow-800",
           Approved: "bg-green-100 text-green-800",
-          Blocked: "bg-red-100 text-red-800",
+          Rejected: "bg-red-100 text-red-800",
         };
         return (
           <span
@@ -137,8 +172,6 @@ export default function ScansManagementPage() {
         toast.success("Scan center approved successfully!");
       }
 
-      setPage(1);
-      setAllLoadedScans([]);
       refetch();
     } catch (error) {
       if (isCurrentlyApproved) {
@@ -188,19 +221,16 @@ export default function ScansManagementPage() {
     }
   };
 
-  const hasMore =
-    scansData && Array.isArray(scansData) && scansData.length === pageSize;
-
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Scans Management
+            {isNewRoute ? "New Scans" : "Scans Management"}
           </h1>
         </div>
-        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-4">
+        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-4 space-y-2">
           <div className="relative">
             <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
             <input
@@ -211,19 +241,33 @@ export default function ScansManagementPage() {
               className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#316BE8] focus:border-transparent"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs sm:text-sm text-gray-600">
+              Status:
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="flex-1 sm:flex-none sm:w-48 px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#316BE8] focus:border-transparent bg-white"
+            >
+              <option value="">All</option>
+              <option value="0">New / Pending</option>
+              <option value="1">Approved</option>
+              <option value="2">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Table */}
       <AdminTable
         columns={columns}
-        data={filteredScans}
+        data={allScans}
         isLoading={isLoading}
         onView={handleView}
         onApprove={handleApprove}
-        showMore={true}
-        hasMore={hasMore}
-        onShowMore={() => setPage((p) => p + 1)}
+        showMore={false}
+        hasMore={false}
       />
     </div>
   );

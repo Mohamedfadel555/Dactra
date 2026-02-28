@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
 import { MdSearch } from "react-icons/md";
@@ -9,54 +9,61 @@ import { useAdminAPI } from "../../api/adminAPI";
 
 export default function LabsManagementPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isNewRoute = location.pathname.endsWith("/new");
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [statusFilter, setStatusFilter] = useState(
+    isNewRoute ? "0" : ""
+  ); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
+  const pageSize = 100;
 
-  // Fetch all labs info with pagination
+  // Fetch all labs info مع search + status
   const { data: labsData, isLoading, refetch } = useQuery({
-    queryKey: ["admin-labs", page, pageSize],
+    queryKey: ["admin-labs", pageSize, searchQuery, statusFilter],
     queryFn: async () => {
-      const res = await adminAPI.getAllLabsInfo(page, pageSize);
-      return res.data; // Array of labs
+      const res = await adminAPI.getAllLabsInfo(
+        1,
+        pageSize,
+        searchQuery || null,
+        statusFilter === "" ? null : Number(statusFilter)
+      );
+      const raw = res.data;
+
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.items)) return raw.items;
+      if (Array.isArray(raw?.data)) return raw.data;
+      if (Array.isArray(raw?.$values)) return raw.$values;
+
+      return [];
     },
   });
 
-  const [allLoadedLabs, setAllLoadedLabs] = useState([]);
-
+  // When route changes between /labs and /labs/new, sync default filter
   useEffect(() => {
-    if (labsData && Array.isArray(labsData) && labsData.length > 0) {
-      setAllLoadedLabs((prev) => {
-        const existingPageStart = (page - 1) * pageSize;
-        const hasPage = prev.length > existingPageStart && prev[existingPageStart] !== undefined;
+    setStatusFilter(isNewRoute ? "0" : "");
+  }, [isNewRoute]);
 
-        if (!hasPage) {
-          const newList = [...prev];
-          while (newList.length < existingPageStart) {
-            newList.push(undefined);
-          }
-          labsData.forEach((lab) => {
-            newList.push(lab);
-          });
-          return newList;
-        }
-        return prev;
-      });
-    }
-  }, [labsData, page, pageSize]);
+  // Reset pagination when search or status filter changes
+  useEffect(() => {
+    // مجرد تغيير key بتاع useQuery بيعمل refetch
+  }, [searchQuery, statusFilter]);
 
-  const allLabs = allLoadedLabs.filter(Boolean);
+  const allLabs = (labsData || []).map((lab) => {
+    const approvalStatus =
+      typeof lab.approvalStatus === "number" ? lab.approvalStatus : null;
 
-  const filteredLabs = (allLabs || []).filter((lab) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      lab.name?.toLowerCase().includes(query) ||
-      lab.location?.toLowerCase().includes(query) ||
-      lab.contact?.toLowerCase().includes(query)
-    );
+    const isApprovedBool =
+      approvalStatus === 1 ||
+      lab.isApproved === true ||
+      lab.status === "Approved" ||
+      lab.statusType === "Approved";
+
+    return {
+      ...lab,
+      isApproved: isApprovedBool,
+    };
   });
 
   const columns = [
@@ -77,6 +84,15 @@ export default function LabsManagementPage() {
       ),
     },
     {
+      label: "License No.",
+      key: "licenceNo",
+      render: (lab) => (
+        <span className="text-sm text-gray-600">
+          {lab.licenceNo || lab.licenseNumber || "N/A"}
+        </span>
+      ),
+    },
+    {
       label: "Address",
       key: "address",
       render: (lab) => (
@@ -87,11 +103,31 @@ export default function LabsManagementPage() {
       label: "Status",
       key: "status",
       render: (lab) => {
-        const status = lab.isApproved ? "Approved" : "Pending";
+        const approvalStatus =
+          typeof lab.approvalStatus === "number" ? lab.approvalStatus : null;
+
+        let status;
+        if (
+          approvalStatus === 1 ||
+          lab.isApproved === true ||
+          lab.status === "Approved" ||
+          lab.statusType === "Approved"
+        ) {
+          status = "Approved";
+        } else if (
+          approvalStatus === 2 ||
+          lab.status === "Rejected" ||
+          lab.statusType === "Rejected"
+        ) {
+          status = "Rejected";
+        } else {
+          status = "Pending";
+        }
+
         const statusColors = {
           Pending: "bg-yellow-100 text-yellow-800",
           Approved: "bg-green-100 text-green-800",
-          Blocked: "bg-red-100 text-red-800",
+          Rejected: "bg-red-100 text-red-800",
         };
         return (
           <span
@@ -139,8 +175,7 @@ export default function LabsManagementPage() {
         toast.success("Lab approved successfully!");
       }
 
-      setPage(1);
-      setAllLoadedLabs([]);
+      // مجرد refetch واحد بعد ما الريكوست يخلص
       refetch();
     } catch (error) {
       if (isCurrentlyApproved) {
@@ -175,8 +210,6 @@ export default function LabsManagementPage() {
         toast.success("User blocked successfully!");
       }
 
-      setPage(1);
-      setAllLoadedLabs([]);
       refetch();
     } catch (error) {
       if (isBlocked) {
@@ -195,9 +228,11 @@ export default function LabsManagementPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Labs Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            {isNewRoute ? "New Labs" : "Labs Management"}
+          </h1>
         </div>
-        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-4">
+        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-4 space-y-2">
           <div className="relative">
             <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
             <input
@@ -208,19 +243,33 @@ export default function LabsManagementPage() {
               className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#316BE8] focus:border-transparent"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs sm:text-sm text-gray-600">
+              Status:
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="flex-1 sm:flex-none sm:w-48 px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#316BE8] focus:border-transparent bg-white"
+            >
+              <option value="">All</option>
+              <option value="0">New / Pending</option>
+              <option value="1">Approved</option>
+              <option value="2">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Table */}
       <AdminTable
         columns={columns}
-        data={filteredLabs}
+        data={allLabs}
         isLoading={isLoading}
         onView={handleView}
         onApprove={handleApprove}
-        showMore={true}
-        hasMore={hasMore}
-        onShowMore={() => setPage((p) => p + 1)}
+        showMore={false}
+        hasMore={false}
       />
     </div>
   );
