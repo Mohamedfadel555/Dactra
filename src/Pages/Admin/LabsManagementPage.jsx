@@ -116,10 +116,10 @@ export default function LabsManagementPage() {
           status = "Approved";
         } else if (
           approvalStatus === 2 ||
-          lab.status === "Rejected" ||
-          lab.statusType === "Rejected"
+          lab.status === "Disapproved" ||
+          lab.statusType === "Disapproved"
         ) {
-          status = "Rejected";
+          status = "Disapproved";
         } else {
           status = "Pending";
         }
@@ -127,7 +127,7 @@ export default function LabsManagementPage() {
         const statusColors = {
           Pending: "bg-yellow-100 text-yellow-800",
           Approved: "bg-green-100 text-green-800",
-          Rejected: "bg-red-100 text-red-800",
+          Disapproved: "bg-red-100 text-red-800",
         };
         return (
           <span
@@ -255,7 +255,7 @@ export default function LabsManagementPage() {
               <option value="">All</option>
               <option value="0">New / Pending</option>
               <option value="1">Approved</option>
-              <option value="2">Rejected</option>
+                <option value="2">Disapproved</option>
             </select>
           </div>
         </div>
