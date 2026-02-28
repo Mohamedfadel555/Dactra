@@ -115,10 +115,10 @@ export default function ScansManagementPage() {
           status = "Approved";
         } else if (
           approvalStatus === 2 ||
-          scan.status === "Rejected" ||
-          scan.statusType === "Rejected"
+          scan.status === "Disapproved" ||
+          scan.statusType === "Disapproved"
         ) {
-          status = "Rejected";
+          status = "Disapproved";
         } else {
           status = "Pending";
         }
@@ -126,7 +126,7 @@ export default function ScansManagementPage() {
         const statusColors = {
           Pending: "bg-yellow-100 text-yellow-800",
           Approved: "bg-green-100 text-green-800",
-          Rejected: "bg-red-100 text-red-800",
+          Disapproved: "bg-red-100 text-red-800",
         };
         return (
           <span
@@ -253,7 +253,7 @@ export default function ScansManagementPage() {
               <option value="">All</option>
               <option value="0">New / Pending</option>
               <option value="1">Approved</option>
-              <option value="2">Rejected</option>
+              <option value="2">Disapproved</option>
             </select>
           </div>
         </div>

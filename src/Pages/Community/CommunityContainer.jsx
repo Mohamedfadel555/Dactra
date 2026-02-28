@@ -16,7 +16,6 @@ import {
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
 import PostCard from "../../Components/Community/PostCard";
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
 const POSTS = [
   {
     id: 1,
@@ -95,7 +94,6 @@ const TRENDING = [
   { tag: "#Oncology", count: 88 },
 ];
 
-// ─── Framer variants ─────────────────────────────────────────────────────────
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
@@ -106,7 +104,6 @@ const stagger = {
   show: { transition: { staggerChildren: 0.08 } },
 };
 
-// ─── Feed Tabs ────────────────────────────────────────────────────────────────
 const TABS = [
   { key: "all", label: "All", icon: FiGrid, filter: () => true },
   { key: "liked", label: "Liked", icon: FiHeart, filter: (p) => p.liked },
@@ -156,21 +153,17 @@ function FeedTabs({ active, onChange, counts }) {
   );
 }
 
-// ─── Empty State ──────────────────────────────────────────────────────────────
 function EmptyState({ tab }) {
   const messages = {
     liked: {
-      emoji: "❤️",
       title: "No liked posts yet",
       sub: "Like posts to find them here quickly",
     },
     saved: {
-      emoji: "🔖",
       title: "No saved posts yet",
       sub: "Bookmark posts to read them later",
     },
     commented: {
-      emoji: "💬",
       title: "No commented posts yet",
       sub: "Join the conversation on any post",
     },
@@ -182,14 +175,12 @@ function EmptyState({ tab }) {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-2xl border border-blue-50 shadow-sm p-10 flex flex-col items-center gap-3 text-center"
     >
-      <span className="text-4xl">{m.emoji}</span>
       <p className="font-bold text-slate-700">{m.title}</p>
       <p className="text-sm text-slate-400 max-w-xs">{m.sub}</p>
     </motion.div>
   );
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
 function Sidebar() {
   return (
     <motion.aside
@@ -198,7 +189,6 @@ function Sidebar() {
       animate="show"
       className="flex flex-col gap-4"
     >
-      {/* Trending */}
       <motion.div
         variants={fadeUp}
         className="bg-white rounded-2xl p-5 border border-blue-50 shadow-sm"
@@ -228,7 +218,6 @@ function Sidebar() {
   );
 }
 
-// ─── Bottom Nav (mobile) ──────────────────────────────────────────────────────
 function BottomNav() {
   const [active, setActive] = useState(0);
   const items = [
@@ -273,7 +262,6 @@ function BottomNav() {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function CommunityContainer() {
   const [focused, setFocused] = useState(false);
   const [text, setText] = useState("");
@@ -282,7 +270,6 @@ export default function CommunityContainer() {
   const [activeTab, setActiveTab] = useState("all");
   const [posts, setPosts] = useState(POSTS);
 
-  // counts for badge on each tab
   const counts = {
     all: 0,
     liked: posts.filter((p) => p.liked).length,
@@ -290,11 +277,9 @@ export default function CommunityContainer() {
     commented: posts.filter((p) => p.commented).length,
   };
 
-  // filtered list based on active tab
   const currentTab = TABS.find((t) => t.key === activeTab);
   const filteredPosts = posts.filter(currentTab.filter);
 
-  // bubble up like/save changes from PostCard so tab counts stay live
   const handlePostUpdate = (id, changes) => {
     setPosts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...changes } : p)),
