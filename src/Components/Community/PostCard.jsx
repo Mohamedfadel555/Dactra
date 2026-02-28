@@ -36,7 +36,7 @@ function ActionBtn({
   );
 }
 
-export default function PostCard({ post }) {
+export default function PostCard({ post, type }) {
   const [liked, setLiked] = useState(post.liked);
   const [saved, setSaved] = useState(post.saved);
   const [likes, setLikes] = useState(post.likes);

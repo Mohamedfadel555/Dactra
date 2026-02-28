@@ -295,7 +295,7 @@ export default function Schedule({
           <button
             type="button"
             onClick={() =>
-              role === "Doctor" ? handleSave : handleBook(table.slotId)
+              role === "Doctor" ? handleSave() : handleBook(table.slotId)
             }
             className="w-[100px] h-[40px] cursor-pointer font-bold rounded-[10px] bg-blue-600 text-white"
           >
