@@ -84,8 +84,8 @@ export default function Navbar() {
           {
             label: "Community",
             Links: [
-              { to: "/Community", label: "- Posts" },
-              { to: "/questions", label: "- Questions" },
+              { to: "/Community/Posts", label: "- Posts" },
+              { to: "/Community/Questions", label: "- Questions" },
             ],
           },
           { to: "/aboutus", label: "About US" },
@@ -96,8 +96,8 @@ export default function Navbar() {
           {
             label: "Community",
             Links: [
-              { to: "/posts", label: "- Posts" },
-              { to: "/questions", label: "- Questions" },
+              { to: "/Community/Posts", label: "- Posts" },
+              { to: "/Community/Questions", label: "- Questions" },
             ],
           },
           { to: "/aboutus", label: "About US" },

@@ -30,7 +30,10 @@ export const useAppointmentAPI = () => {
   };
 
   const Book = async (id) => {
-    const res = await axiosInstance.post("Appointment/Book", id);
+    console.log(id);
+    const res = await axiosInstance.post(
+      `Appointment/Book?scheduleTableId=${id}`,
+    );
     return res;
   };
 

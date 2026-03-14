@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiHeart,
@@ -15,6 +15,10 @@ import {
 } from "react-icons/fi";
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
 import PostCard from "../../Components/Community/PostCard";
+import { useGetPosts } from "../../hooks/useGetPosts";
+import { useAuth } from "../../Context/AuthContext";
+import { usePostArtical } from "../../hooks/usePostArtical";
+import { useFilterPosts } from "../../hooks/useFilterPosts";
 
 const POSTS = [
   {
@@ -218,73 +222,63 @@ function Sidebar() {
   );
 }
 
-function BottomNav() {
-  const [active, setActive] = useState(0);
-  const items = [
-    { Icon: FiHome, label: "Home" },
-    { Icon: FiCompass, label: "Explore" },
-    { Icon: FiBook, label: "Articles" },
-    { Icon: FiUser, label: "Profile" },
-  ];
-  return (
-    <motion.nav
-      initial={{ y: 80 }}
-      animate={{ y: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-xl border-t border-blue-100 flex justify-around py-2 pb-safe"
-    >
-      {items.map(({ Icon, label }, i) => (
-        <button
-          key={i}
-          onClick={() => setActive(i)}
-          className="relative flex flex-col items-center gap-0.5 px-4 py-1"
-        >
-          {active === i && (
-            <motion.span
-              layoutId="bottomNavIndicator"
-              className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
-            />
-          )}
-          <Icon
-            size={20}
-            className={active === i ? "text-blue-600" : "text-slate-400"}
-          />
-          <span
-            className={`text-[10px] font-semibold ${
-              active === i ? "text-blue-600" : "text-slate-400"
-            }`}
-          >
-            {label}
-          </span>
-        </button>
-      ))}
-    </motion.nav>
-  );
-}
-
-export default function CommunityContainer() {
+export default function CommunityContainer({ type }) {
   const [focused, setFocused] = useState(false);
   const [text, setText] = useState("");
   const containerRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState("all");
-  const [posts, setPosts] = useState(POSTS);
 
-  const counts = {
+  const { data: fil } = useFilterPosts(
+    activeTab === "all"
+      ? null
+      : activeTab === "liked"
+        ? 0
+        : activeTab === "saved"
+          ? 1
+          : 2,
+  );
+  console.log(fil);
+
+  const { data: PostsDetails } = useGetPosts();
+  console.log(PostsDetails);
+  const [posts, setPosts] = useState(PostsDetails?.posts.items || []);
+
+  const { role } = useAuth();
+
+  const postMutation = usePostArtical();
+
+  useEffect(() => {
+    setPosts(PostsDetails?.posts.items || []);
+    if (PostsDetails?.stats) {
+      setCounts({
+        all: PostsDetails.stats.totalPosts ?? 0,
+        liked: PostsDetails.stats.totalLiked ?? 0,
+        saved: PostsDetails.stats.totalSaved ?? 0,
+        commented: PostsDetails.stats.totalCommented ?? 0,
+      });
+    }
+  }, [PostsDetails]);
+
+  const [counts, setCounts] = useState({
     all: 0,
-    liked: posts.filter((p) => p.liked).length,
-    saved: posts.filter((p) => p.saved).length,
-    commented: posts.filter((p) => p.commented).length,
+    liked: PostsDetails?.stats.totalLiked || 0,
+    saved: PostsDetails?.stats.totalSaved || 0,
+    commented: PostsDetails?.stats.totalCommented || 0,
+  });
+
+  const handlePostUpdate = (att, type) => {
+    setCounts((prev) => ({
+      ...prev,
+      [att]: type === "inc" ? prev[att] + 1 : prev[att] - 1,
+    }));
   };
 
-  const currentTab = TABS.find((t) => t.key === activeTab);
-  const filteredPosts = posts.filter(currentTab.filter);
-
-  const handlePostUpdate = (id, changes) => {
-    setPosts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...changes } : p)),
-    );
-  };
+  // const currentTab = TABS.find((t) => t.key === activeTab);
+  const filteredPosts = activeTab === "all" ? posts : fil?.items;
+  // const filteredPosts = posts.filter(currentTab.filter);
+  console.log(posts);
+  console.log(filteredPosts);
 
   const handleBlur = (e) => {
     if (
@@ -301,80 +295,83 @@ export default function CommunityContainer() {
         {/* Feed */}
         <div className="flex flex-col gap-4">
           {/* Compose Box */}
-          <motion.div
-            ref={containerRef}
-            variants={fadeUp}
-            initial="hidden"
-            animate={{
-              opacity: 1,
-              y: 0,
-              borderColor: focused
-                ? "rgba(59,130,246,0.5)"
-                : "rgba(219,234,254,1)",
-              boxShadow: focused
-                ? "0 0 0 3px rgba(59,130,246,0.12)"
-                : "0 1px 3px rgba(0,0,0,0.06)",
-            }}
-            onBlur={handleBlur}
-            className="bg-white rounded-2xl p-4 border"
-          >
-            <div className="flex gap-3 items-start">
-              <AvatarIcon />
-              <div className="flex-1 min-w-0">
-                <motion.textarea
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onFocus={() => setFocused(true)}
-                  placeholder="Share a medical insight, case, or update…"
-                  animate={{ height: focused ? 72 : 32 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className={`w-full ${focused ? "p-0" : "pt-[7px]"} text-sm text-slate-700 placeholder-slate-400 bg-transparent outline-none resize-none leading-relaxed overflow-hidden`}
-                />
+          {((type === "Artical" && role === "Doctor") ||
+            (type === "Question" && role === "Patient")) && (
+            <motion.div
+              ref={containerRef}
+              variants={fadeUp}
+              initial="hidden"
+              animate={{
+                opacity: 1,
+                y: 0,
+                borderColor: focused
+                  ? "rgba(59,130,246,0.5)"
+                  : "rgba(219,234,254,1)",
+                boxShadow: focused
+                  ? "0 0 0 3px rgba(59,130,246,0.12)"
+                  : "0 1px 3px rgba(0,0,0,0.06)",
+              }}
+              onBlur={handleBlur}
+              className="bg-white rounded-2xl p-4 border"
+            >
+              <div className="flex gap-3 items-start">
+                <AvatarIcon />
+                <div className="flex-1 min-w-0">
+                  <motion.textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onFocus={() => setFocused(true)}
+                    placeholder="Share a medical insight, case, or update…"
+                    animate={{ height: focused ? 72 : 32 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className={`w-full ${focused ? "p-0" : "pt-[7px]"} text-sm text-slate-700 placeholder-slate-400 bg-transparent outline-none resize-none leading-relaxed overflow-hidden`}
+                  />
 
-                {/* Toolbar */}
-                <AnimatePresence initial={false}>
-                  {focused && (
-                    <motion.div
-                      key="toolbar"
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="flex items-center justify-between mt-3 flex-wrap gap-2"
-                    >
-                      <div className="flex gap-1">
+                  {/* Toolbar */}
+                  <AnimatePresence initial={false}>
+                    {focused && (
+                      <motion.div
+                        key="toolbar"
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="flex items-center justify-between mt-3 flex-wrap gap-2"
+                      >
+                        <div className="flex gap-1">
+                          <motion.button
+                            whileHover={{ scale: 1.12 }}
+                            whileTap={{ scale: 0.92 }}
+                            tabIndex={0}
+                            className="p-2 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors focus:outline-none"
+                          >
+                            <FiLink size={15} />
+                          </motion.button>
+                        </div>
+
                         <motion.button
-                          whileHover={{ scale: 1.12 }}
-                          whileTap={{ scale: 0.92 }}
+                          whileHover={text.trim() ? { scale: 1.04 } : {}}
+                          whileTap={text.trim() ? { scale: 0.96 } : {}}
                           tabIndex={0}
-                          className="p-2 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors focus:outline-none"
-                        >
-                          <FiLink size={15} />
-                        </motion.button>
-                      </div>
-
-                      <motion.button
-                        whileHover={text.trim() ? { scale: 1.04 } : {}}
-                        whileTap={text.trim() ? { scale: 0.96 } : {}}
-                        tabIndex={0}
-                        disabled={!text.trim()}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all focus:outline-none
+                          disabled={text.length < 10}
+                          onClick={() => postMutation.mutate({ content: text })}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all focus:outline-none
                           ${
-                            text.trim()
+                            text.length > 10
                               ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-200 cursor-pointer"
                               : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-60"
                           }`}
-                      >
-                        <FiSend size={13} />
-                        Post
-                      </motion.button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                        >
+                          <FiSend size={13} />
+                          Post
+                        </motion.button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
-            </div>
-          </motion.div>
-
+            </motion.div>
+          )}
           {/* ── Feed Tabs ── */}
           <FeedTabs
             active={activeTab}
@@ -392,17 +389,21 @@ export default function CommunityContainer() {
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="flex flex-col gap-4"
             >
-              {filteredPosts.length === 0 && activeTab !== "all" ? (
+              {filteredPosts?.length === 0 && activeTab !== "all" ? (
                 <EmptyState tab={activeTab} />
               ) : (
-                filteredPosts.map((p, i) => (
+                filteredPosts?.map((p, i) => (
                   <motion.div
                     key={p.id}
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06, duration: 0.32 }}
                   >
-                    <PostCard post={p} onUpdate={handlePostUpdate} />
+                    <PostCard
+                      type={type}
+                      post={p}
+                      onUpdate={handlePostUpdate}
+                    />
                   </motion.div>
                 ))
               )}

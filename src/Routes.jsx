@@ -12,6 +12,7 @@ import DoctorsListPage from "./Pages/DoctorsListPage";
 import MyProfile from "./Pages/Profile/MyProfile";
 import Profile from "./Pages/Profile/Profile";
 import CommunityContainer from "./Pages/Community/CommunityContainer";
+import PostDetailPage from "./Pages/Community/PostDetails";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -52,14 +53,14 @@ const ScansManagementPage = lazy(
 const ComplaintsReportsPage = lazy(
   () => import("./Pages/Admin/ComplaintsReportsPage"),
 );
-const AllergiesManagementPage = lazy(() =>
-  import("./Pages/Admin/AllergiesManagementPage")
+const AllergiesManagementPage = lazy(
+  () => import("./Pages/Admin/AllergiesManagementPage"),
 );
-const ChronicDiseasesManagementPage = lazy(() =>
-  import("./Pages/Admin/ChronicDiseasesManagementPage")
+const ChronicDiseasesManagementPage = lazy(
+  () => import("./Pages/Admin/ChronicDiseasesManagementPage"),
 );
-const MajorsManagementPage = lazy(() =>
-  import("./Pages/Admin/MajorsManagementPage")
+const MajorsManagementPage = lazy(
+  () => import("./Pages/Admin/MajorsManagementPage"),
 );
 
 export const route = createBrowserRouter([
@@ -79,9 +80,14 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
+      { path: "Community/Post", element: <PostDetailPage /> },
       {
-        path: "Community",
-        element: <CommunityContainer />,
+        path: "Community/Posts",
+        element: <CommunityContainer type={"Artical"} />,
+      },
+      {
+        path: "Community/Questions",
+        element: <CommunityContainer type={"Question"} />,
       },
       {
         path: "doctors",

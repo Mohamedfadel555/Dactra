@@ -6,7 +6,8 @@ export const useBook = () => {
   return useMutation({
     mutationFn: Book,
     onSuccess: (res) => {
-      console.log(res);
+      console.log(res.data.appointmentId);
+      window.open(res.data.appointmentId, "_blank");
     },
     onError: (err) => {
       console.log(err);
