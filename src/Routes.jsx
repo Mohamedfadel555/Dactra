@@ -63,6 +63,16 @@ const MajorsManagementPage = lazy(
   () => import("./Pages/Admin/MajorsManagementPage"),
 );
 
+// Lab / Scan (Provider) Layout and Pages
+const ProviderLayout = lazy(() => import("./Layout/ProviderLayout"));
+const ProviderProfilePage = lazy(() => import("./Pages/Provider/ProviderProfilePage"));
+const ProviderServicesPage = lazy(() => import("./Pages/Provider/ProviderServicesPage"));
+const ProtectedProvider = lazy(() => import("./Components/Provider/ProtectedProvider"));
+
+// Patient: Service Providers (Labs & Scans) list and detail
+const ServiceProvidersPage = lazy(() => import("./Pages/ServiceProviders/ServiceProvidersPage"));
+const ServiceProviderDetailPage = lazy(() => import("./Pages/ServiceProviders/ServiceProviderDetailPage"));
+
 export const route = createBrowserRouter([
   {
     path: "/",
@@ -133,22 +143,22 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
-      // {
-      //   path: "lab/profile/:id",
-      //   element: (
-      //     <Suspense fallback={<Loader />}>
-      //       <Profile />
-      //     </Suspense>
-      //   ),
-      // },
-      // {
-      //   path: "scan/profile/:id",
-      //   element: (
-      //     <Suspense fallback={<Loader />}>
-      //       <Profile />
-      //     </Suspense>
-      //   ),
-      // },
+      {
+        path: "service-providers",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ServiceProvidersPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "labs/:id",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ServiceProviderDetailPage />
+          </Suspense>
+        ),
+      },
     ],
   },
   {
@@ -226,6 +236,7 @@ export const route = createBrowserRouter([
         </ProtectedAdmin>
       </Suspense>
     ),
+    // Only Admin can access; Lab/Scan get 403
     children: [
       {
         index: true,
@@ -327,6 +338,36 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
+    ],
+  },
+  {
+    path: "/lab",
+    element: (
+      <Suspense fallback={<Loader />}>
+        <ProtectedProvider allowedRoles={["Lab"]}>
+          <ProviderLayout />
+        </ProtectedProvider>
+      </Suspense>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/lab/profile" replace /> },
+      { path: "profile", element: <Suspense fallback={<Loader />}><ProviderProfilePage /></Suspense> },
+      { path: "services", element: <Suspense fallback={<Loader />}><ProviderServicesPage /></Suspense> },
+    ],
+  },
+  {
+    path: "/scan",
+    element: (
+      <Suspense fallback={<Loader />}>
+        <ProtectedProvider allowedRoles={["Scan"]}>
+          <ProviderLayout />
+        </ProtectedProvider>
+      </Suspense>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/scan/profile" replace /> },
+      { path: "profile", element: <Suspense fallback={<Loader />}><ProviderProfilePage /></Suspense> },
+      { path: "services", element: <Suspense fallback={<Loader />}><ProviderServicesPage /></Suspense> },
     ],
   },
   {

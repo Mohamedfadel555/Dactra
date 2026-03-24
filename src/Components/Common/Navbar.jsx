@@ -71,16 +71,19 @@ export default function Navbar() {
     role === "Patient" || role === null
       ? [
           { to: "/", label: "Home" },
+          
           { to: "/fav", label: "Favourite" },
           {
             label: "Services",
             Links: [
+              { to: "/service-providers", label: "- Labs & Scan Centers" },
               { to: "/service1", label: "- Service1" },
               { to: "/service2", label: "- Service2" },
               { to: "/service3", label: "- Service3" },
             ],
           },
           { to: "/doctors", label: "Doctors" },
+          { to: "/service-providers", label: "Labs & Scans" },
           {
             label: "Community",
             Links: [

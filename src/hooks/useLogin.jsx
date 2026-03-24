@@ -17,16 +17,54 @@ export const useLogin = () => {
     mutationFn: LoginAPI,
     onSuccess: async (data) => {
       const tokenPayload = JSON.parse(atob(data.data.token.split(".")[1]));
-      console.log(data);
-      const role = tokenPayload.role;
-      await login(data.data.token, role);
+      console.log("Login success payload:", tokenPayload);
+
+      // Try to extract role from different possible claim keys
+      let rawRole =
+        tokenPayload.role ||
+        tokenPayload.roles ||
+        tokenPayload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+
+      const typeValue = tokenPayload.tv; // "0" for lab, "1" for scan (from backend)
+
+      if (Array.isArray(rawRole)) {
+        rawRole = rawRole[0];
+      }
+
+      const normalizedRole = (rawRole && typeof rawRole === "string" ? rawRole : "").toLowerCase();
+
+      // Map backend roles to app roles (used across the app)
+      let appRole = rawRole;
+      if (normalizedRole === "admin" || normalizedRole === "administrator") {
+        appRole = "Admin";
+      } else if (normalizedRole === "lab" || normalizedRole === "lap") {
+        appRole = "Lab";
+      } else if (normalizedRole === "scan" || normalizedRole === "scancenter") {
+        appRole = "Scan";
+      } else if (normalizedRole === "medicaltestprovider") {
+        // MedicalTestProvider: decide Lab vs Scan based on tv claim
+        if (typeValue === "0" || typeValue === 0) {
+          appRole = "Lab";
+        } else if (typeValue === "1" || typeValue === 1) {
+          appRole = "Scan";
+        } else {
+          appRole = "Lab";
+        }
+      }
+
+      await login(data.data.token, appRole);
       toast.success("Logged in successfully!", {
         position: "top-center",
         closeOnClick: true,
       });
-      const normalizedRole = role?.toLowerCase();
-      if (normalizedRole === "admin" || normalizedRole === "administrator") {
+
+      const navRole = (appRole && typeof appRole === "string" ? appRole : "").toLowerCase();
+      if (navRole === "admin" || navRole === "administrator") {
         navigate("/admin/dashboard", { replace: true });
+      } else if (navRole === "lab" || navRole === "lap") {
+        navigate("/lab", { replace: true });
+      } else if (navRole === "scan") {
+        navigate("/scan", { replace: true });
       } else {
         navigate("/", { replace: true });
       }

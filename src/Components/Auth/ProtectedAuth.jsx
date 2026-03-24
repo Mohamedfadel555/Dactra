@@ -13,10 +13,20 @@ export default function ProtectedAuth() {
   console.log(accessToken);
   if (accessToken) {
     const normalizedRole = role?.toLowerCase();
+
     if (normalizedRole === "admin" || normalizedRole === "administrator") {
-      // Admin redirect is handled in useLogin hook
       return <Navigate to="/admin/dashboard" replace />;
     }
+
+    if (normalizedRole === "lab" || normalizedRole === "lap") {
+      return <Navigate to="/lab" replace />;
+    }
+
+    if (normalizedRole === "scan") {
+      return <Navigate to="/scan" replace />;
+    }
+
+    // Default: send any other logged-in user to home
     return <Navigate to="/" replace />;
   }
 
