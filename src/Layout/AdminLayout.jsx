@@ -138,7 +138,7 @@ export default function AdminLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2 lg:px-4 py-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-2 lg:px-4 py-4 space-y-2 overflow-y-auto scrollbar-hide">
           {navItems.map((item) => {
             const IconComponent = item.icon;
             const hasChildren = Array.isArray(item.children);
