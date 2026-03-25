@@ -80,7 +80,9 @@ export default function LabsManagementPage() {
       label: "Phone",
       key: "phoneNumber",
       render: (lab) => (
-        <span className="text-sm text-gray-600">{lab.phoneNumber || "N/A"}</span>
+        <span className="text-sm text-gray-600">
+          {lab.phoneNumber || lab.phone || "N/A"}
+        </span>
       ),
     },
     {
@@ -88,7 +90,7 @@ export default function LabsManagementPage() {
       key: "licenceNo",
       render: (lab) => (
         <span className="text-sm text-gray-600">
-          {lab.licenceNo || lab.licenseNumber || "N/A"}
+          {lab.licenceNo || lab.licenseNo || lab.licenseNumber || "N/A"}
         </span>
       ),
     },

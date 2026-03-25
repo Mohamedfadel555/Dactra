@@ -73,6 +73,15 @@ body {
   box-sizing: border-box;
 }
 
+/* Hide scrollbar but keep scroll (sidebar) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 .gradient-text {
   background: linear-gradient(to right, #316be8, #88d8ff);
   -webkit-background-clip: text;

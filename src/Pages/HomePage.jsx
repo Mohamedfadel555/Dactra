@@ -37,6 +37,9 @@ import FAQAccordion from "../Components/Home/FAQAccordion";
 import { useAuth } from "../Context/AuthContext";
 import axios from "axios";
 import ReviewsDetailsSection from "../Components/Common/ReviewsDetailsSection";
+import { useQuery } from "@tanstack/react-query";
+import { useProviderAPI } from "../api/providerAPI";
+import ServiceProviderCard from "../Components/ServiceProviders/ServiceProviderCard";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -206,6 +209,13 @@ export default function HomePage() {
     isLoading: majorsLoading,
     isError: majorsError,
   } = useMajors("doctor");
+  const providerAPI = useProviderAPI();
+  const { data: providers = [] } = useQuery({
+    queryKey: ["medicalTestsProviders"],
+    queryFn: () => providerAPI.getMedicalTestsProviders(),
+  });
+  const labs = (providers || []).filter((p) => p.type === 0);
+  const scans = (providers || []).filter((p) => p.type === 1);
 
   return (
     <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
@@ -419,6 +429,65 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
               </div>
             </div>
           </div>
+
+          {/* Labs & Scan Centers for Patient */}
+          {(labs.length > 0 || scans.length > 0) && (
+          <div className="flex flex-col gap-10 justify-center items-center px-4 md:px-8 lg:px-12 mt-4">
+              <HeaderSection
+                leftText="Labs &"
+                gradientText=" Scan Centers"
+                rightText=""
+                description="Find trusted labs and scan centers. View profile, services, and working hours."
+              />
+              <div className="w-full max-w-screen-2xl mx-auto flex flex-col gap-10">
+                {labs.length > 0 && (
+                <div className="w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {labs.slice(0, 6).map((p) => (
+                        <motion.div key={p.id} initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                          <ServiceProviderCard
+                            id={p.id}
+                            name={p.name}
+                            address={p.address}
+                            avg_Rating={p.avg_Rating}
+                            type={0}
+                            topServices={[]}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {scans.length > 0 && (
+                <div className="w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {scans.slice(0, 6).map((p) => (
+                        <motion.div key={p.id} initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                          <ServiceProviderCard
+                            id={p.id}
+                            name={p.name}
+                            address={p.address}
+                            avg_Rating={p.avg_Rating}
+                            type={1}
+                            topServices={[]}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-center">
+                  <Link
+                    to="/service-providers"
+                    className="px-6 py-3 rounded-xl bg-[#316BE8] text-white font-semibold hover:bg-[#2552c1] transition"
+                  >
+                    View all Labs & Scan Centers
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-12 justify-center items-center px-4 md:px-8 lg:px-12">
             <HeaderSection
               leftText="Top Our"

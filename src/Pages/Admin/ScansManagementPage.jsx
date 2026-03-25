@@ -79,7 +79,9 @@ export default function ScansManagementPage() {
       label: "Phone",
       key: "phoneNumber",
       render: (scan) => (
-        <span className="text-sm text-gray-600">{scan.phoneNumber || "N/A"}</span>
+        <span className="text-sm text-gray-600">
+          {scan.phoneNumber || scan.phone || "N/A"}
+        </span>
       ),
     },
     {
@@ -87,7 +89,7 @@ export default function ScansManagementPage() {
       key: "licenceNo",
       render: (scan) => (
         <span className="text-sm text-gray-600">
-          {scan.licenceNo || scan.licenseNumber || "N/A"}
+          {scan.licenceNo || scan.licenseNo || scan.licenseNumber || "N/A"}
         </span>
       ),
     },
@@ -209,8 +211,6 @@ export default function ScansManagementPage() {
         toast.success("User blocked successfully!");
       }
 
-      setPage(1);
-      setAllLoadedScans([]);
       refetch();
     } catch (error) {
       if (isBlocked) {

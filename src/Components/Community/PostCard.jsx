@@ -40,9 +40,8 @@ export default function PostCard({ post, type, onUpdate }) {
 
   // ── time formatting ──
   const now = new Date();
-  const createAt = new Date(post.createdAt + "Z");
-  console.log(post.createdAt);
-  console.log(createAt);
+  const createAt = new Date(post.createdAt);
+
   const diff = now - createAt;
   const diffMinutes = diff / (1000 * 60);
   const diffHours = diff / (1000 * 60 * 60);

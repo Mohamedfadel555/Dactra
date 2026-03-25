@@ -100,7 +100,7 @@ export default function DoctorsManagementPage() {
       key: "licenceNo",
       render: (doctor) => (
         <span className="text-sm text-gray-600">
-          {doctor.licenceNo || doctor.licenseNumber || "N/A"}
+          {doctor.licenceNo || doctor.licenseNo || doctor.licenseNumber || "N/A"}
         </span>
       ),
     },
