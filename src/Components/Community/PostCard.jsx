@@ -14,6 +14,7 @@ import ActionBtn from "../Common/ActionBtn";
 import { useAuth } from "../../Context/AuthContext";
 import { useLikePost } from "../../hooks/useLikePost";
 import { useSavePost } from "./../../hooks/useSavePost";
+import { useInterestPost } from "../../hooks/useInterestPost";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -21,13 +22,27 @@ const fadeUp = {
 };
 
 export default function PostCard({ post, type, onUpdate }) {
-  const [liked, setLiked] = useState(post.isLikedByCurrentUser);
+  const [liked, setLiked] = useState(
+    type === "Question"
+      ? post.isInterestedByCurrentUser
+      : post.isLikedByCurrentUser,
+  );
   const [saved, setSaved] = useState(post.isSavedByCurrentUser);
-  const [likes, setLikes] = useState(post.likesCount);
+  const [likes, setLikes] = useState(
+    type === "Question" ? post.interestsCount : post.likesCount,
+  );
   const [expanded, setExpanded] = useState(false);
 
+  const { role } = useAuth();
+  const likeMutation = useLikePost();
+  const interestMutation = useInterestPost();
+  const saveMutation = useSavePost(type);
+
+  // ── time formatting ──
   const now = new Date();
-  const createAt = new Date(post.createdAt);
+  const createAt = new Date(post.createdAt + "Z");
+  console.log(post.createdAt);
+  console.log(createAt);
   const diff = now - createAt;
   const diffMinutes = diff / (1000 * 60);
   const diffHours = diff / (1000 * 60 * 60);
@@ -36,14 +51,85 @@ export default function PostCard({ post, type, onUpdate }) {
   const diffMonths = diff / (1000 * 60 * 60 * 24 * 30);
   const diffYears = diff / (1000 * 60 * 60 * 24 * 30 * 12);
 
-  const { role } = useAuth();
+  const timeAgo =
+    diffYears >= 1
+      ? Math.floor(diffYears) + "y ago"
+      : diffMonths >= 1
+        ? Math.floor(diffMonths) + "mo ago"
+        : diffWeeks >= 1
+          ? Math.floor(diffWeeks) + "w ago"
+          : diffDays >= 1
+            ? Math.floor(diffDays) + "d ago"
+            : diffHours >= 1
+              ? Math.floor(diffHours) + "h ago"
+              : diffMinutes >= 1
+                ? Math.floor(diffMinutes) + "m ago"
+                : "now";
 
-  const isLong = post.content.length > 140;
-  const body =
-    !expanded && isLong ? post.content.slice(0, 140) + "…" : post.content;
+  // ── body ──
+  console.log(post);
+  const bodyText = post.content ? post.content : post.text;
+  const isLong = bodyText.length > 140;
+  const body = !expanded && isLong ? bodyText.slice(0, 140) + "…" : bodyText;
 
-  const likeMutation = useLikePost();
-  const saveMutation = useSavePost();
+  // ── handlers ──
+  const handleLike = () => {
+    setLiked((prev) => !prev);
+    setLikes((prev) => (liked ? prev - 1 : prev + 1));
+    onUpdate("liked", liked ? "dec" : "inc");
+    likeMutation.mutate(post.id);
+  };
+
+  const handleInterest = () => {
+    setLiked((prev) => !prev);
+    setLikes((prev) => (liked ? prev - 1 : prev + 1));
+    onUpdate("liked", liked ? "dec" : "inc");
+    interestMutation.mutate(post.id);
+  };
+
+  const handleSave = () => {
+    setSaved((prev) => !prev);
+    onUpdate("saved", saved ? "dec" : "inc");
+    saveMutation.mutate(post.id);
+  };
+
+  // ── render like/interest action ──
+  const renderLikeAction = () => {
+    if (type === "Artical") {
+      // ✅ Article → Like للكل (Doctor + Patient)
+      return (
+        <ActionBtn
+          // ✅ الأيقونة بتتغير حسب الحالة
+          iconActive={ImHeart}
+          iconInactive={FiHeart}
+          label="Like"
+          labelInActive="Liked"
+          active={liked}
+          activeClass="text-rose-500"
+          onClick={handleLike}
+        />
+      );
+    }
+
+    if (type === "Question" && role === "Patient") {
+      // ✅ Question + Patient → Interest
+      return (
+        <ActionBtn
+          // ✅ الأيقونة بتتغير حسب الحالة
+          iconActive={FaAngleDoubleUp}
+          iconInactive={FaAngleUp}
+          label="Interest"
+          labelInActive="Interested"
+          active={liked}
+          activeClass="text-blue-600"
+          onClick={handleInterest}
+        />
+      );
+    }
+
+    // Doctor على Question → مفيش زرار
+    return null;
+  };
 
   return (
     <motion.article
@@ -58,23 +144,13 @@ export default function PostCard({ post, type, onUpdate }) {
           <AvatarIcon />
           <div>
             <p className="font-bold text-slate-800 text-sm leading-tight">
-              Dr.{post.doctor.fullName}
+              {type === "Question"
+                ? post.patient.fullName
+                : `Dr.${post.doctor.fullName}`}
             </p>
             <p className="text-xs text-slate-400">
-              {post.doctor.specialty} ·{" "}
-              {diffYears >= 1
-                ? Math.floor(diffYears) + "y"
-                : diffMonths >= 1
-                  ? Math.floor(diffMonths) + "mo"
-                  : diffWeeks >= 1
-                    ? Math.floor(diffWeeks) + "w"
-                    : diffDays >= 1
-                      ? Math.floor(diffDays) + "d"
-                      : diffHours >= 1
-                        ? Math.floor(diffHours) + "h"
-                        : diffMinutes >= 1
-                          ? Math.floor(diffMinutes) + "m"
-                          : "now"}
+              {type === "Artical" && post.doctor.specialty + " · "}
+              {timeAgo}
             </p>
           </div>
         </div>
@@ -102,9 +178,9 @@ export default function PostCard({ post, type, onUpdate }) {
       </p>
 
       {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {post.tags.length > 0 &&
-          post.tags.map((t) => (
+      {post.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {post.tags.map((t) => (
             <span
               key={t}
               className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-0.5 rounded-full"
@@ -112,81 +188,59 @@ export default function PostCard({ post, type, onUpdate }) {
               #{t}
             </span>
           ))}
-      </div>
+        </div>
+      )}
 
-      {/* ── Stats bar ── */}
+      {/* Stats */}
+      {/* Stats */}
       <div className="flex items-center gap-4 mb-3">
-        {/* Likes count */}
         <div className="flex items-center gap-1.5">
-          <ImHeart size={13} className="text-rose-400" />
+          {/* ✅ ثابتة دايمًا - مش بتتغير حسب liked */}
+          {type === "Question" ? (
+            <FaAngleDoubleUp size={13} className="text-blue-500" />
+          ) : (
+            <ImHeart size={13} className="text-rose-400" />
+          )}
+
           <span className="text-xs font-semibold text-slate-600">{likes}</span>
-          <span className="text-xs text-slate-400">likes</span>
+          <span className="text-xs text-slate-400">
+            {type === "Question" ? "interested" : "likes"}
+          </span>
         </div>
 
-        {/* Comments count — hidden for Articles */}
-        {type !== "Artical" && (
+        {type === "Question" && (
           <div className="flex items-center gap-1.5">
             <FiMessageCircle size={13} className="text-blue-400" />
             <span className="text-xs font-semibold text-slate-600">
-              {post.comments}
+              {post.answersCount}
             </span>
-            <span className="text-xs text-slate-400">comments</span>
+            <span className="text-xs text-slate-400">answers</span>
           </div>
         )}
       </div>
-
       <div className="h-px bg-blue-50 mb-3" />
 
       {/* Actions */}
       <div className="flex items-center justify-between">
         <div className="flex gap-1">
-          {type === "Artical" ? (
-            <ActionBtn
-              iconActive={ImHeart}
-              iconInactive={FiHeart}
-              label="Like"
-              labelInActive="Liked"
-              active={liked}
-              activeClass="text-rose-500"
-              onClick={() => {
-                setLiked(!liked);
-                liked ? onUpdate("liked", "dec") : onUpdate("liked", "inc");
-                setLikes(liked ? likes - 1 : likes + 1);
-                likeMutation.mutate(post.id);
-              }}
-            />
-          ) : role === "Patient" ? (
-            <ActionBtn
-              iconActive={FaAngleDoubleUp}
-              iconInactive={FaAngleUp}
-              label="interest"
-              labelInActive="interested"
-              active={liked}
-              activeClass="text-blue-600"
-              onClick={() => {
-                setLiked(!liked);
-                setLikes(liked ? likes - 1 : likes + 1);
-              }}
-            />
-          ) : null}
-          {type === "Artical" ? null : (
-            <Link to={"/Community/Post"}>
+          {renderLikeAction()}
+
+          {type === "Question" && (
+            <Link to={`/Community/Question/${post.id}`}>
               <ActionBtn
                 iconActive={FiMessageCircle}
                 iconInactive={FiMessageCircle}
-                label="Comments"
+                label="Answer"
                 count={post.comments}
               />
             </Link>
           )}
         </div>
+
+        {/* Save للكل */}
         <motion.button
           whileTap={{ scale: 0.85 }}
-          onClick={() => {
-            setSaved(!saved);
-            saved ? onUpdate("saved", "dec") : onUpdate("saved", "inc");
-            saveMutation.mutate(post.id);
-          }}
+          onClick={handleSave}
           className={`p-2 rounded-xl cursor-pointer transition-colors ${
             saved
               ? "text-blue-600 bg-blue-50"

@@ -66,7 +66,6 @@ export default function Navbar() {
     return () => (document.body.style.overflow = "auto");
   }, [sidenav]);
 
-  console.log(role);
   const NavLinks =
     role === "Patient" || role === null
       ? [

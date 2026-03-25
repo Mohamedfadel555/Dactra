@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCommunityAPI } from "../api/CommunityAPI";
 
-export const useFilterPosts = (id) => {
+export const useFilterPosts = (id, type) => {
   console.log(id);
-  const { filterPosts } = useCommunityAPI();
+  const { filterPosts, filterQuestion } = useCommunityAPI();
   return useQuery({
-    queryFn: () => filterPosts(id),
-    queryKey: ["filteredPosts", id],
+    queryFn: () => (type === "Question" ? filterQuestion(id) : filterPosts(id)),
+    queryKey: [type === "Question" ? "filterQuestions" : "filteredPosts", id],
     enabled: id !== null,
   });
 };

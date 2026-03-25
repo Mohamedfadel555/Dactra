@@ -24,12 +24,49 @@ export const useCommunityAPI = () => {
   };
 
   const filterPosts = async (id) => {
-    console.log(id);
     const res = await axiosInstance.get("Posts/filterOn", {
       params: { filter: id },
     });
     return res.data;
   };
 
-  return { getPosts, likePost, savePost, postArtical, filterPosts };
+  const getQuestions = async () => {
+    const res = await axiosInstance.get("Questions");
+    return res.data;
+  };
+
+  const interestPost = (id) => {
+    const res = axiosInstance.post(`Questions/${id}/interest`);
+    return res;
+  };
+
+  const filterQuestion = async (id) => {
+    const res = await axiosInstance.get("Questions/filterOn", {
+      params: { filter: id },
+    });
+    return res.data;
+  };
+
+  const saveQuestion = (id) => {
+    const res = axiosInstance.post(`Questions/${id}/save`);
+    return res;
+  };
+
+  const PostQuestion = async (Data) => {
+    const res = await axiosInstance.post("Questions", Data);
+    return res;
+  };
+
+  return {
+    getPosts,
+    likePost,
+    savePost,
+    postArtical,
+    filterPosts,
+    getQuestions,
+    interestPost,
+    filterQuestion,
+    saveQuestion,
+    PostQuestion,
+  };
 };

@@ -80,7 +80,7 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
-      { path: "Community/Post", element: <PostDetailPage /> },
+      { path: "Community/Question/:id", element: <PostDetailPage /> },
       {
         path: "Community/Posts",
         element: <CommunityContainer type={"Artical"} />,
