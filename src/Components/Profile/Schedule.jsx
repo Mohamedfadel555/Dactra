@@ -13,7 +13,6 @@ export default function Schedule({
   data = {},
 }) {
   const [table, setTable] = useState(role === "Doctor" ? data : timeSlots);
-  console.log(table);
   const [selectedDay, setSelectedDay] = useState(null);
   const today = new Date();
 
@@ -26,8 +25,6 @@ export default function Schedule({
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   }
-
-  console.log(timeSlots);
 
   const generatedSlots =
     role !== "Doctor"
@@ -61,8 +58,6 @@ export default function Schedule({
 
           return slots;
         }, [start, end]);
-
-  console.log(generatedSlots);
 
   const [weekDays, setWeekDays] = useState(
     Array.from({ length: 7 }, (_, i) => {
@@ -114,14 +109,11 @@ export default function Schedule({
   const dayKey = formatDateKey(dayPicked);
 
   async function handleBook(id) {
-    console.log(id);
     await bookMutation.mutateAsync(id);
   }
 
   async function handleSave() {
-    console.log({
-      slots: table,
-    });
+    console.log({ slots: table });
     await saveMutation.mutateAsync({
       slots: table,
     });
@@ -130,8 +122,6 @@ export default function Schedule({
   let emptycheck =
     (role === "Doctor" ? generatedSlots : generatedSlots[dayKey] || [])
       .length === 0;
-
-  console.log(emptycheck);
 
   return (
     <div className="flex flex-col gap-[20px]">

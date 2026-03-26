@@ -66,7 +66,7 @@ export default function PostCard({ post, type, onUpdate }) {
                 : "now";
 
   // ── body ──
-  console.log(post);
+
   const bodyText = post.content ? post.content : post.text;
   const isLong = bodyText.length > 140;
   const body = !expanded && isLong ? bodyText.slice(0, 140) + "…" : bodyText;
@@ -225,7 +225,7 @@ export default function PostCard({ post, type, onUpdate }) {
           {renderLikeAction()}
 
           {type === "Question" && (
-            <Link to={`/Community/Question/${post.id}`}>
+            <Link to={`/Community/Question/${post.id}`} state={{ post }}>
               <ActionBtn
                 iconActive={FiMessageCircle}
                 iconInactive={FiMessageCircle}

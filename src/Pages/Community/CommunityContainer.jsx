@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { TbUserQuestion } from "react-icons/tb";
+import { FaHospitalUser } from "react-icons/fa6";
 import {
   FiHeart,
   FiMessageCircle,
@@ -33,27 +35,59 @@ const stagger = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08 } },
 };
+const getTabs = (type, role) => {
+  const tabs = [
+    { key: "all", label: "All", icon: FiGrid },
 
-const getTabs = (type) => [
-  { key: "all", label: "All", icon: FiGrid },
-  {
-    key: "liked",
-    label: type === "Question" ? "Interested" : "Liked",
-    icon: type === "Question" ? FaAngleDoubleUp : FiHeart,
-  },
-  { key: "saved", label: "Saved", icon: FiBookmark },
-  {
-    key: "commented",
-    label: type === "Question" ? "Answered" : "Commented",
-    icon: FiMessageCircle,
-  },
-];
+    { key: "saved", label: "Saved", icon: FiBookmark },
+  ];
 
-function FeedTabs({ active, onChange, counts, type }) {
-  const TABS = getTabs(type);
+  if (role === "Patient" && type === "Question") {
+    tabs.push({
+      key: "liked",
+      label: "Interested",
+      icon: FaAngleDoubleUp,
+    });
+  } else if (type === "Artical") {
+    tabs.push({
+      key: "liked",
+      label: "Liked",
+      icon: FiHeart,
+    });
+  }
+
+  if (role === "Doctor" && type === "Question") {
+    tabs.push({
+      key: "commented",
+      label: "Answered",
+      icon: FiMessageCircle,
+    });
+  }
+
+  if (type === "Question" && role === "Patient") {
+    tabs.push({ key: "my", label: "My Questions", icon: TbUserQuestion });
+  }
+
+  if (type === "Artical" && role === "Doctor") {
+    tabs.push({ key: "my", label: "My Articals", icon: FaHospitalUser });
+  }
+
+  return tabs;
+};
+
+function FeedTabs({ active, onChange, counts, type, role }) {
+  const TABS = getTabs(type, role);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   return (
-    <div className="relative bg-white rounded-2xl border border-blue-50 shadow-sm p-1 flex gap-1 overflow-x-auto scrollbar-none overflow-hidden">
-      {" "}
+    <div className="relative bg-white rounded-2xl border border-blue-50 shadow-sm p-1 flex gap-1 w-full overflow-hidden">
       {TABS.map((tab) => {
         const isActive = active === tab.key;
         return (
@@ -61,25 +95,54 @@ function FeedTabs({ active, onChange, counts, type }) {
             key={tab.key}
             onClick={() => onChange(tab.key)}
             whileTap={{ scale: 0.96 }}
-            className={`relative flex  items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap flex-1 justify-center transition-colors z-10
-              ${isActive ? "text-blue-600" : "text-slate-500 hover:text-blue-500 hover:bg-blue-50"}`}
+            animate={{ flex: isMobile ? (isActive ? 3 : 1) : 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+            className={`relative flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl
+              text-xs sm:text-sm font-semibold transition-colors z-10 min-w-0 overflow-hidden
+              ${
+                isActive
+                  ? "text-blue-600"
+                  : "text-slate-500 hover:text-blue-500 hover:bg-blue-50"
+              }`}
           >
             {isActive && (
               <motion.span
-                layoutId={`feedTabPill-${type}`} // ✅ بيتغير مع الـ type
-                className="absolute top-0 inset-0 bg-blue-50 border border-blue-100 rounded-xl"
+                layoutId={`feedTabPill-${type}`}
+                className={`absolute inset-0 bg-blue-50 border border-blue-100 rounded-xl`}
                 transition={{ type: "spring", stiffness: 400, damping: 32 }}
               />
             )}
+
             <tab.icon size={14} className="relative z-10 flex-shrink-0" />
-            <span className="relative z-10">{tab.label}</span>
+
+            {/* شاشة كبيرة: الاسم ظاهر دايماً */}
+            <span className="relative z-10 hidden sm:inline whitespace-nowrap">
+              {tab.label}
+            </span>
+
+            {/* شاشة صغيرة: الاسم في الـ active بس */}
+            <motion.span
+              className="relative z-10 sm:hidden whitespace-nowrap text-xs leading-none "
+              animate={
+                isActive && isMobile
+                  ? { width: "auto", opacity: 1, marginLeft: 2 }
+                  : { width: 0, opacity: 0, marginLeft: 0 }
+              }
+              transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              style={{ overflow: "hidden", display: "inline-block" }}
+            >
+              {tab.label}
+            </motion.span>
+
             {counts[tab.key] > 0 && (
-              <span
-                className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none
+              <motion.span
+                transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                style={{ overflow: "hidden", display: "inline-block" }}
+                className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none flex-shrink-0
                   ${isActive ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"}`}
               >
                 {counts[tab.key]}
-              </span>
+              </motion.span>
             )}
           </motion.button>
         );
@@ -87,7 +150,6 @@ function FeedTabs({ active, onChange, counts, type }) {
     </div>
   );
 }
-
 function EmptyState({ tab, type }) {
   const messages = {
     liked: {
@@ -170,6 +232,7 @@ export default function CommunityContainer({ type }) {
   const [text, setText] = useState("");
   const containerRef = useRef(null);
   const [activeTab, setActiveTab] = useState("all");
+  const { role } = useAuth();
 
   const { data: fil } = useFilterPosts(
     activeTab === "all"
@@ -178,12 +241,15 @@ export default function CommunityContainer({ type }) {
         ? 0
         : activeTab === "saved"
           ? 1
-          : 2,
+          : activeTab === "commented"
+            ? 2
+            : 3,
     type,
   );
 
+  console.log(fil);
+
   const { data: PostsDetails, isFetching } = useGetPosts(type);
-  const { role } = useAuth();
   const postMutation = usePostArtical(type);
 
   const [posts, setPosts] = useState(
@@ -354,6 +420,7 @@ export default function CommunityContainer({ type }) {
             onChange={setActiveTab}
             counts={counts}
             type={type}
+            role={role}
           />
 
           <AnimatePresence mode="wait">

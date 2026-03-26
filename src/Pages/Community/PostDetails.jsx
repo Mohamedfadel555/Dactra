@@ -10,8 +10,15 @@ import {
   FiChevronDown,
   FiChevronUp,
 } from "react-icons/fi";
-import { FaRegBookmark, FaBookmark } from "react-icons/fa";
+import {
+  FaRegBookmark,
+  FaBookmark,
+  FaAngleDoubleUp,
+  FaAngleUp,
+} from "react-icons/fa";
 import { ImHeart } from "react-icons/im";
+import { useLocation } from "react-router-dom";
+import AvatarIcon from "../../Components/Common/AvatarIcon1";
 
 /* ── Avatar ─────────────────────────────────────────────────────── */
 const AVATAR_COLORS = [
@@ -369,9 +376,12 @@ const SEED_COMMENTS = [
 
 /* ── Main Page ──────────────────────────────────────────────────── */
 export default function PostDetailPage({ onBack }) {
-  const [liked, setLiked] = useState(POST.liked);
-  const [saved, setSaved] = useState(POST.saved);
-  const [likes, setLikes] = useState(POST.likes);
+  const { state } = useLocation();
+  const post = state?.post;
+  console.log(post);
+  const [liked, setLiked] = useState(post.isInterestedByCurrentUser);
+  const [saved, setSaved] = useState(post.isSavedByCurrentUser);
+  const [likes, setLikes] = useState(post.interestsCount);
   const [comments, setComments] = useState(SEED_COMMENTS);
   const [newComment, setNewComment] = useState("");
   const bottomRef = useRef(null);
@@ -462,6 +472,32 @@ export default function PostDetailPage({ onBack }) {
       ),
     );
 
+  const now = new Date();
+  const createAt = new Date(post.createdAt);
+
+  const diff = now - createAt;
+  const diffMinutes = diff / (1000 * 60);
+  const diffHours = diff / (1000 * 60 * 60);
+  const diffDays = diff / (1000 * 60 * 60 * 24);
+  const diffWeeks = diff / (1000 * 60 * 60 * 24 * 7);
+  const diffMonths = diff / (1000 * 60 * 60 * 24 * 30);
+  const diffYears = diff / (1000 * 60 * 60 * 24 * 30 * 12);
+
+  const timeAgo =
+    diffYears >= 1
+      ? Math.floor(diffYears) + "y ago"
+      : diffMonths >= 1
+        ? Math.floor(diffMonths) + "mo ago"
+        : diffWeeks >= 1
+          ? Math.floor(diffWeeks) + "w ago"
+          : diffDays >= 1
+            ? Math.floor(diffDays) + "d ago"
+            : diffHours >= 1
+              ? Math.floor(diffHours) + "h ago"
+              : diffMinutes >= 1
+                ? Math.floor(diffMinutes) + "m ago"
+                : "now";
+
   return (
     <div className=" pt-[60px] min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-white">
       {/* Decorative top accent */}
@@ -485,7 +521,7 @@ export default function PostDetailPage({ onBack }) {
         <div className="w-px h-5 bg-slate-200" />
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-sm font-semibold text-slate-600">Post</span>
+          <span className="text-sm font-semibold text-slate-600">Question</span>
         </div>
       </motion.header>
 
@@ -504,17 +540,12 @@ export default function PostDetailPage({ onBack }) {
             {/* Author */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <Avatar name={POST.author} size="lg" idx={0} />
+                <AvatarIcon />
                 <div>
                   <p className="text-[14.5px] font-bold text-slate-800 leading-tight">
-                    {POST.author}
+                    {post.patient.fullName}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    <span className="text-blue-500 font-medium">
-                      {POST.specialty}
-                    </span>{" "}
-                    · {POST.time}
-                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">{timeAgo}</p>
                 </div>
               </div>
               <button className="p-2 rounded-xl text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer border-none bg-transparent">
@@ -524,12 +555,12 @@ export default function PostDetailPage({ onBack }) {
 
             {/* Content */}
             <p className="text-[15px] text-slate-600 leading-[1.8] mb-5">
-              {POST.content}
+              {post.content}
             </p>
 
             {/* Tags */}
             <div className="flex flex-wrap gap-2 mb-5">
-              {POST.tags.map((t) => (
+              {post.tags.map((t) => (
                 <Tag key={t} label={t} />
               ))}
             </div>
@@ -548,11 +579,15 @@ export default function PostDetailPage({ onBack }) {
                     setLikes(liked ? likes - 1 : likes + 1);
                   }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold border-none cursor-pointer transition-all
-                    ${liked ? "text-rose-500 bg-rose-50 shadow-sm" : "text-slate-500 bg-slate-50 hover:bg-rose-50 hover:text-rose-500"}`}
+    ${liked ? "text-blue-600 bg-blue-50 shadow-sm" : "text-slate-500 bg-slate-50 hover:bg-blue-50 hover:text-blue-600"}`}
                 >
-                  {liked ? <ImHeart size={15} /> : <FiHeart size={15} />}
+                  {liked ? (
+                    <FaAngleDoubleUp size={15} />
+                  ) : (
+                    <FaAngleUp size={15} />
+                  )}
                   <span>{likes}</span>
-                  <span className="hidden sm:inline">Like</span>
+                  <span className="hidden sm:inline">Interest</span>
                 </motion.button>
 
                 <motion.button

@@ -13,6 +13,7 @@ import MyProfile from "./Pages/Profile/MyProfile";
 import Profile from "./Pages/Profile/Profile";
 import CommunityContainer from "./Pages/Community/CommunityContainer";
 import PostDetailPage from "./Pages/Community/PostDetails";
+import PaymentCallback from "./Components/Auth/PaymentCallback";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -65,13 +66,23 @@ const MajorsManagementPage = lazy(
 
 // Lab / Scan (Provider) Layout and Pages
 const ProviderLayout = lazy(() => import("./Layout/ProviderLayout"));
-const ProviderProfilePage = lazy(() => import("./Pages/Provider/ProviderProfilePage"));
-const ProviderServicesPage = lazy(() => import("./Pages/Provider/ProviderServicesPage"));
-const ProtectedProvider = lazy(() => import("./Components/Provider/ProtectedProvider"));
+const ProviderProfilePage = lazy(
+  () => import("./Pages/Provider/ProviderProfilePage"),
+);
+const ProviderServicesPage = lazy(
+  () => import("./Pages/Provider/ProviderServicesPage"),
+);
+const ProtectedProvider = lazy(
+  () => import("./Components/Provider/ProtectedProvider"),
+);
 
 // Patient: Service Providers (Labs & Scans) list and detail
-const ServiceProvidersPage = lazy(() => import("./Pages/ServiceProviders/ServiceProvidersPage"));
-const ServiceProviderDetailPage = lazy(() => import("./Pages/ServiceProviders/ServiceProviderDetailPage"));
+const ServiceProvidersPage = lazy(
+  () => import("./Pages/ServiceProviders/ServiceProvidersPage"),
+);
+const ServiceProviderDetailPage = lazy(
+  () => import("./Pages/ServiceProviders/ServiceProviderDetailPage"),
+);
 
 export const route = createBrowserRouter([
   {
@@ -98,6 +109,10 @@ export const route = createBrowserRouter([
       {
         path: "Community/Questions",
         element: <CommunityContainer type={"Question"} />,
+      },
+      {
+        path: "payment/callback",
+        element: <PaymentCallback />,
       },
       {
         path: "doctors",
@@ -351,8 +366,22 @@ export const route = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="/lab/profile" replace /> },
-      { path: "profile", element: <Suspense fallback={<Loader />}><ProviderProfilePage /></Suspense> },
-      { path: "services", element: <Suspense fallback={<Loader />}><ProviderServicesPage /></Suspense> },
+      {
+        path: "profile",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ProviderProfilePage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "services",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ProviderServicesPage />
+          </Suspense>
+        ),
+      },
     ],
   },
   {
@@ -366,8 +395,22 @@ export const route = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="/scan/profile" replace /> },
-      { path: "profile", element: <Suspense fallback={<Loader />}><ProviderProfilePage /></Suspense> },
-      { path: "services", element: <Suspense fallback={<Loader />}><ProviderServicesPage /></Suspense> },
+      {
+        path: "profile",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ProviderProfilePage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "services",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ProviderServicesPage />
+          </Suspense>
+        ),
+      },
     ],
   },
   {

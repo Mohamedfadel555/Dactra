@@ -57,6 +57,16 @@ export const useCommunityAPI = () => {
     return res;
   };
 
+  const myPosts = async () => {
+    const res = await axiosInstance.get("Posts/my-posts");
+    return res.data;
+  };
+
+  const myQuestions = async () => {
+    const res = await axiosInstance.get("Questions/my-questions");
+    return res.data;
+  };
+
   return {
     getPosts,
     likePost,
@@ -68,5 +78,7 @@ export const useCommunityAPI = () => {
     filterQuestion,
     saveQuestion,
     PostQuestion,
+    myPosts,
+    myQuestions,
   };
 };
