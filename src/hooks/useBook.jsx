@@ -7,7 +7,7 @@ export const useBook = () => {
     mutationFn: Book,
     onSuccess: (res) => {
       console.log(res.data.appointmentId);
-      window.open(res.data.appointmentId, "_blank");
+      window.location.href = res.data.appointmentId;
     },
     onError: (err) => {
       console.log(err);
