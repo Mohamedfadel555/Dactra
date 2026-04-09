@@ -442,16 +442,15 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
               <div className="w-full max-w-screen-2xl mx-auto flex flex-col gap-10">
                 {labs.length > 0 && (
                 <div className="w-full">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                       {labs.slice(0, 6).map((p) => (
-                        <motion.div key={p.id} initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                        <motion.div key={p.id} className="h-full" initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
                           <ServiceProviderCard
                             id={p.id}
                             name={p.name}
                             address={p.address}
                             avg_Rating={p.avg_Rating}
                             type={0}
-                            topServices={[]}
                           />
                         </motion.div>
                       ))}
@@ -460,16 +459,15 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 )}
                 {scans.length > 0 && (
                 <div className="w-full">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                       {scans.slice(0, 6).map((p) => (
-                        <motion.div key={p.id} initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                        <motion.div key={p.id} className="h-full" initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
                           <ServiceProviderCard
                             id={p.id}
                             name={p.name}
                             address={p.address}
                             avg_Rating={p.avg_Rating}
                             type={1}
-                            topServices={[]}
                           />
                         </motion.div>
                       ))}
