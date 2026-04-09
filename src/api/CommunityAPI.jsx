@@ -3,18 +3,18 @@ import { useAxios } from "../hooks/useAxios";
 export const useCommunityAPI = () => {
   const axiosInstance = useAxios();
 
-  const getPosts = async () => {
-    const res = await axiosInstance.get("Posts");
+  const getPosts = async (params) => {
+    const res = await axiosInstance.get("Posts", { params });
     return res.data;
   };
 
-  const likePost = (id) => {
-    const res = axiosInstance.post(`Posts/${id}/like`);
+  const likePost = (Id) => {
+    const res = axiosInstance.post(`Posts/${Id}/like`);
     return res;
   };
 
-  const savePost = (id) => {
-    const res = axiosInstance.post(`Posts/${id}/save`);
+  const savePost = (Id) => {
+    const res = axiosInstance.post(`Posts/${Id}/save`);
     return res;
   };
 
@@ -23,32 +23,31 @@ export const useCommunityAPI = () => {
     return res;
   };
 
-  const filterPosts = async (id) => {
-    const res = await axiosInstance.get("Posts/filterOn", {
-      params: { filter: id },
-    });
+  const filterPosts = async (params) => {
+    console.log(params);
+    const res = await axiosInstance.get("Posts/filterOn", { params });
     return res.data;
   };
 
-  const getQuestions = async () => {
-    const res = await axiosInstance.get("Questions");
+  const getQuestions = async (params) => {
+    const res = await axiosInstance.get("Questions", { params });
     return res.data;
   };
 
-  const interestPost = (id) => {
-    const res = axiosInstance.post(`Questions/${id}/interest`);
+  const interestPost = (Id) => {
+    const res = axiosInstance.post(`Questions/${Id}/interest`);
     return res;
   };
 
-  const filterQuestion = async (id) => {
+  const filterQuestion = async (params) => {
     const res = await axiosInstance.get("Questions/filterOn", {
-      params: { filter: id },
+      params,
     });
     return res.data;
   };
 
-  const saveQuestion = (id) => {
-    const res = axiosInstance.post(`Questions/${id}/save`);
+  const saveQuestion = (Id) => {
+    const res = axiosInstance.post(`Questions/${Id}/save`);
     return res;
   };
 
@@ -57,13 +56,39 @@ export const useCommunityAPI = () => {
     return res;
   };
 
-  const myPosts = async () => {
-    const res = await axiosInstance.get("Posts/my-posts");
+  const myPosts = async (params) => {
+    const res = await axiosInstance.get("Posts/my-posts", { params });
     return res.data;
   };
 
-  const myQuestions = async () => {
-    const res = await axiosInstance.get("Questions/my-questions");
+  const myQuestions = async (params) => {
+    const res = await axiosInstance.get("Questions/my-questions", { params });
+    return res.data;
+  };
+
+  const getQuestionsAnswers = async (Id, params) => {
+    console.log(Id);
+    const res = await axiosInstance.get(`Questions/${Id}/comments`, { params });
+    return res.data;
+  };
+
+  const postAnswer = async (Id, Data) => {
+    const res = await axiosInstance.post(`Questions/${Id}/comments`, Data);
+    return res;
+  };
+
+  const getCommentReplies = async (Id) => {
+    const res = await axiosInstance.get(`Questions/comments/${Id}/replies`);
+    return res.data;
+  };
+
+  const likeComment = (Id) => {
+    const res = axiosInstance.post(`Questions/comments/${Id}/like`);
+    return res;
+  };
+
+  const getQuestionById = async (id) => {
+    const res = await axiosInstance.get(`Questions/${id}`);
     return res.data;
   };
 
@@ -80,5 +105,10 @@ export const useCommunityAPI = () => {
     PostQuestion,
     myPosts,
     myQuestions,
+    getQuestionsAnswers,
+    postAnswer,
+    getCommentReplies,
+    likeComment,
+    getQuestionById,
   };
 };

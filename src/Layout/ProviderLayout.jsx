@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
-import { MdPerson, MdMiscellaneousServices, MdLogout, MdMenu, MdClose } from "react-icons/md";
+import {
+  MdPerson,
+  MdMiscellaneousServices,
+  MdLogout,
+  MdMenu,
+  MdClose,
+} from "react-icons/md";
+import { FaUserDoctor } from "react-icons/fa6";
 import Icon from "../assets/images/icons/dactraIcon.webp";
 import { useLogout } from "../hooks/useLogout";
 
@@ -13,7 +20,9 @@ export default function ProviderLayout() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isLab = (role || "").toLowerCase() === "lab" || (role || "").toLowerCase() === "lap";
+  const isLab =
+    (role || "").toLowerCase() === "lab" ||
+    (role || "").toLowerCase() === "lap";
   const title = isLab ? "Lab Center" : "Scan Center";
 
   const handleLogout = () => {
@@ -52,7 +61,9 @@ export default function ProviderLayout() {
       {/* Sidebar */}
       <aside
         className={`fixed lg:static w-[240px] bg-[#05162C] flex flex-col h-full z-50 transition-all duration-300 ease-in-out ${
-          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+          sidebarOpen
+            ? "translate-x-0 shadow-2xl"
+            : "-translate-x-full lg:translate-x-0"
         }`}
       >
         <div className="p-4 lg:p-6 flex items-center justify-between">
@@ -98,6 +109,20 @@ export default function ProviderLayout() {
             <MdMiscellaneousServices className="w-5 h-5" />
             <span className="text-sm font-medium truncate">Services</span>
           </NavLink>
+          <NavLink
+            to={isLab ? "/lab/searchdoctors" : "/scan/searchdoctors"}
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? "bg-[#316BE8] text-white shadow-lg scale-[1.02]"
+                  : "text-gray-300 hover:bg-gray-800 hover:scale-[1.01]"
+              }`
+            }
+          >
+            <FaUserDoctor className="w-5 h-5" />
+            <span className="text-sm font-medium truncate">Doctors</span>
+          </NavLink>
         </nav>
 
         <div className="p-4 border-t border-gray-700">
@@ -134,4 +159,3 @@ export default function ProviderLayout() {
     </div>
   );
 }
-

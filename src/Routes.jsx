@@ -14,6 +14,8 @@ import Profile from "./Pages/Profile/Profile";
 import CommunityContainer from "./Pages/Community/CommunityContainer";
 import PostDetailPage from "./Pages/Community/PostDetails";
 import PaymentCallback from "./Components/Auth/PaymentCallback";
+import MedicalChat from "./Pages/ChatBot";
+import Doctors from "./Pages/Provider/Doctors";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -85,6 +87,7 @@ const ServiceProviderDetailPage = lazy(
 );
 
 export const route = createBrowserRouter([
+  { path: "/Dactra/Chat", element: <MedicalChat /> },
   {
     path: "/",
     element: (
@@ -101,14 +104,29 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
-      { path: "Community/Question/:id", element: <PostDetailPage /> },
+      {
+        path: "Community/Question/:id",
+        element: (
+          <ProtectedRoutes>
+            <PostDetailPage />
+          </ProtectedRoutes>
+        ),
+      },
       {
         path: "Community/Posts",
-        element: <CommunityContainer type={"Artical"} />,
+        element: (
+          <ProtectedRoutes>
+            <CommunityContainer type={"Artical"} />
+          </ProtectedRoutes>
+        ),
       },
       {
         path: "Community/Questions",
-        element: <CommunityContainer type={"Question"} />,
+        element: (
+          <ProtectedRoutes>
+            <CommunityContainer type={"Question"} />
+          </ProtectedRoutes>
+        ),
       },
       {
         path: "payment/callback",
@@ -382,6 +400,10 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: "searchdoctors",
+        element: <Doctors />,
+      },
     ],
   },
   {
@@ -410,6 +432,10 @@ export const route = createBrowserRouter([
             <ProviderServicesPage />
           </Suspense>
         ),
+      },
+      {
+        path: "searchdoctors",
+        element: <Doctors />,
       },
     ],
   },

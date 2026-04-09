@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TbUserQuestion } from "react-icons/tb";
 import { FaHospitalUser } from "react-icons/fa6";
@@ -10,6 +10,7 @@ import {
   FiLink,
   FiTrendingUp,
   FiGrid,
+  FiLoader,
 } from "react-icons/fi";
 import { FaAngleDoubleUp } from "react-icons/fa";
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
@@ -35,33 +36,21 @@ const stagger = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08 } },
 };
+
 const getTabs = (type, role) => {
   const tabs = [
     { key: "all", label: "All", icon: FiGrid },
-
     { key: "saved", label: "Saved", icon: FiBookmark },
   ];
 
   if (role === "Patient" && type === "Question") {
-    tabs.push({
-      key: "liked",
-      label: "Interested",
-      icon: FaAngleDoubleUp,
-    });
+    tabs.push({ key: "liked", label: "Interested", icon: FaAngleDoubleUp });
   } else if (type === "Artical") {
-    tabs.push({
-      key: "liked",
-      label: "Liked",
-      icon: FiHeart,
-    });
+    tabs.push({ key: "liked", label: "Liked", icon: FiHeart });
   }
 
   if (role === "Doctor" && type === "Question") {
-    tabs.push({
-      key: "commented",
-      label: "Answered",
-      icon: FiMessageCircle,
-    });
+    tabs.push({ key: "commented", label: "Answered", icon: FiMessageCircle });
   }
 
   if (type === "Question" && role === "Patient") {
@@ -97,7 +86,7 @@ function FeedTabs({ active, onChange, counts, type, role }) {
             whileTap={{ scale: 0.96 }}
             animate={{ flex: isMobile ? (isActive ? 3 : 1) : 1 }}
             transition={{ type: "spring", stiffness: 400, damping: 32 }}
-            className={`relative flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl
+            className={`relative flex items-center justify-center gap-1 px-3 sm:px-4 py-2 rounded-xl
               text-xs sm:text-sm font-semibold transition-colors z-10 min-w-0 overflow-hidden
               ${
                 isActive
@@ -108,21 +97,19 @@ function FeedTabs({ active, onChange, counts, type, role }) {
             {isActive && (
               <motion.span
                 layoutId={`feedTabPill-${type}`}
-                className={`absolute inset-0 bg-blue-50 border border-blue-100 rounded-xl`}
+                className="absolute inset-0 bg-blue-50 border border-blue-100 rounded-xl"
                 transition={{ type: "spring", stiffness: 400, damping: 32 }}
               />
             )}
 
             <tab.icon size={14} className="relative z-10 flex-shrink-0" />
 
-            {/* شاشة كبيرة: الاسم ظاهر دايماً */}
             <span className="relative z-10 hidden sm:inline whitespace-nowrap">
               {tab.label}
             </span>
 
-            {/* شاشة صغيرة: الاسم في الـ active بس */}
             <motion.span
-              className="relative z-10 sm:hidden whitespace-nowrap text-xs leading-none "
+              className="relative z-10 sm:hidden whitespace-nowrap text-xs leading-none"
               animate={
                 isActive && isMobile
                   ? { width: "auto", opacity: 1, marginLeft: 2 }
@@ -150,6 +137,19 @@ function FeedTabs({ active, onChange, counts, type, role }) {
     </div>
   );
 }
+
+function Spinner({ size = 16 }) {
+  return (
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+      className="inline-flex"
+    >
+      <FiLoader size={size} className="text-blue-400" />
+    </motion.div>
+  );
+}
+
 function EmptyState({ tab, type }) {
   const messages = {
     liked: {
@@ -176,8 +176,19 @@ function EmptyState({ tab, type }) {
           ? "Answer questions to find them here"
           : "Join the conversation on any post",
     },
+    my: {
+      title:
+        type === "Question"
+          ? "No questions posted yet"
+          : "No articles posted yet",
+      sub:
+        type === "Question"
+          ? "Ask your first medical question"
+          : "Share your first medical insight",
+    },
   };
   const m = messages[tab];
+  if (!m) return null;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -227,14 +238,40 @@ function Sidebar() {
   );
 }
 
+const SkeletonCard = () => (
+  <div className="bg-white rounded-2xl border border-blue-50 shadow-sm p-5 flex flex-col gap-3 animate-pulse">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full bg-slate-200" />
+      <div className="flex flex-col gap-1.5 flex-1">
+        <div className="h-3 bg-slate-200 rounded w-1/3" />
+        <div className="h-2.5 bg-slate-100 rounded w-1/4" />
+      </div>
+    </div>
+    <div className="h-3 bg-slate-200 rounded w-full" />
+    <div className="h-3 bg-slate-200 rounded w-5/6" />
+    <div className="h-3 bg-slate-100 rounded w-2/3" />
+    <div className="flex gap-4 mt-1">
+      <div className="h-6 w-12 bg-slate-100 rounded-lg" />
+      <div className="h-6 w-12 bg-slate-100 rounded-lg" />
+      <div className="h-6 w-12 bg-slate-100 rounded-lg" />
+    </div>
+  </div>
+);
+
 export default function CommunityContainer({ type }) {
   const [focused, setFocused] = useState(false);
   const [text, setText] = useState("");
   const containerRef = useRef(null);
   const [activeTab, setActiveTab] = useState("all");
   const { role } = useAuth();
+  const loadRef = useRef(null);
 
-  const { data: fil } = useFilterPosts(
+  const {
+    data: fil,
+    hasNextPage: filHasNextPage,
+    isFetchingNextPage: filIsFetchingNextPage,
+    fetchNextPage: filFetchNextPage,
+  } = useFilterPosts(
     activeTab === "all"
       ? null
       : activeTab === "liked"
@@ -249,49 +286,48 @@ export default function CommunityContainer({ type }) {
 
   console.log(fil);
 
-  const { data: PostsDetails, isFetching } = useGetPosts(type);
+  const {
+    data: PostsDetails,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    fetchNextPage,
+  } = useGetPosts(type);
+
+  console.log(PostsDetails);
+
   const postMutation = usePostArtical(type);
 
-  const [posts, setPosts] = useState(
-    (type === "Question"
-      ? PostsDetails?.questions?.items
-      : PostsDetails?.posts?.items) || [],
-  );
+  const posts = useMemo(() => {
+    if (!PostsDetails?.pages) return [];
+    return PostsDetails.pages.flatMap((page) =>
+      type === "Question"
+        ? (page.questions?.items ?? [])
+        : (page.posts?.items ?? []),
+    );
+  }, [PostsDetails, type]);
 
   const [counts, setCounts] = useState({
     all: 0,
-    liked:
-      (type === "Question"
-        ? PostsDetails?.stats?.totalInterested
-        : PostsDetails?.stats?.totalLiked) || 0,
-    saved: PostsDetails?.stats?.totalSaved || 0,
-    commented:
-      (type === "Question"
-        ? PostsDetails?.stats?.totalAnswered
-        : PostsDetails?.stats?.totalCommented) || 0,
+    liked: 0,
+    saved: 0,
+    commented: 0,
+    my: 0,
   });
 
   useEffect(() => {
-    setPosts(
-      (type === "Question"
-        ? PostsDetails?.questions?.items
-        : PostsDetails?.posts?.items) || [],
-    );
-    if (PostsDetails?.stats) {
-      setCounts({
-        all: 0,
-        liked:
-          (type === "Question"
-            ? PostsDetails.stats.totalInterested
-            : PostsDetails.stats.totalLiked) ?? 0,
-        saved: PostsDetails.stats.totalSaved ?? 0,
-        commented:
-          (type === "Question"
-            ? PostsDetails.stats.totalAnswered
-            : PostsDetails.stats.totalCommented) ?? 0,
-      });
-    }
-  }, [PostsDetails]);
+    const stats = PostsDetails?.pages?.[0]?.stats;
+    if (!stats) return;
+    setCounts({
+      all: 0,
+      liked:
+        (type === "Question" ? stats.totalInterested : stats.totalLiked) ?? 0,
+      saved: stats.totalSaved ?? 0,
+      commented:
+        (type === "Question" ? stats.totalAnswered : stats.totalCommented) ?? 0,
+      my: stats.totalShared ?? 0,
+    });
+  }, [PostsDetails?.pages?.[0]?.stats, type]);
 
   const handlePostUpdate = (att, updateType) => {
     setCounts((prev) => ({
@@ -300,7 +336,15 @@ export default function CommunityContainer({ type }) {
     }));
   };
 
-  const filteredPosts = activeTab === "all" ? posts : fil?.items;
+  const filteredPosts = useMemo(() => {
+    if (activeTab === "all") return posts;
+    if (!fil?.pages) return [];
+    return fil.pages.flatMap((page) =>
+      type === "Question"
+        ? (page.questions?.items ?? page.items ?? [])
+        : (page.posts?.items ?? page.items ?? []),
+    );
+  }, [activeTab, posts, fil, type]);
 
   const handleBlur = (e) => {
     if (
@@ -310,26 +354,38 @@ export default function CommunityContainer({ type }) {
       setFocused(false);
     }
   };
+  const handleObserve = useCallback(
+    (entries) => {
+      const [entry] = entries;
+      if (!entry.isIntersecting) return;
 
-  const SkeletonCard = () => (
-    <div className="bg-white rounded-2xl border border-blue-50 shadow-sm p-5 flex flex-col gap-3 animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-slate-200" />
-        <div className="flex flex-col gap-1.5 flex-1">
-          <div className="h-3 bg-slate-200 rounded w-1/3" />
-          <div className="h-2.5 bg-slate-100 rounded w-1/4" />
-        </div>
-      </div>
-      <div className="h-3 bg-slate-200 rounded w-full" />
-      <div className="h-3 bg-slate-200 rounded w-5/6" />
-      <div className="h-3 bg-slate-100 rounded w-2/3" />
-      <div className="flex gap-4 mt-1">
-        <div className="h-6 w-12 bg-slate-100 rounded-lg" />
-        <div className="h-6 w-12 bg-slate-100 rounded-lg" />
-        <div className="h-6 w-12 bg-slate-100 rounded-lg" />
-      </div>
-    </div>
+      if (activeTab === "all" && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      } else if (
+        activeTab !== "all" &&
+        filHasNextPage &&
+        !filIsFetchingNextPage
+      ) {
+        filFetchNextPage();
+      }
+    },
+    [
+      activeTab,
+      fetchNextPage,
+      hasNextPage,
+      isFetchingNextPage,
+      filFetchNextPage,
+      filHasNextPage,
+      filIsFetchingNextPage,
+    ],
   );
+  useEffect(() => {
+    const el = loadRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(handleObserve, { threshold: 0.1 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [handleObserve]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 font-sans pt-[60px]">
@@ -396,13 +452,17 @@ export default function CommunityContainer({ type }) {
                           whileTap={text.trim() ? { scale: 0.96 } : {}}
                           tabIndex={0}
                           disabled={text.length < 10}
-                          onClick={() => postMutation.mutate({ content: text })}
+                          onClick={() => {
+                            postMutation.mutate({ content: text });
+                            setText("");
+                            setFocused(false);
+                          }}
                           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all focus:outline-none
-                          ${
-                            text.length > 10
-                              ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-200 cursor-pointer"
-                              : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-60"
-                          }`}
+                            ${
+                              text.length > 10
+                                ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-200 cursor-pointer"
+                                : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-60"
+                            }`}
                         >
                           <FiSend size={13} />
                           {type === "Question" ? "Ask" : "Post"}
@@ -432,7 +492,8 @@ export default function CommunityContainer({ type }) {
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="flex flex-col gap-4"
             >
-              {isFetching ? (
+              {/* ✅ isLoading بدل isFetching عشان ما يظهرش في background refetch */}
+              {isLoading ? (
                 <>
                   <SkeletonCard />
                   <SkeletonCard />
@@ -456,6 +517,42 @@ export default function CommunityContainer({ type }) {
                   </motion.div>
                 ))
               )}
+
+              <div ref={loadRef} className="h-2 w-full">
+                {(isFetchingNextPage || filIsFetchingNextPage) && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex justify-center py-4"
+                  >
+                    <Spinner size={20} />
+                  </motion.div>
+                )}
+
+                {/* all tab */}
+                {activeTab === "all" && !hasNextPage && posts.length > 0 && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center text-[11px] text-slate-300 font-medium py-2"
+                  >
+                    — All posts loaded —
+                  </motion.p>
+                )}
+
+                {/* filtered tabs */}
+                {activeTab !== "all" &&
+                  !filHasNextPage &&
+                  filteredPosts.length > 0 && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center text-[11px] text-slate-300 font-medium py-2"
+                    >
+                      — All posts loaded —
+                    </motion.p>
+                  )}
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   FiHeart,
   FiMessageCircle,
@@ -9,6 +9,10 @@ import {
   FiCornerDownRight,
   FiChevronDown,
   FiChevronUp,
+  FiLoader,
+  FiEdit2,
+  FiTrash2,
+  FiFlag,
 } from "react-icons/fi";
 import {
   FaRegBookmark,
@@ -17,41 +21,36 @@ import {
   FaAngleUp,
 } from "react-icons/fa";
 import { ImHeart } from "react-icons/im";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
+import { usePostAnswer } from "../../hooks/usePostAnswer";
+import { useGetCommentReplies } from "../../hooks/useGetCommentReplies";
+import { useLikeComment } from "../../hooks/useLikeComment";
+import { useGetQuestionsAnswersInfinite } from "../../hooks/useGetQuestionsAnswersInfinite";
+import ActionBtn from "../../Components/Common/ActionBtn";
+import { useInterestPost } from "../../hooks/useInterestPost";
+import { useAuth } from "../../Context/AuthContext";
+import { useGetQuestionById } from "../../hooks/useGetQuestionById";
+import { useSavePost } from "../../hooks/useSavePost";
 
-/* ── Avatar ─────────────────────────────────────────────────────── */
-const AVATAR_COLORS = [
-  "from-blue-500 to-blue-600",
-  "from-cyan-500 to-blue-500",
-  "from-indigo-500 to-blue-500",
-  "from-blue-400 to-cyan-500",
-  "from-sky-500 to-blue-600",
-  "from-blue-600 to-indigo-600",
-];
-
-function Avatar({ name = "U", size = "md", idx = 0 }) {
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-  const sizeClass = {
-    sm: "w-7 h-7 text-[10px]",
-    md: "w-9 h-9 text-xs",
-    lg: "w-11 h-11 text-sm",
-  }[size];
-  return (
-    <div
-      className={`${sizeClass} flex-shrink-0 rounded-full bg-gradient-to-br ${AVATAR_COLORS[idx % AVATAR_COLORS.length]} flex items-center justify-center font-bold text-white shadow-md`}
-    >
-      {initials}
-    </div>
-  );
+function handleTime(create) {
+  const diff = Date.now() - new Date(create).getTime();
+  const m = diff / 60000;
+  const h = m / 60;
+  const d = h / 24;
+  const w = d / 7;
+  const mo = d / 30;
+  const y = mo / 12;
+  if (y >= 1) return `${Math.floor(y)}y ago`;
+  if (mo >= 1) return `${Math.floor(mo)}mo ago`;
+  if (w >= 1) return `${Math.floor(w)}w ago`;
+  if (d >= 1) return `${Math.floor(d)}d ago`;
+  if (h >= 1) return `${Math.floor(h)}h ago`;
+  if (m >= 1) return `${Math.floor(m)}m ago`;
+  return "now";
 }
 
-/* ── Tag ────────────────────────────────────────────────────────── */
 function Tag({ label }) {
   return (
     <motion.span
@@ -63,191 +62,560 @@ function Tag({ label }) {
   );
 }
 
-/* ── Reply Item ─────────────────────────────────────────────────── */
-function ReplyItem({ reply, idx, onLike }) {
+function Spinner({ size = 16 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, x: -4 }}
-      animate={{ opacity: 1, y: 0, x: 0 }}
-      transition={{
-        duration: 0.3,
-        delay: idx * 0.06,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      className="flex gap-2.5 mt-3"
+      animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+      className="inline-flex"
     >
-      <Avatar name={reply.author} size="sm" idx={reply.colorIdx} />
-      <div className="flex-1 min-w-0">
-        <div className="bg-blue-50/60 border border-blue-100 rounded-2xl px-3.5 py-2.5">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-[12px] font-bold text-slate-700">
-              {reply.author}
-            </span>
-            <span className="text-[11px] text-slate-400">
-              {reply.specialty}
-            </span>
-            <span className="ml-auto text-[11px] text-slate-300">
-              {reply.time}
-            </span>
-          </div>
-          <p className="text-[13px] text-slate-500 leading-relaxed">
-            {reply.text}
-          </p>
-        </div>
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={() => onLike(reply.id)}
-          className={`flex items-center gap-1.5 mt-1.5 ml-2 text-[11px] font-semibold border-none bg-transparent cursor-pointer transition-colors
-            ${reply.liked ? "text-rose-500" : "text-slate-300 hover:text-rose-400"}`}
-        >
-          {reply.liked ? <ImHeart size={11} /> : <FiHeart size={11} />}
-          <span>{reply.likes}</span>
-        </motion.button>
-      </div>
+      <FiLoader size={size} className="text-blue-400" />
     </motion.div>
   );
 }
 
-/* ── Comment Item ───────────────────────────────────────────────── */
-function CommentItem({ comment, idx, onLikeComment, onLikeReply, onAddReply }) {
-  const [showReplies, setShowReplies] = useState(false);
+function DoctorBadge() {
+  return (
+    <span className="inline-flex items-center text-[9px] font-bold text-white bg-blue-500 px-1.5 py-0.5 rounded-md leading-none tracking-wide">
+      DR
+    </span>
+  );
+}
+
+// ── Shared dropdown menu ──
+function ContextMenu({ isOwner, onEdit, onDelete, onReport, onClose }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
+  const items = isOwner
+    ? [
+        {
+          icon: FiEdit2,
+          label: "Edit post",
+          onClick: onEdit,
+          color: "text-slate-600",
+        },
+        {
+          icon: FiTrash2,
+          label: "Delete post",
+          onClick: onDelete,
+          color: "text-rose-500",
+        },
+      ]
+    : [
+        {
+          icon: FiFlag,
+          label: "Report post",
+          onClick: onReport,
+          color: "text-amber-500",
+        },
+      ];
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.92, y: -6 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="absolute right-0 top-8 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/60 py-1.5 min-w-[160px] overflow-hidden"
+    >
+      {items.map((item, i) => (
+        <motion.button
+          key={i}
+          whileHover={{ backgroundColor: "rgba(241,245,249,1)" }}
+          onClick={() => {
+            item.onClick();
+            onClose();
+          }}
+          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold border-none bg-transparent cursor-pointer transition-colors ${item.color}`}
+        >
+          <item.icon size={14} />
+          {item.label}
+        </motion.button>
+      ))}
+    </motion.div>
+  );
+}
+
+function AnswererInfo({ answerer, time, size = "md" }) {
+  const nameSize = size === "sm" ? "text-[11.5px]" : "text-[13px]";
+  const metaSize = size === "sm" ? "text-[10.5px]" : "text-[11.5px]";
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap mb-1.5 min-w-0">
+      <span
+        className={`${nameSize} font-bold text-slate-800 flex items-center gap-1 shrink-0`}
+      >
+        {answerer.fullName}
+        {answerer.isDoctor && <DoctorBadge />}
+      </span>
+      <span className={`${metaSize} text-slate-300`}>·</span>
+      <span className={`${metaSize} text-blue-400 font-medium`}>
+        {answerer.specialty}
+      </span>
+      {answerer.yearsOfExperience > 0 && (
+        <>
+          <span className={`${metaSize} text-slate-300`}>·</span>
+          <span className={`${metaSize} text-slate-400`}>
+            {answerer.yearsOfExperience}y exp
+          </span>
+        </>
+      )}
+      <span className={`ml-auto ${metaSize} text-slate-300 shrink-0`}>
+        {handleTime(time)}
+      </span>
+    </div>
+  );
+}
+
+function ReplyItem({ reply, idx, questionId, depth, onLike }) {
+  const [optimisticLiked, setOptimisticLiked] = useState(
+    reply.isLikedByCurrentUser,
+  );
+  const [optimisticCount, setOptimisticCount] = useState(reply.likesCount);
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [showNested, setShowNested] = useState(false);
+  const [visibleNested, setVisibleNested] = useState(2);
+  const [menuOpen, setMenuOpen] = useState(false);
   const inputRef = useRef(null);
+  const queryClient = useQueryClient();
+
+  const { accessToken } = useAuth();
+  const userEmail = accessToken
+    ? JSON.parse(atob(accessToken.split(".")[1])).email
+    : null;
+  const isOwner = reply.answerer?.email === userEmail;
+
+  const likeMutation = useLikeComment();
+  const answerMutation = usePostAnswer();
+
+  const { data: nestedData, isLoading: nestedLoading } = useGetCommentReplies(
+    showNested ? reply.id : null,
+  );
+  const nestedReplies = nestedData?.items ?? [];
+  const hasMoreNested = visibleNested < nestedReplies.length;
 
   useEffect(() => {
     if (replyOpen) inputRef.current?.focus();
   }, [replyOpen]);
 
-  const handleReply = () => {
-    if (!replyText.trim()) return;
-    onAddReply(comment.id, replyText.trim());
-    setReplyText("");
-    setShowReplies(true);
-    setReplyOpen(false);
+  const handleLike = () => {
+    setOptimisticLiked((p) => !p);
+    setOptimisticCount((p) => (optimisticLiked ? p - 1 : p + 1));
+    likeMutation.mutate(reply.id, {
+      onError: () => {
+        setOptimisticLiked((p) => !p);
+        setOptimisticCount((p) => (optimisticLiked ? p + 1 : p - 1));
+      },
+    });
   };
 
-  const hasReplies = comment.replies?.length > 0;
+  const handleSendNested = () => {
+    const text = replyText.trim();
+    if (!text) return;
+    answerMutation.mutate(
+      { id: questionId, Data: { content: text, parentAnswerId: reply.id } },
+      {
+        onSuccess: () => {
+          setReplyText("");
+          setReplyOpen(false);
+          setShowNested(true);
+          queryClient.invalidateQueries(["replies", reply.id]);
+        },
+      },
+    );
+  };
+
+  const canNestFurther = depth < 2;
+  const hasNestedReplies = reply.repliesCount > 0 || nestedReplies.length > 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.25,
+        delay: idx * 0.04,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className="flex gap-2 mt-3"
+    >
+      <div className="flex flex-col items-center flex-shrink-0">
+        <AvatarIcon />
+        {(hasNestedReplies || replyOpen) && canNestFurther && (
+          <div className="w-0.5 flex-1 min-h-2 bg-blue-100 mt-1 rounded-full" />
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="bg-blue-50/60 border border-blue-100 rounded-2xl px-3.5 py-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <AnswererInfo
+              answerer={reply.answerer}
+              time={reply.createdAt}
+              size="sm"
+            />
+            {/* Three dots */}
+            <div className="relative flex-shrink-0">
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={() => setMenuOpen((v) => !v)}
+                className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-white/60 transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <FiMoreHorizontal size={13} />
+              </motion.button>
+              <AnimatePresence>
+                {menuOpen && (
+                  <ContextMenu
+                    isOwner={isOwner}
+                    onEdit={() => console.log("edit reply", reply.id)}
+                    onDelete={() => console.log("delete reply", reply.id)}
+                    onReport={() => console.log("report reply", reply.id)}
+                    onClose={() => setMenuOpen(false)}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+          <p className="text-[12.5px] text-slate-500 leading-relaxed">
+            {reply.content}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-0.5 pl-1 mt-1">
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border-none bg-transparent cursor-pointer transition-colors
+              ${optimisticLiked ? "text-rose-500" : "text-slate-300 hover:text-rose-400"}`}
+          >
+            {optimisticLiked ? <ImHeart size={10} /> : <FiHeart size={10} />}
+            <span>{optimisticCount}</span>
+          </button>
+
+          {canNestFurther && (
+            <button
+              onClick={() => setReplyOpen((v) => !v)}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border-none cursor-pointer transition-colors
+                ${replyOpen ? "text-blue-600" : "text-slate-300 hover:text-blue-500"}`}
+            >
+              <FiCornerDownRight size={10} />
+              Reply
+            </button>
+          )}
+
+          {hasNestedReplies && canNestFurther && (
+            <button
+              onClick={() => setShowNested((v) => !v)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border-none cursor-pointer text-blue-400 hover:text-blue-600 bg-transparent transition-colors"
+            >
+              {nestedLoading ? (
+                <Spinner size={10} />
+              ) : showNested ? (
+                <FiChevronUp size={10} />
+              ) : (
+                <FiChevronDown size={10} />
+              )}
+              {showNested ? "Hide" : `${reply.repliesCount} more`}
+            </button>
+          )}
+        </div>
+
+        <AnimatePresence>
+          {replyOpen && canNestFurther && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden mt-2"
+            >
+              <div className="flex items-center gap-2">
+                <AvatarIcon />
+                <div className="flex-1 relative">
+                  <input
+                    ref={inputRef}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSendNested();
+                    }}
+                    placeholder={`Reply to ${reply.answerer.fullName.split(" ")[0]}…`}
+                    className="w-full bg-blue-50/60 border border-blue-100 focus:border-blue-300 focus:bg-white rounded-xl px-3 py-1.5 pr-9 text-[12px] text-slate-700 placeholder-slate-300 outline-none transition-all"
+                  />
+                  <button
+                    onClick={handleSendNested}
+                    disabled={!replyText.trim() || answerMutation.isPending}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center border-none transition-all
+                      ${replyText.trim() && !answerMutation.isPending ? "bg-blue-500 text-white cursor-pointer" : "bg-slate-100 text-slate-300 cursor-not-allowed"}`}
+                  >
+                    {answerMutation.isPending ? (
+                      <Spinner size={9} />
+                    ) : (
+                      <FiSend size={9} />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showNested && canNestFurther && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              {nestedLoading ? (
+                <div className="flex justify-center py-3">
+                  <Spinner size={14} />
+                </div>
+              ) : (
+                <>
+                  {nestedReplies.slice(0, visibleNested).map((nr, i) => (
+                    <ReplyItem
+                      key={nr.id}
+                      reply={nr}
+                      idx={i}
+                      questionId={questionId}
+                      depth={depth + 1}
+                      onLike={onLike}
+                    />
+                  ))}
+                  {hasMoreNested && (
+                    <button
+                      onClick={() => setVisibleNested((v) => v + 3)}
+                      className="mt-2 ml-1 text-[11px] font-semibold text-blue-400 hover:text-blue-600 border-none bg-transparent cursor-pointer flex items-center gap-1"
+                    >
+                      <FiChevronDown size={11} />
+                      {nestedReplies.length - visibleNested} more{" "}
+                      {nestedReplies.length - visibleNested === 1
+                        ? "reply"
+                        : "replies"}
+                    </button>
+                  )}
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+function CommentItem({ comment, idx }) {
+  const [showReplies, setShowReplies] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [visibleRepliesCount, setVisibleRepliesCount] = useState(3);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const inputRef = useRef(null);
+  const queryClient = useQueryClient();
+
+  const [optimisticLiked, setOptimisticLiked] = useState(
+    comment.isLikedByCurrentUser,
+  );
+  const [optimisticCount, setOptimisticCount] = useState(comment.likesCount);
+
+  const { accessToken } = useAuth();
+  const userEmail = accessToken
+    ? JSON.parse(atob(accessToken.split(".")[1])).email
+    : null;
+  const isOwner = comment.answerer?.email === userEmail;
+
+  const likeMutation = useLikeComment();
+  const answerMutation = usePostAnswer();
+
+  const { data: repliesData, isLoading: repliesLoading } = useGetCommentReplies(
+    showReplies ? comment.id : null,
+  );
+  const replies = repliesData?.items ?? [];
+  const visibleReplies = replies.slice(0, visibleRepliesCount);
+  const hasMoreReplies = visibleRepliesCount < replies.length;
+
+  useEffect(() => {
+    if (replyOpen) inputRef.current?.focus();
+  }, [replyOpen]);
+
+  const handleLike = () => {
+    setOptimisticLiked((p) => !p);
+    setOptimisticCount((p) => (optimisticLiked ? p - 1 : p + 1));
+    likeMutation.mutate(comment.id, {
+      onError: () => {
+        setOptimisticLiked((p) => !p);
+        setOptimisticCount((p) => (optimisticLiked ? p + 1 : p - 1));
+      },
+    });
+  };
+
+  const handleSendReply = () => {
+    const text = replyText.trim();
+    if (!text) return;
+    answerMutation.mutate(
+      {
+        id: comment.questionId,
+        Data: { content: text, parentAnswerId: comment.id },
+      },
+      {
+        onSuccess: () => {
+          setReplyText("");
+          setReplyOpen(false);
+          setShowReplies(true);
+          queryClient.invalidateQueries(["replies", comment.id]);
+        },
+      },
+    );
+  };
+
+  const hasReplies = comment.repliesCount > 0 || replies.length > 0;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.4,
-        delay: idx * 0.08,
+        duration: 0.35,
+        delay: idx * 0.04,
         ease: [0.22, 1, 0.36, 1],
       }}
     >
       <div className="flex gap-3">
-        {/* Thread line col */}
         <div className="flex flex-col items-center flex-shrink-0">
-          <Avatar name={comment.author} size="md" idx={comment.colorIdx} />
+          <AvatarIcon />
           {(hasReplies || replyOpen) && (
             <motion.div
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
-              transition={{ duration: 0.3, delay: 0.15 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
               className="w-0.5 flex-1 min-h-3 bg-blue-100 mt-1.5 origin-top rounded-full"
             />
           )}
         </div>
 
-        {/* Content col */}
         <div className="flex-1 min-w-0 pb-1">
-          {/* Bubble */}
           <div className="bg-white border border-slate-100 rounded-2xl px-4 py-3.5 mb-2 shadow-sm hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-baseline gap-2 mb-1.5 flex-wrap">
-              <span className="text-[13.5px] font-bold text-slate-800">
-                {comment.author}
-              </span>
-              <span className="text-[11.5px] text-blue-400 font-medium">
-                {comment.specialty}
-              </span>
-              <span className="ml-auto text-[11px] text-slate-300">
-                {comment.time}
-              </span>
+            <div className="flex items-start justify-between gap-2">
+              <AnswererInfo
+                answerer={comment.answerer}
+                time={comment.createdAt}
+              />
+              {/* Three dots */}
+              <div className="relative flex-shrink-0">
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="p-1.5 rounded-xl text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  <FiMoreHorizontal size={15} />
+                </motion.button>
+                <AnimatePresence>
+                  {menuOpen && (
+                    <ContextMenu
+                      isOwner={isOwner}
+                      onEdit={() => console.log("edit comment", comment.id)}
+                      onDelete={() => console.log("delete comment", comment.id)}
+                      onReport={() => console.log("report comment", comment.id)}
+                      onClose={() => setMenuOpen(false)}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
             <p className="text-[13.5px] text-slate-500 leading-relaxed">
-              {comment.text}
+              {comment.content}
             </p>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-0.5 pl-1">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.88 }}
-              onClick={() => onLikeComment(comment.id)}
+              onClick={handleLike}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold border-none cursor-pointer transition-all
-                ${comment.liked ? "text-rose-500 bg-rose-50" : "text-slate-400 bg-transparent hover:text-rose-400 hover:bg-rose-50"}`}
+                ${optimisticLiked ? "text-rose-500 bg-rose-50" : "text-slate-400 bg-transparent hover:text-rose-400 hover:bg-rose-50"}`}
             >
-              {comment.liked ? <ImHeart size={12} /> : <FiHeart size={12} />}
-              <span>{comment.likes}</span>
+              {optimisticLiked ? <ImHeart size={12} /> : <FiHeart size={12} />}
+              <span>{optimisticCount}</span>
             </motion.button>
 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.88 }}
-              onClick={() => setReplyOpen(!replyOpen)}
+              onClick={() => setReplyOpen((v) => !v)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold border-none cursor-pointer transition-all
                 ${replyOpen ? "text-blue-600 bg-blue-50" : "text-slate-400 bg-transparent hover:text-blue-500 hover:bg-blue-50"}`}
             >
               <FiCornerDownRight size={12} />
-              <span>Reply</span>
+              Reply
             </motion.button>
 
-            {hasReplies && (
+            {(comment.repliesCount > 0 || replies.length > 0) && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.88 }}
-                onClick={() => setShowReplies(!showReplies)}
+                onClick={() => setShowReplies((v) => !v)}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold border-none cursor-pointer text-blue-500 bg-transparent hover:bg-blue-50 transition-all"
               >
-                {showReplies ? (
+                {repliesLoading ? (
+                  <Spinner size={11} />
+                ) : showReplies ? (
                   <FiChevronUp size={12} />
                 ) : (
                   <FiChevronDown size={12} />
                 )}
                 {showReplies
-                  ? "Hide"
-                  : `${comment.replies.length} ${comment.replies.length > 1 ? "replies" : "reply"}`}
+                  ? "Hide replies"
+                  : `${comment.repliesCount} ${comment.repliesCount === 1 ? "reply" : "replies"}`}
               </motion.button>
             )}
           </div>
 
-          {/* Reply input */}
           <AnimatePresence>
             {replyOpen && (
               <motion.div
-                initial={{ opacity: 0, height: 0, y: -8 }}
+                initial={{ opacity: 0, height: 0, y: -6 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, height: 0, y: -6 }}
+                transition={{ duration: 0.22 }}
                 className="overflow-hidden mt-2.5 pl-1"
               >
                 <div className="flex items-center gap-2">
-                  <Avatar name="You" size="sm" idx={0} />
+                  <AvatarIcon />
                   <div className="flex-1 relative">
                     <input
                       ref={inputRef}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") handleReply();
+                        if (e.key === "Enter") handleSendReply();
                       }}
-                      placeholder={`Reply to ${comment.author.split(" ")[0]}…`}
+                      placeholder={`Reply to ${comment.answerer.fullName.split(" ")[0]}…`}
                       className="w-full bg-blue-50/60 border border-blue-100 focus:border-blue-300 focus:bg-white rounded-xl px-3.5 py-2 pr-10 text-[13px] text-slate-700 placeholder-slate-300 outline-none transition-all"
                     />
                     <motion.button
-                      whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.85 }}
-                      onClick={handleReply}
-                      disabled={!replyText.trim()}
+                      onClick={handleSendReply}
+                      disabled={!replyText.trim() || answerMutation.isPending}
                       className={`absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center border-none transition-all
-                        ${replyText.trim() ? "bg-blue-500 text-white cursor-pointer shadow-sm" : "bg-slate-100 text-slate-300 cursor-not-allowed"}`}
+                        ${replyText.trim() && !answerMutation.isPending ? "bg-blue-500 text-white cursor-pointer shadow-sm" : "bg-slate-100 text-slate-300 cursor-not-allowed"}`}
                     >
-                      <FiSend size={11} />
+                      {answerMutation.isPending ? (
+                        <Spinner size={10} />
+                      ) : (
+                        <FiSend size={11} />
+                      )}
                     </motion.button>
                   </div>
                 </div>
@@ -255,24 +623,48 @@ function CommentItem({ comment, idx, onLikeComment, onLikeReply, onAddReply }) {
             )}
           </AnimatePresence>
 
-          {/* Nested Replies */}
           <AnimatePresence>
-            {showReplies && hasReplies && (
+            {showReplies && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.28 }}
                 className="overflow-hidden pl-1"
               >
-                {comment.replies.map((r, i) => (
-                  <ReplyItem
-                    key={r.id}
-                    reply={r}
-                    idx={i}
-                    onLike={(rid) => onLikeReply(comment.id, rid)}
-                  />
-                ))}
+                {repliesLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Spinner size={18} />
+                  </div>
+                ) : (
+                  <>
+                    {visibleReplies.map((r, i) => (
+                      <ReplyItem
+                        key={r.id}
+                        reply={r}
+                        idx={i}
+                        questionId={comment.questionId}
+                        depth={0}
+                        onLike={(rid) => likeMutation.mutate(rid)}
+                      />
+                    ))}
+                    {hasMoreReplies && (
+                      <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setVisibleRepliesCount((p) => p + 5)}
+                        className="mt-3 ml-2 flex items-center gap-1.5 text-[12px] font-semibold text-blue-500 hover:text-blue-600 border-none bg-transparent cursor-pointer"
+                      >
+                        <FiChevronDown size={13} />
+                        {replies.length - visibleRepliesCount} more{" "}
+                        {replies.length - visibleRepliesCount === 1
+                          ? "reply"
+                          : "replies"}
+                      </motion.button>
+                    )}
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -282,422 +674,349 @@ function CommentItem({ comment, idx, onLikeComment, onLikeReply, onAddReply }) {
   );
 }
 
-/* ── Data ───────────────────────────────────────────────────────── */
-const POST = {
-  author: "Dr. Sarah Khalil",
-  specialty: "Cardiology",
-  time: "2h ago",
-  liked: false,
-  saved: false,
-  likes: 142,
-  tags: ["cardiology", "research", "heartfailure"],
-  content:
-    "New findings suggest that early intervention with SGLT2 inhibitors in heart failure patients with preserved ejection fraction significantly reduces hospitalization rates. Our multi-center study of 1,200 patients over 18 months shows a 34% reduction in adverse cardiac events. This represents a major shift in how we approach HFpEF management. The data is compelling and I believe we'll see updated guidelines reflecting this soon. Would love to hear thoughts from fellow cardiologists on implementation strategies in routine clinical practice.",
-};
+export default function PostDetailPage() {
+  const param = useParams();
+  const navigate = useNavigate();
+  const { data: post } = useGetQuestionById(param.id);
+  const { role, accessToken } = useAuth();
 
-const SEED_COMMENTS = [
-  {
-    id: 1,
-    colorIdx: 1,
-    author: "Dr. Omar Farouk",
-    specialty: "Internal Medicine",
-    time: "1h ago",
-    text: "Fascinating results! The 34% reduction is remarkable. Did you stratify by age groups? I've noticed different responses in elderly patients in my practice.",
-    liked: false,
-    likes: 12,
-    replies: [
-      {
-        id: 101,
-        colorIdx: 0,
-        author: "Dr. Sarah Khalil",
-        specialty: "Cardiology",
-        time: "55m ago",
-        text: "Great question Omar! Yes — patients >75 showed a slightly attenuated but still significant 28% reduction.",
-        liked: false,
-        likes: 7,
-      },
-      {
-        id: 102,
-        colorIdx: 3,
-        author: "Dr. Nadia Samy",
-        specialty: "Cardiology",
-        time: "40m ago",
-        text: "This matches our anecdotal observations. The elderly cohort is tricky due to polypharmacy.",
-        liked: false,
-        likes: 3,
-      },
-    ],
-  },
-  {
-    id: 2,
-    colorIdx: 2,
-    author: "Dr. Nadia Samy",
-    specialty: "Cardiology",
-    time: "45m ago",
-    text: "Thank you for sharing, Dr. Khalil. We've been hesitant due to cost concerns in our region. Any data on cost-effectiveness?",
-    liked: false,
-    likes: 8,
-    replies: [
-      {
-        id: 201,
-        colorIdx: 0,
-        author: "Dr. Sarah Khalil",
-        specialty: "Cardiology",
-        time: "38m ago",
-        text: "We're preparing a health economics sub-analysis — should be ready in Q1. Happy to share the draft.",
-        liked: false,
-        likes: 4,
-      },
-    ],
-  },
-  {
-    id: 3,
-    colorIdx: 4,
-    author: "Dr. Karim Hassan",
-    specialty: "Pharmacology",
-    time: "30m ago",
-    text: "Is the benefit primarily volume regulation or direct myocardial effects? This debate is very much alive in the current literature.",
-    liked: false,
-    likes: 5,
-    replies: [],
-  },
-  {
-    id: 4,
-    colorIdx: 5,
-    author: "Dr. Layla Mostafa",
-    specialty: "Research Fellow",
-    time: "15m ago",
-    text: "Would love to see the full paper when published. This aligns well with the EMPEROR-Preserved trial data.",
-    liked: false,
-    likes: 3,
-    replies: [],
-  },
-];
+  const userEmail = accessToken
+    ? JSON.parse(atob(accessToken.split(".")[1])).email
+    : null;
 
-/* ── Main Page ──────────────────────────────────────────────────── */
-export default function PostDetailPage({ onBack }) {
-  const { state } = useLocation();
-  const post = state?.post;
-  console.log(post);
-  const [liked, setLiked] = useState(post.isInterestedByCurrentUser);
-  const [saved, setSaved] = useState(post.isSavedByCurrentUser);
-  const [likes, setLikes] = useState(post.interestsCount);
-  const [comments, setComments] = useState(SEED_COMMENTS);
+  const isOwner = post?.patient?.email === userEmail;
+
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [likes, setLikes] = useState(0);
   const [newComment, setNewComment] = useState("");
-  const bottomRef = useRef(null);
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
 
-  const totalComments = comments.reduce(
-    (acc, c) => acc + 1 + (c.replies?.length || 0),
-    0,
+  useEffect(() => {
+    if (!post) return;
+    setLiked(post.isInterestedByCurrentUser);
+    setSaved(post.isSavedByCurrentUser);
+    setLikes(post.interestsCount);
+  }, [post]);
+
+  const loadMoreRef = useRef(null);
+  const answerMutation = usePostAnswer();
+
+  const {
+    data: commentsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: commentsLoading,
+  } = useGetQuestionsAnswersInfinite(post?.id);
+
+  const allComments = commentsData
+    ? [
+        ...new Map(
+          commentsData.pages.flatMap((p) => p.items).map((c) => [c.id, c]),
+        ).values(),
+      ]
+    : [];
+
+  const totalComments = commentsData?.pages[0]?.totalCount ?? 0;
+
+  const handleObserver = useCallback(
+    (entries) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage)
+        fetchNextPage();
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage],
   );
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(handleObserver, { threshold: 0.1 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [handleObserver]);
 
   const handleAddComment = () => {
     const text = newComment.trim();
     if (!text) return;
-    setComments((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        colorIdx: 0,
-        author: "You",
-        specialty: "General",
-        time: "Just now",
-        text,
-        liked: false,
-        likes: 0,
-        replies: [],
-      },
-    ]);
-    setNewComment("");
-    setTimeout(
-      () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
-      100,
+    answerMutation.mutate(
+      { id: post.id, Data: { content: text, parentAnswerId: null } },
+      { onSuccess: () => setNewComment("") },
     );
   };
 
-  const handleLikeComment = (cid) =>
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id !== cid
-          ? c
-          : {
-              ...c,
-              liked: !c.liked,
-              likes: c.liked ? c.likes - 1 : c.likes + 1,
-            },
-      ),
-    );
+  const interestMutation = useInterestPost();
+  const saveMutation = useSavePost("Question");
 
-  const handleLikeReply = (cid, rid) =>
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id !== cid
-          ? c
-          : {
-              ...c,
-              replies: c.replies.map((r) =>
-                r.id !== rid
-                  ? r
-                  : {
-                      ...r,
-                      liked: !r.liked,
-                      likes: r.liked ? r.likes - 1 : r.likes + 1,
-                    },
-              ),
-            },
-      ),
-    );
+  const handleInterest = () => {
+    setLiked((prev) => !prev);
+    setLikes((prev) => (liked ? prev - 1 : prev + 1));
+    interestMutation.mutate(post?.id);
+  };
 
-  const handleAddReply = (cid, text) =>
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id !== cid
-          ? c
-          : {
-              ...c,
-              replies: [
-                ...(c.replies || []),
-                {
-                  id: Date.now(),
-                  colorIdx: 0,
-                  author: "You",
-                  specialty: "General",
-                  time: "Just now",
-                  text,
-                  liked: false,
-                  likes: 0,
-                },
-              ],
-            },
-      ),
-    );
+  const handleSave = () => {
+    setSaved((prev) => !prev);
+    saveMutation.mutate(post.id);
+  };
 
-  const now = new Date();
-  const createAt = new Date(post.createdAt);
-
-  const diff = now - createAt;
-  const diffMinutes = diff / (1000 * 60);
-  const diffHours = diff / (1000 * 60 * 60);
-  const diffDays = diff / (1000 * 60 * 60 * 24);
-  const diffWeeks = diff / (1000 * 60 * 60 * 24 * 7);
-  const diffMonths = diff / (1000 * 60 * 60 * 24 * 30);
-  const diffYears = diff / (1000 * 60 * 60 * 24 * 30 * 12);
-
-  const timeAgo =
-    diffYears >= 1
-      ? Math.floor(diffYears) + "y ago"
-      : diffMonths >= 1
-        ? Math.floor(diffMonths) + "mo ago"
-        : diffWeeks >= 1
-          ? Math.floor(diffWeeks) + "w ago"
-          : diffDays >= 1
-            ? Math.floor(diffDays) + "d ago"
-            : diffHours >= 1
-              ? Math.floor(diffHours) + "h ago"
-              : diffMinutes >= 1
-                ? Math.floor(diffMinutes) + "m ago"
-                : "now";
+  const timeAgo = post?.createdAt ? handleTime(post.createdAt) : "";
+  const authorName = post?.patient?.fullName;
 
   return (
-    <div className=" pt-[60px] min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-white">
-      {/* Decorative top accent */}
-      <div className="h-1 w-full" />
-
-      {/* ── Sticky Header ── */}
-      <motion.header
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="sticky top-[60px] z-30 px-5 pt-2 flex items-center gap-3"
-      >
-        <motion.button
-          whileHover={{ scale: 1.04, x: -2 }}
-          whileTap={{ scale: 0.94 }}
-          onClick={onBack}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 text-[13px] font-semibold cursor-pointer hover:bg-blue-100 transition-colors"
-        >
-          <FiArrowLeft size={14} /> Back
-        </motion.button>
-        <div className="w-px h-5 bg-slate-200" />
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-sm font-semibold text-slate-600">Question</span>
-        </div>
-      </motion.header>
-
-      <div className="max-w-2xl mx-auto px-4  pb-16 space-y-4">
-        {/* ── Post Card ── */}
-        <motion.article
-          initial={{ opacity: 0, y: 28 }}
+    <div className="pt-[60px] min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-white">
+      <div className="max-w-2xl mx-auto px-4 pb-16">
+        {/* Top bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-center gap-3 py-4"
         >
-          {/* Blue top stripe */}
-          <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400" />
+          {/* ✅ Back button يستخدم useNavigate */}
+          <motion.button
+            whileHover={{ scale: 1.03, x: -2 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-[13px] font-semibold cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+          >
+            <FiArrowLeft size={14} />
+            Back
+          </motion.button>
 
-          <div className="p-6">
-            {/* Author */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <AvatarIcon />
-                <div>
-                  <p className="text-[14.5px] font-bold text-slate-800 leading-tight">
-                    {post.patient.fullName}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{timeAgo}</p>
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] text-slate-400 font-medium">Live</span>
+          </div>
+        </motion.div>
+
+        <div className="space-y-4">
+          {/* Post Card */}
+          <motion.article
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+          >
+            <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400" />
+            <div className="p-6">
+              {/* Author row */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <AvatarIcon />
+                  <div>
+                    <p className="text-[14.5px] font-bold text-slate-800 leading-tight">
+                      {authorName}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">{timeAgo}</p>
+                  </div>
+                </div>
+
+                {/* ✅ Three dots على الـ post */}
+                <div className="relative">
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={() => setPostMenuOpen((v) => !v)}
+                    className="p-2 rounded-xl text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer border-none bg-transparent"
+                  >
+                    <FiMoreHorizontal size={18} />
+                  </motion.button>
+                  <AnimatePresence>
+                    {postMenuOpen && (
+                      <ContextMenu
+                        isOwner={isOwner}
+                        onEdit={() => console.log("edit post", post?.id)}
+                        onDelete={() => console.log("delete post", post?.id)}
+                        onReport={() => console.log("report post", post?.id)}
+                        onClose={() => setPostMenuOpen(false)}
+                      />
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
-              <button className="p-2 rounded-xl text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer border-none bg-transparent">
-                <FiMoreHorizontal size={18} />
-              </button>
-            </div>
 
-            {/* Content */}
-            <p className="text-[15px] text-slate-600 leading-[1.8] mb-5">
-              {post.content}
-            </p>
-
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {post.tags.map((t) => (
-                <Tag key={t} label={t} />
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="h-px bg-slate-100 mb-4" />
-
-            {/* Action buttons */}
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.92 }}
-                  onClick={() => {
-                    setLiked(!liked);
-                    setLikes(liked ? likes - 1 : likes + 1);
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold border-none cursor-pointer transition-all
-    ${liked ? "text-blue-600 bg-blue-50 shadow-sm" : "text-slate-500 bg-slate-50 hover:bg-blue-50 hover:text-blue-600"}`}
-                >
-                  {liked ? (
-                    <FaAngleDoubleUp size={15} />
-                  ) : (
-                    <FaAngleUp size={15} />
-                  )}
-                  <span>{likes}</span>
-                  <span className="hidden sm:inline">Interest</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.92 }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold text-blue-600 bg-blue-50 border-none cursor-default"
-                >
-                  <FiMessageCircle size={15} />
-                  <span>{totalComments}</span>
-                  <span className="hidden sm:inline">Comments</span>
-                </motion.button>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.88 }}
-                onClick={() => setSaved(!saved)}
-                className={`p-2.5 rounded-xl border cursor-pointer transition-all
-                  ${saved ? "text-blue-600 bg-blue-50 border-blue-200 shadow-sm" : "text-slate-400 bg-slate-50 border-slate-200 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-200"}`}
-              >
-                {saved ? <FaBookmark size={16} /> : <FaRegBookmark size={16} />}
-              </motion.button>
-            </div>
-          </div>
-        </motion.article>
-
-        {/* ── Comments Section ── */}
-        <motion.section
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
-        >
-          {/* Section header */}
-          <div className="px-6 pt-5 pb-4 border-b border-slate-50 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
-              <FiMessageCircle size={15} className="text-blue-500" />
-            </div>
-            <div>
-              <h2 className="text-[14px] font-bold text-slate-700">
-                Discussion
-              </h2>
-              <p className="text-[11px] text-slate-400">
-                {totalComments} contributions
+              <p className="text-[15px] text-slate-600 leading-[1.8] mb-5">
+                {post?.content}
               </p>
-            </div>
-            <span className="ml-auto text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full">
-              {totalComments}
-            </span>
-          </div>
 
-          <div className="p-6 space-y-5">
-            {/* Comments list */}
-            {comments.map((c, i) => (
-              <CommentItem
-                key={c.id}
-                comment={c}
-                idx={i}
-                onLikeComment={handleLikeComment}
-                onLikeReply={handleLikeReply}
-                onAddReply={handleAddReply}
-              />
-            ))}
+              {post?.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {post.tags.map((t) => (
+                    <Tag key={t} label={t} />
+                  ))}
+                </div>
+              )}
 
-            {/* Divider */}
-            <div
-              ref={bottomRef}
-              className="h-px bg-gradient-to-r from-transparent via-blue-100 to-transparent"
-            />
+              <div className="h-px bg-slate-100 mb-4" />
 
-            {/* ── New Comment ── */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex gap-3 items-end"
-            >
-              <Avatar name="You" size="md" idx={0} />
-              <div className="flex-1 relative">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddComment();
-                    }
-                  }}
-                  rows={2}
-                  placeholder="Write a comment… (Enter to post)"
-                  className="w-full resize-none bg-blue-50/60 border border-blue-100 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-50 rounded-2xl px-4 py-3 pr-14 text-[14px] text-slate-700 placeholder-slate-300 outline-none leading-relaxed transition-all"
-                />
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  {role === "Patient" && (
+                    <ActionBtn
+                      iconActive={FaAngleDoubleUp}
+                      iconInactive={FaAngleUp}
+                      label="Interest"
+                      labelInActive="Interested"
+                      active={liked}
+                      activeClass="text-blue-600"
+                      onClick={handleInterest}
+                      count={likes}
+                    />
+                  )}
+                  <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-blue-600 bg-blue-50 select-none">
+                    <FiMessageCircle size={15} />
+                    {totalComments > 0 && <span>{totalComments}</span>}
+                    <span className="hidden sm:inline">Comments</span>
+                  </div>
+                </div>
+
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.08 }}
                   whileTap={{ scale: 0.88 }}
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim()}
-                  className={`absolute right-3 bottom-3 w-9 h-9 rounded-xl flex items-center justify-center border-none transition-all
+                  onClick={handleSave}
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all
                     ${
-                      newComment.trim()
-                        ? "bg-blue-500 text-white cursor-pointer shadow-md shadow-blue-200 hover:bg-blue-600"
-                        : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                      saved
+                        ? "text-blue-600 bg-blue-50 border-blue-200 shadow-sm"
+                        : "text-slate-400 bg-slate-50 border-slate-200 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-200"
                     }`}
                 >
-                  <FiSend size={14} />
+                  {saved ? (
+                    <FaBookmark size={16} />
+                  ) : (
+                    <FaRegBookmark size={16} />
+                  )}
                 </motion.button>
               </div>
-            </motion.div>
-          </div>
-        </motion.section>
+            </div>
+          </motion.article>
+
+          {/* Comments Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.4,
+              delay: 0.08,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+          >
+            <div className="px-6 pt-5 pb-4 border-b border-slate-50 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                <FiMessageCircle size={15} className="text-blue-500" />
+              </div>
+              <div>
+                <h2 className="text-[14px] font-bold text-slate-700">
+                  Discussion
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  {totalComments} contributions
+                </p>
+              </div>
+              <span className="ml-auto text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full">
+                {totalComments}
+              </span>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {(role === "Doctor" || post?.email === userEmail) && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex gap-3 items-end"
+                >
+                  <AvatarIcon />
+                  <div className="flex-1 relative">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddComment();
+                        }
+                      }}
+                      rows={2}
+                      placeholder="Write a comment… (Enter to post)"
+                      className="w-full resize-none bg-blue-50/60 border border-blue-100 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-50 rounded-2xl px-4 py-3 pr-14 text-[14px] text-slate-700 placeholder-slate-300 outline-none leading-relaxed transition-all"
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || answerMutation.isPending}
+                      className={`absolute right-3 bottom-3 w-9 h-9 rounded-xl flex items-center justify-center border-none transition-all
+                        ${
+                          newComment.trim() && !answerMutation.isPending
+                            ? "bg-blue-500 text-white cursor-pointer shadow-md shadow-blue-200 hover:bg-blue-600"
+                            : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                        }`}
+                    >
+                      {answerMutation.isPending ? (
+                        <Spinner size={14} />
+                      ) : (
+                        <FiSend size={14} />
+                      )}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              <div className="h-px bg-gradient-to-r from-transparent via-blue-100 to-transparent" />
+
+              {commentsLoading ? (
+                <div className="flex justify-center py-10">
+                  <Spinner size={24} />
+                </div>
+              ) : allComments.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-10"
+                >
+                  <FiMessageCircle
+                    size={32}
+                    className="text-slate-200 mx-auto mb-3"
+                  />
+                  <p className="text-[13px] text-slate-400 font-medium">
+                    No comments yet. Be the first!
+                  </p>
+                </motion.div>
+              ) : (
+                <>
+                  <AnimatePresence mode="popLayout">
+                    {allComments.map((c, i) => (
+                      <CommentItem key={c.id} comment={c} idx={i} />
+                    ))}
+                  </AnimatePresence>
+
+                  <div ref={loadMoreRef} className="h-2 w-full" />
+
+                  {isFetchingNextPage && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex justify-center py-4"
+                    >
+                      <Spinner size={20} />
+                    </motion.div>
+                  )}
+
+                  {!hasNextPage && allComments.length > 0 && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center text-[11px] text-slate-300 font-medium py-2"
+                    >
+                      — All comments loaded —
+                    </motion.p>
+                  )}
+                </>
+              )}
+            </div>
+          </motion.section>
+        </div>
       </div>
     </div>
   );
