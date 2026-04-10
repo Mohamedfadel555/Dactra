@@ -16,6 +16,7 @@ import PostDetailPage from "./Pages/Community/PostDetails";
 import PaymentCallback from "./Components/Auth/PaymentCallback";
 import MedicalChat from "./Pages/ChatBot";
 import Doctors from "./Pages/Provider/Doctors";
+import TagPostsPage from "./Pages/Community/TagPostsPage";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -103,6 +104,14 @@ export const route = createBrowserRouter([
             <HomePage />
           </Suspense>
         ),
+      },
+      {
+        path: "Community/Question/tag/:tagId/:tagName",
+        element: <TagPostsPage type="Question" />,
+      },
+      {
+        path: "Community/Artical/tag/:tagId/:tagName",
+        element: <TagPostsPage type="Artical" />,
       },
       {
         path: "Community/Question/:id",

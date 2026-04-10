@@ -1,14 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import AvatarIcon from "../Common/AvatarIcon1";
-import {
-  FiHeart,
-  FiMessageCircle,
-  FiMoreHorizontal,
-  FiEdit2,
-  FiTrash2,
-  FiFlag,
-} from "react-icons/fi";
+import { FiHeart, FiMessageCircle, FiMoreHorizontal } from "react-icons/fi";
 import {
   FaRegBookmark,
   FaBookmark,
@@ -22,73 +15,17 @@ import { useAuth } from "../../Context/AuthContext";
 import { useLikePost } from "../../hooks/useLikePost";
 import { useSavePost } from "./../../hooks/useSavePost";
 import { useInterestPost } from "../../hooks/useInterestPost";
+import Tag from "./Tag";
+import PostMenu from "./PostMenu";
+import { useDeletePost } from "../../hooks/useDeletePost";
+import { useEditQuestion } from "../../hooks/useEditQuestion";
+import { useEditPost } from "../../hooks/useEditPost";
+import EditModal from "./EditModal";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
 };
-
-function PostMenu({ isOwner, onEdit, onDelete, onReport, onClose }) {
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) onClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
-
-  const items = isOwner
-    ? [
-        {
-          icon: FiEdit2,
-          label: "Edit post",
-          onClick: onEdit,
-          color: "text-slate-600",
-        },
-        {
-          icon: FiTrash2,
-          label: "Delete post",
-          onClick: onDelete,
-          color: "text-rose-500",
-        },
-      ]
-    : [
-        {
-          icon: FiFlag,
-          label: "Report post",
-          onClick: onReport,
-          color: "text-amber-500",
-        },
-      ];
-
-  return (
-    <motion.div
-      ref={menuRef}
-      initial={{ opacity: 0, scale: 0.92, y: -6 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.92, y: -6 }}
-      transition={{ duration: 0.15, ease: "easeOut" }}
-      className="absolute right-0 top-8 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/60 py-1.5 min-w-[160px] overflow-hidden"
-    >
-      {items.map((item, i) => (
-        <motion.button
-          key={i}
-          whileHover={{ backgroundColor: "rgba(241,245,249,1)" }}
-          onClick={() => {
-            item.onClick();
-            onClose();
-          }}
-          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold border-none bg-transparent cursor-pointer transition-colors ${item.color}`}
-        >
-          <item.icon size={14} />
-          {item.label}
-        </motion.button>
-      ))}
-    </motion.div>
-  );
-}
 
 export default function PostCard({ post, type, onUpdate }) {
   const [liked, setLiked] = useState(
@@ -102,18 +39,28 @@ export default function PostCard({ post, type, onUpdate }) {
   );
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  // optimistic content update
+  const [displayContent, setDisplayContent] = useState(
+    post.content ?? post.text ?? "",
+  );
 
   const { role, accessToken } = useAuth();
   const userEmail = accessToken
     ? JSON.parse(atob(accessToken.split(".")[1])).email
     : null;
 
-  const isOwner =
-    type === "Question" ? post?.email === userEmail : post?.email === userEmail;
+  const isOwner = post?.email === userEmail;
 
   const likeMutation = useLikePost();
   const interestMutation = useInterestPost();
   const saveMutation = useSavePost(type);
+  const deletePostMutation = useDeletePost(type);
+  const editQuestionMutation = useEditQuestion();
+  const editPostMutation = useEditPost();
+
+  const editMutation =
+    type === "Question" ? editQuestionMutation : editPostMutation;
 
   // ── time formatting ──
   const now = new Date();
@@ -141,9 +88,9 @@ export default function PostCard({ post, type, onUpdate }) {
                 ? Math.floor(diffMinutes) + "m ago"
                 : "now";
 
-  const bodyText = post.content ?? post.text ?? "";
-  const isLong = bodyText.length > 140;
-  const body = !expanded && isLong ? bodyText.slice(0, 140) + "…" : bodyText;
+  const isLong = displayContent.length > 140;
+  const body =
+    !expanded && isLong ? displayContent.slice(0, 140) + "…" : displayContent;
 
   const handleLike = () => {
     setLiked((prev) => !prev);
@@ -165,19 +112,24 @@ export default function PostCard({ post, type, onUpdate }) {
     saveMutation.mutate(post.id);
   };
 
-  const handleEdit = () => {
-    // TODO: wire up edit modal/page
-    console.log("edit", post.id);
-  };
-
   const handleDelete = () => {
-    // TODO: wire up delete mutation
-    console.log("delete", post.id);
+    deletePostMutation.mutate(post.id);
   };
 
   const handleReport = () => {
-    // TODO: wire up report mutation
     console.log("report", post.id);
+  };
+
+  const handleEditSave = (newContent) => {
+    editMutation.mutate(
+      { id: post.id, content: newContent },
+      {
+        onSuccess: () => {
+          setDisplayContent(newContent);
+          setEditOpen(false);
+        },
+      },
+    );
   };
 
   const renderLikeAction = () => {
@@ -211,140 +163,151 @@ export default function PostCard({ post, type, onUpdate }) {
   };
 
   return (
-    <motion.article
-      variants={fadeUp}
-      whileHover={{ y: -3, boxShadow: "0 12px 40px rgba(14,99,255,0.13)" }}
-      transition={{ duration: 0.2 }}
-      className="bg-white rounded-2xl p-5 border border-blue-50 shadow-sm"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <AvatarIcon />
-          <div>
-            <p className="font-bold text-slate-800 text-sm leading-tight">
-              {type === "Question"
-                ? post.patient?.fullName
-                : `Dr.${post.doctor?.fullName}`}
-            </p>
-            <p className="text-xs text-slate-400">
-              {type === "Artical" && post.doctor?.specialty + " · "}
-              {timeAgo}
-            </p>
+    <>
+      <motion.article
+        variants={fadeUp}
+        whileHover={{ y: -3, boxShadow: "0 12px 40px rgba(14,99,255,0.13)" }}
+        transition={{ duration: 0.2 }}
+        className="bg-white rounded-2xl p-5 border border-blue-50 shadow-sm"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <AvatarIcon />
+            <div>
+              <p className="font-bold text-slate-800 text-sm leading-tight">
+                {type === "Question"
+                  ? post.patient?.fullName
+                  : `Dr.${post.doctor?.fullName}`}
+              </p>
+              <p className="text-xs text-slate-400">
+                {type === "Artical" && post.doctor?.specialty + " · "}
+                {timeAgo}
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <span className="hidden sm:inline text-[10px] font-bold tracking-widest text-blue-500 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
-            {type}
-          </span>
-
-          {/* Three dots menu */}
-          <div className="relative">
-            <motion.button
-              whileTap={{ scale: 0.88 }}
-              onClick={() => setMenuOpen((v) => !v)}
-              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors border-none bg-transparent cursor-pointer"
-            >
-              <FiMoreHorizontal size={16} />
-            </motion.button>
-
-            <AnimatePresence>
-              {menuOpen && (
-                <PostMenu
-                  isOwner={isOwner}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onReport={handleReport}
-                  onClose={() => setMenuOpen(false)}
-                />
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <p className="text-sm text-slate-600 leading-relaxed mb-3">
-        {body}
-        {isLong && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="ml-1 cursor-pointer text-blue-500 font-bold hover:text-blue-700 transition-colors"
-          >
-            {expanded ? "less" : "more"}
-          </button>
-        )}
-      </p>
-
-      {/* Tags */}
-      {post.tags?.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {post.tags.map((t) => (
-            <span
-              key={t.id ?? t}
-              className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-0.5 rounded-full"
-            >
-              #{t.name ?? t}
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline text-[10px] font-bold tracking-widest text-blue-500 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
+              {type}
             </span>
-          ))}
-        </div>
-      )}
 
-      <div className="flex items-center gap-4 mb-3">
-        <div className="flex items-center gap-1.5">
-          {type === "Question" ? (
-            <FaAngleDoubleUp size={13} className="text-blue-500" />
-          ) : (
-            <ImHeart size={13} className="text-rose-400" />
+            <div className="relative">
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={() => setMenuOpen((v) => !v)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <FiMoreHorizontal size={16} />
+              </motion.button>
+
+              <AnimatePresence>
+                {menuOpen && (
+                  <PostMenu
+                    isOwner={isOwner}
+                    onEdit={() => {
+                      setMenuOpen(false);
+                      setEditOpen(true);
+                    }}
+                    onDelete={handleDelete}
+                    onReport={handleReport}
+                    onClose={() => setMenuOpen(false)}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <p className="text-sm text-slate-600 leading-relaxed mb-3">
+          {body}
+          {isLong && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="ml-1 cursor-pointer text-blue-500 font-bold hover:text-blue-700 transition-colors"
+            >
+              {expanded ? "less" : "more"}
+            </button>
           )}
-          <span className="text-xs font-semibold text-slate-600">{likes}</span>
-          <span className="text-xs text-slate-400">
-            {type === "Question" ? "interested" : "likes"}
-          </span>
-        </div>
+        </p>
 
-        {type === "Question" && (
+        {/* Tags */}
+        {post.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {post.tags.map((t) => (
+              <Tag key={t.id} label={t.name} id={t.id} type={type} />
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 mb-3">
           <div className="flex items-center gap-1.5">
-            <FiMessageCircle size={13} className="text-blue-400" />
+            {type === "Question" ? (
+              <FaAngleDoubleUp size={13} className="text-blue-500" />
+            ) : (
+              <ImHeart size={13} className="text-rose-400" />
+            )}
             <span className="text-xs font-semibold text-slate-600">
-              {post.answersCount}
+              {likes}
             </span>
-            <span className="text-xs text-slate-400">answers</span>
+            <span className="text-xs text-slate-400">
+              {type === "Question" ? "interested" : "likes"}
+            </span>
           </div>
-        )}
-      </div>
 
-      <div className="h-px bg-blue-50 mb-3" />
-
-      {/* Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1">
-          {renderLikeAction()}
           {type === "Question" && (
-            <Link to={`/Community/Question/${post.id}`} state={{ post }}>
-              <ActionBtn
-                iconActive={FiMessageCircle}
-                iconInactive={FiMessageCircle}
-                label="Answer"
-                count={post.comments}
-              />
-            </Link>
+            <div className="flex items-center gap-1.5">
+              <FiMessageCircle size={13} className="text-blue-400" />
+              <span className="text-xs font-semibold text-slate-600">
+                {post.answersCount}
+              </span>
+              <span className="text-xs text-slate-400">answers</span>
+            </div>
           )}
         </div>
 
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={handleSave}
-          className={`p-2 rounded-xl cursor-pointer transition-colors ${
-            saved
-              ? "text-blue-600 bg-blue-50"
-              : "text-slate-400 hover:text-blue-500 hover:bg-blue-50"
-          }`}
-        >
-          {saved ? <FaBookmark size={17} /> : <FaRegBookmark size={17} />}
-        </motion.button>
-      </div>
-    </motion.article>
+        <div className="h-px bg-blue-50 mb-3" />
+
+        {/* Actions */}
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1">
+            {renderLikeAction()}
+            {type === "Question" && (
+              <Link to={`/Community/Question/${post.id}`} state={{ type }}>
+                <ActionBtn
+                  iconActive={FiMessageCircle}
+                  iconInactive={FiMessageCircle}
+                  label="Answer"
+                  count={post.comments}
+                />
+              </Link>
+            )}
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.85 }}
+            onClick={handleSave}
+            className={`p-2 rounded-xl cursor-pointer transition-colors ${
+              saved
+                ? "text-blue-600 bg-blue-50"
+                : "text-slate-400 hover:text-blue-500 hover:bg-blue-50"
+            }`}
+          >
+            {saved ? <FaBookmark size={17} /> : <FaRegBookmark size={17} />}
+          </motion.button>
+        </div>
+      </motion.article>
+
+      {/* Edit Modal */}
+      <EditModal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        initialText={displayContent}
+        onSave={handleEditSave}
+        isPending={editMutation.isPending}
+        title={type === "Question" ? "Edit Question" : "Edit Article"}
+      />
+    </>
   );
 }

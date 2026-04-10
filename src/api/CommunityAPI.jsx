@@ -77,8 +77,10 @@ export const useCommunityAPI = () => {
     return res;
   };
 
-  const getCommentReplies = async (Id) => {
-    const res = await axiosInstance.get(`Questions/comments/${Id}/replies`);
+  const getCommentReplies = async (Id, params) => {
+    const res = await axiosInstance.get(`Questions/comments/${Id}/replies`, {
+      params,
+    });
     return res.data;
   };
 
@@ -90,6 +92,57 @@ export const useCommunityAPI = () => {
   const getQuestionById = async (id) => {
     const res = await axiosInstance.get(`Questions/${id}`);
     return res.data;
+  };
+
+  const getQuestionsByTag = async (id, params) => {
+    const res = await axiosInstance.get(`Questions/tag/${id}`, { params });
+    return res.data;
+  };
+  const getPostsByTag = async (id, params) => {
+    const res = await axiosInstance.get(`Posts/tag/${id}`, { params });
+    return res.data;
+  };
+
+  const getQuestionsTrendingTags = async () => {
+    const res = await axiosInstance.get("Questions/top-tags", { top: 4 });
+    return res.data;
+  };
+  const getPostsTrendingTags = async () => {
+    const res = await axiosInstance.get("Posts/top-tags", { top: 4 });
+    return res.data;
+  };
+
+  const deletePost = (id) => {
+    const res = axiosInstance.delete(`Posts/${id}`);
+    return res;
+  };
+
+  const deleteQuestion = (id) => {
+    const res = axiosInstance.delete(`Questions/${id}`);
+    return res;
+  };
+
+  const deletePostComment = (id) => {
+    const res = axiosInstance.delete(`Posts/comments/${id}`);
+    return res;
+  };
+  const deleteQuestionComment = (id) => {
+    const res = axiosInstance.delete(`Questions/comments/${id}`);
+    return res;
+  };
+
+  const editPost = (id, Data) => {
+    const res = axiosInstance.put(`Posts/${id}`, Data);
+    return res;
+  };
+  const editQuestion = (id, Data) => {
+    const res = axiosInstance.put(`Questions/${id}`, Data);
+    return res;
+  };
+  const editComment = (id, Data) => {
+    console.log(Data);
+    const res = axiosInstance.put(`Questions/comments/${id}`, Data);
+    return res;
   };
 
   return {
@@ -110,5 +163,16 @@ export const useCommunityAPI = () => {
     getCommentReplies,
     likeComment,
     getQuestionById,
+    getQuestionsByTag,
+    getPostsByTag,
+    getQuestionsTrendingTags,
+    getPostsTrendingTags,
+    deletePost,
+    deletePostComment,
+    deleteQuestion,
+    deleteQuestionComment,
+    editComment,
+    editPost,
+    editQuestion,
   };
 };
