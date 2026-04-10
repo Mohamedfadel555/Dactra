@@ -18,7 +18,6 @@ export default function ServiceProvidersPage() {
     queryKey: ["medicalTestsProviders"],
     queryFn: () => providerAPI.getMedicalTestsProviders(),
   });
-
   const filtered = useMemo(() => {
     let list = [...providers];
     if (filter === FILTER_LAB) list = list.filter((p) => p.type === 0);
@@ -87,17 +86,17 @@ export default function ServiceProvidersPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-500">No labs or scan centers match your search.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {filtered.map((p) => (
-              <ServiceProviderCard
-                key={p.id}
-                id={p.id}
-                name={p.name}
-                address={p.address}
-                avg_Rating={p.avg_Rating}
-                type={p.type}
-                topServices={[]}
-              />
+              <div key={p.id} className="h-full min-h-0">
+                <ServiceProviderCard
+                  id={p.id}
+                  name={p.name}
+                  address={p.address}
+                  avg_Rating={p.avg_Rating}
+                  type={p.type}
+                />
+              </div>
             ))}
           </div>
         )}
