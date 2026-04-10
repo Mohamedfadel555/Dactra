@@ -8,6 +8,7 @@ export default function ActionBtn({
   active,
   activeClass = "text-red-500",
   onClick,
+  count,
 }) {
   const Icon = active ? iconActive : iconInactive;
   const Label = active ? (labelInActive ? labelInActive : label) : label;
@@ -21,6 +22,7 @@ export default function ActionBtn({
         hover:bg-blue-50 cursor-pointer select-none`}
     >
       <Icon size={16} />
+      {count && count > 0 && count}
       {label && <span className="hidden sm:inline">{Label}</span>}
     </motion.button>
   );

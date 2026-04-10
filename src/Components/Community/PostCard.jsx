@@ -1,7 +1,14 @@
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
 import AvatarIcon from "../Common/AvatarIcon1";
-import { FiHeart, FiMessageCircle, FiMoreHorizontal } from "react-icons/fi";
+import {
+  FiHeart,
+  FiMessageCircle,
+  FiMoreHorizontal,
+  FiEdit2,
+  FiTrash2,
+  FiFlag,
+} from "react-icons/fi";
 import {
   FaRegBookmark,
   FaBookmark,
@@ -21,6 +28,68 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
 };
 
+function PostMenu({ isOwner, onEdit, onDelete, onReport, onClose }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
+  const items = isOwner
+    ? [
+        {
+          icon: FiEdit2,
+          label: "Edit post",
+          onClick: onEdit,
+          color: "text-slate-600",
+        },
+        {
+          icon: FiTrash2,
+          label: "Delete post",
+          onClick: onDelete,
+          color: "text-rose-500",
+        },
+      ]
+    : [
+        {
+          icon: FiFlag,
+          label: "Report post",
+          onClick: onReport,
+          color: "text-amber-500",
+        },
+      ];
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.92, y: -6 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="absolute right-0 top-8 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/60 py-1.5 min-w-[160px] overflow-hidden"
+    >
+      {items.map((item, i) => (
+        <motion.button
+          key={i}
+          whileHover={{ backgroundColor: "rgba(241,245,249,1)" }}
+          onClick={() => {
+            item.onClick();
+            onClose();
+          }}
+          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold border-none bg-transparent cursor-pointer transition-colors ${item.color}`}
+        >
+          <item.icon size={14} />
+          {item.label}
+        </motion.button>
+      ))}
+    </motion.div>
+  );
+}
+
 export default function PostCard({ post, type, onUpdate }) {
   const [liked, setLiked] = useState(
     type === "Question"
@@ -32,8 +101,16 @@ export default function PostCard({ post, type, onUpdate }) {
     type === "Question" ? post.interestsCount : post.likesCount,
   );
   const [expanded, setExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const { role } = useAuth();
+  const { role, accessToken } = useAuth();
+  const userEmail = accessToken
+    ? JSON.parse(atob(accessToken.split(".")[1])).email
+    : null;
+
+  const isOwner =
+    type === "Question" ? post?.email === userEmail : post?.email === userEmail;
+
   const likeMutation = useLikePost();
   const interestMutation = useInterestPost();
   const saveMutation = useSavePost(type);
@@ -41,7 +118,6 @@ export default function PostCard({ post, type, onUpdate }) {
   // ── time formatting ──
   const now = new Date();
   const createAt = new Date(post.createdAt);
-
   const diff = now - createAt;
   const diffMinutes = diff / (1000 * 60);
   const diffHours = diff / (1000 * 60 * 60);
@@ -65,13 +141,10 @@ export default function PostCard({ post, type, onUpdate }) {
                 ? Math.floor(diffMinutes) + "m ago"
                 : "now";
 
-  // ── body ──
-
-  const bodyText = post.content ? post.content : post.text;
+  const bodyText = post.content ?? post.text ?? "";
   const isLong = bodyText.length > 140;
   const body = !expanded && isLong ? bodyText.slice(0, 140) + "…" : bodyText;
 
-  // ── handlers ──
   const handleLike = () => {
     setLiked((prev) => !prev);
     setLikes((prev) => (liked ? prev - 1 : prev + 1));
@@ -92,13 +165,25 @@ export default function PostCard({ post, type, onUpdate }) {
     saveMutation.mutate(post.id);
   };
 
-  // ── render like/interest action ──
+  const handleEdit = () => {
+    // TODO: wire up edit modal/page
+    console.log("edit", post.id);
+  };
+
+  const handleDelete = () => {
+    // TODO: wire up delete mutation
+    console.log("delete", post.id);
+  };
+
+  const handleReport = () => {
+    // TODO: wire up report mutation
+    console.log("report", post.id);
+  };
+
   const renderLikeAction = () => {
     if (type === "Artical") {
-      // ✅ Article → Like للكل (Doctor + Patient)
       return (
         <ActionBtn
-          // ✅ الأيقونة بتتغير حسب الحالة
           iconActive={ImHeart}
           iconInactive={FiHeart}
           label="Like"
@@ -109,12 +194,9 @@ export default function PostCard({ post, type, onUpdate }) {
         />
       );
     }
-
     if (type === "Question" && role === "Patient") {
-      // ✅ Question + Patient → Interest
       return (
         <ActionBtn
-          // ✅ الأيقونة بتتغير حسب الحالة
           iconActive={FaAngleDoubleUp}
           iconInactive={FaAngleUp}
           label="Interest"
@@ -125,8 +207,6 @@ export default function PostCard({ post, type, onUpdate }) {
         />
       );
     }
-
-    // Doctor على Question → مفيش زرار
     return null;
   };
 
@@ -144,22 +224,43 @@ export default function PostCard({ post, type, onUpdate }) {
           <div>
             <p className="font-bold text-slate-800 text-sm leading-tight">
               {type === "Question"
-                ? post.patient.fullName
-                : `Dr.${post.doctor.fullName}`}
+                ? post.patient?.fullName
+                : `Dr.${post.doctor?.fullName}`}
             </p>
             <p className="text-xs text-slate-400">
-              {type === "Artical" && post.doctor.specialty + " · "}
+              {type === "Artical" && post.doctor?.specialty + " · "}
               {timeAgo}
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           <span className="hidden sm:inline text-[10px] font-bold tracking-widest text-blue-500 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
             {type}
           </span>
-          <button className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
-            <FiMoreHorizontal size={16} />
-          </button>
+
+          {/* Three dots menu */}
+          <div className="relative">
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              onClick={() => setMenuOpen((v) => !v)}
+              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors border-none bg-transparent cursor-pointer"
+            >
+              <FiMoreHorizontal size={16} />
+            </motion.button>
+
+            <AnimatePresence>
+              {menuOpen && (
+                <PostMenu
+                  isOwner={isOwner}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onReport={handleReport}
+                  onClose={() => setMenuOpen(false)}
+                />
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -177,30 +278,26 @@ export default function PostCard({ post, type, onUpdate }) {
       </p>
 
       {/* Tags */}
-      {post.tags.length > 0 && (
+      {post.tags?.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {post.tags.map((t) => (
             <span
-              key={t}
+              key={t.id ?? t}
               className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-0.5 rounded-full"
             >
-              #{t}
+              #{t.name ?? t}
             </span>
           ))}
         </div>
       )}
 
-      {/* Stats */}
-      {/* Stats */}
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5">
-          {/* ✅ ثابتة دايمًا - مش بتتغير حسب liked */}
           {type === "Question" ? (
             <FaAngleDoubleUp size={13} className="text-blue-500" />
           ) : (
             <ImHeart size={13} className="text-rose-400" />
           )}
-
           <span className="text-xs font-semibold text-slate-600">{likes}</span>
           <span className="text-xs text-slate-400">
             {type === "Question" ? "interested" : "likes"}
@@ -217,13 +314,13 @@ export default function PostCard({ post, type, onUpdate }) {
           </div>
         )}
       </div>
+
       <div className="h-px bg-blue-50 mb-3" />
 
       {/* Actions */}
       <div className="flex items-center justify-between">
         <div className="flex gap-1">
           {renderLikeAction()}
-
           {type === "Question" && (
             <Link to={`/Community/Question/${post.id}`} state={{ post }}>
               <ActionBtn
@@ -236,7 +333,6 @@ export default function PostCard({ post, type, onUpdate }) {
           )}
         </div>
 
-        {/* Save للكل */}
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={handleSave}

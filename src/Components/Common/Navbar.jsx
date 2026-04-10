@@ -123,14 +123,10 @@ export default function Navbar() {
           {
             label: "Services",
             Links: [
+              { to: "/doctors", label: "Doctors" },
               { to: "/service-providers", label: "Labs & Scan Centers" },
-              { to: "/service1", label: "Service 1" },
-              { to: "/service2", label: "Service 2" },
-              { to: "/service3", label: "Service 3" },
             ],
           },
-          { to: "/doctors", label: "Doctors" },
-          { to: "/service-providers", label: "Labs & Scans" },
           {
             label: "Community",
             Links: [

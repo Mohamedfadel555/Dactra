@@ -19,6 +19,11 @@ export default function AdminTable({
   onShowMore,
   hasMore = false,
 }) {
+  console.log("=>" + Boolean(onView || onApprove || onDelete || onBlock));
+  console.log(onApprove);
+  console.log(onDelete);
+  console.log(onBlock);
+
   const [expandedRow, setExpandedRow] = useState(null);
   // Show loading state
   if (isLoading) {
@@ -52,9 +57,14 @@ export default function AdminTable({
                   {col.label}
                 </th>
               ))}
-              <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              {onView ||
+                onApprove ||
+                onDelete ||
+                (onBlock && (
+                  <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -83,66 +93,71 @@ export default function AdminTable({
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
-                  <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {onView && (
-                        <button
-                          onClick={() => onView(row)}
-                          className="text-blue-600 hover:text-blue-800 p-1 transition-all duration-200 hover:scale-110"
-                          title="View"
-                        >
-                          <MdVisibility className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                      )}
-                      {onApprove && (
-                        <button
-                          onClick={() => onApprove(row)}
-                          className={`p-1 transition-all duration-200 ${
-                            row.isApproved
-                              ? "text-red-600 hover:text-red-800 hover:scale-110"
-                              : "text-green-600 hover:text-green-800 hover:scale-110"
-                          }`}
-                          title={row.isApproved ? "Disapprove" : "Approve"}
-                        >
-                          {row.isApproved ? (
-                            <MdCancel className="w-4 h-4 sm:w-5 sm:h-5" />
-                          ) : (
-                            <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {onView ||
+                    onApprove ||
+                    onDelete ||
+                    (onBlock && (
+                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          {onView && (
+                            <button
+                              onClick={() => onView(row)}
+                              className="text-blue-600 hover:text-blue-800 p-1 transition-all duration-200 hover:scale-110"
+                              title="View"
+                            >
+                              <MdVisibility className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
                           )}
-                        </button>
-                      )}
-                      {onBlock && (
-                        <button
-                          onClick={() => onBlock(row)}
-                          className={`p-1 ${
-                            row.isDeleted ||
-                            row.statusType === "Blocked" ||
-                            row.isBlocked
-                              ? "text-green-600 hover:text-green-800"
-                              : "text-orange-600 hover:text-orange-800"
-                          }`}
-                          title={
-                            row.isDeleted ||
-                            row.statusType === "Blocked" ||
-                            row.isBlocked
-                              ? "Unblock"
-                              : "Block"
-                          }
-                        >
-                          <MdBlock className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button
-                          onClick={() => onDelete(row)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                          title="Delete"
-                        >
-                          <MdDelete className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                          {onApprove && (
+                            <button
+                              onClick={() => onApprove(row)}
+                              className={`p-1 transition-all duration-200 ${
+                                row.isApproved
+                                  ? "text-red-600 hover:text-red-800 hover:scale-110"
+                                  : "text-green-600 hover:text-green-800 hover:scale-110"
+                              }`}
+                              title={row.isApproved ? "Disapprove" : "Approve"}
+                            >
+                              {row.isApproved ? (
+                                <MdCancel className="w-4 h-4 sm:w-5 sm:h-5" />
+                              ) : (
+                                <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                              )}
+                            </button>
+                          )}
+                          {onBlock && (
+                            <button
+                              onClick={() => onBlock(row)}
+                              className={`p-1 ${
+                                row.isDeleted ||
+                                row.statusType === "Blocked" ||
+                                row.isBlocked
+                                  ? "text-green-600 hover:text-green-800"
+                                  : "text-orange-600 hover:text-orange-800"
+                              }`}
+                              title={
+                                row.isDeleted ||
+                                row.statusType === "Blocked" ||
+                                row.isBlocked
+                                  ? "Unblock"
+                                  : "Block"
+                              }
+                            >
+                              <MdBlock className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button
+                              onClick={() => onDelete(row)}
+                              className="text-red-600 hover:text-red-800 p-1"
+                              title="Delete"
+                            >
+                              <MdDelete className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    ))}
                 </tr>
               ))
             )}
