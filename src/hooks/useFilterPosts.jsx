@@ -12,7 +12,7 @@ export const useFilterPosts = (id, type) => {
         : id === 3 && type === "Artical"
           ? ["myArticals"]
           : type === "Question"
-            ? ["filterQuestions", id]
+            ? ["filteredQuestions", id]
             : ["filteredPosts", id],
     queryFn: ({ pageParam = 1 }) => {
       if (id === 3 && type === "Question")
