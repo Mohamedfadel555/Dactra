@@ -1,11 +1,16 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCommunityAPI } from "../api/CommunityAPI";
 import { toast } from "react-toastify";
 
 export const useInterestPost = () => {
   const { interestPost } = useCommunityAPI();
+
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: interestPost,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["filteredQuestions", 0]);
+    },
     onError: () =>
       toast.error("something went wrong, try again later!", {
         position: "top-center",

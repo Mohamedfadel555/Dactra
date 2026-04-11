@@ -14,6 +14,7 @@ export const useDeleteComment = (id, type) => {
         closeOnClick: true,
       });
       queryClient.invalidateQueries(["comments-infintie", id]);
+      queryClient.invalidateQueries(["filteredQuestions", 2]);
     },
     onError: () =>
       toast.error("something went wrong", {
