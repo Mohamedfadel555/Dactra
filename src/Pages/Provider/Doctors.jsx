@@ -24,7 +24,6 @@ export default function Doctors() {
     startDate,
     endDate,
   }) => {
-    // TODO: استبدل ده بـ API call الحقيقية
     const response = await fetch("/api/deals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -43,7 +42,6 @@ export default function Doctors() {
 
     const data = await response.json();
     console.log("Deal created:", data);
-    // ممكن هنا تعمل toast notification للمعمل إن الديل اتبعت
   };
 
   const columns = [

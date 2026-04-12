@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
+import { FaHandsHelping } from "react-icons/fa";
+import { FaUsers } from "react-icons/fa";
 import {
   MdPerson,
   MdMiscellaneousServices,
@@ -11,6 +13,7 @@ import {
 import { FaUserDoctor } from "react-icons/fa6";
 import Icon from "../assets/images/icons/dactraIcon.webp";
 import { useLogout } from "../hooks/useLogout";
+import { TbContract } from "react-icons/tb";
 
 export default function ProviderLayout() {
   const { role, accessToken } = useAuth();
@@ -122,6 +125,48 @@ export default function ProviderLayout() {
           >
             <FaUserDoctor className="w-5 h-5" />
             <span className="text-sm font-medium truncate">Doctors</span>
+          </NavLink>
+          <NavLink
+            to={isLab ? "/lab/ourdeals" : "/scan/ourdeals"}
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? "bg-[#316BE8] text-white shadow-lg scale-[1.02]"
+                  : "text-gray-300 hover:bg-gray-800 hover:scale-[1.01]"
+              }`
+            }
+          >
+            <TbContract className="w-5 h-5" />
+            <span className="text-sm font-medium truncate">Deals</span>
+          </NavLink>
+          <NavLink
+            to={isLab ? "/lab/sponsoreddoctors" : "/scan/sponsoreddoctors"}
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? "bg-[#316BE8] text-white shadow-lg scale-[1.02]"
+                  : "text-gray-300 hover:bg-gray-800 hover:scale-[1.01]"
+              }`
+            }
+          >
+            <FaHandsHelping className="w-5 h-5" />
+            <span className="text-sm font-medium truncate">Sponsored</span>
+          </NavLink>
+          <NavLink
+            to={isLab ? "/lab/referredpatients" : "/scan/referredpatients"}
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? "bg-[#316BE8] text-white shadow-lg scale-[1.02]"
+                  : "text-gray-300 hover:bg-gray-800 hover:scale-[1.01]"
+              }`
+            }
+          >
+            <FaUsers className="w-5 h-5" />
+            <span className="text-sm font-medium truncate">Referred</span>
           </NavLink>
         </nav>
 

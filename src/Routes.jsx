@@ -17,6 +17,9 @@ import PaymentCallback from "./Components/Auth/PaymentCallback";
 import MedicalChat from "./Pages/ChatBot";
 import Doctors from "./Pages/Provider/Doctors";
 import TagPostsPage from "./Pages/Community/TagPostsPage";
+import OurDeals from "./Pages/Provider/OurDeals";
+import SponsoredDoctors from "./Pages/Provider/SponsoredDoctors";
+import ReferredPatients from "./Pages/Provider/ReferredPatients";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -413,6 +416,9 @@ export const route = createBrowserRouter([
         path: "searchdoctors",
         element: <Doctors />,
       },
+      { path: "ourdeals", element: <OurDeals /> },
+      { path: "sponsoreddoctors", element: <SponsoredDoctors /> },
+      { path: "referredpatients", element: <ReferredPatients /> },
     ],
   },
   {

@@ -6,13 +6,13 @@ export const useVerifyOTP = () => {
   return useMutation({
     mutationFn: VerifyOTP,
     onSuccess: (data) => {
-      toast.success("✅ OTP Is Correct!", {
+      toast.success(" OTP Is Correct!", {
         closeOnClick: true,
         position: "top-center",
       });
     },
     onError: (data) => {
-      toast.error("❌ OTP Is Wrong ", {
+      toast.error(" OTP Is Wrong ", {
         closeOnClick: true,
         position: "top-center",
       });
