@@ -23,7 +23,9 @@ export const useLogin = () => {
       let rawRole =
         tokenPayload.role ||
         tokenPayload.roles ||
-        tokenPayload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        tokenPayload[
+          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+        ];
 
       const typeValue = tokenPayload.tv; // "0" for lab, "1" for scan (from backend)
 
@@ -31,7 +33,9 @@ export const useLogin = () => {
         rawRole = rawRole[0];
       }
 
-      const normalizedRole = (rawRole && typeof rawRole === "string" ? rawRole : "").toLowerCase();
+      const normalizedRole = (
+        rawRole && typeof rawRole === "string" ? rawRole : ""
+      ).toLowerCase();
 
       // Map backend roles to app roles (used across the app)
       let appRole = rawRole;
@@ -58,7 +62,9 @@ export const useLogin = () => {
         closeOnClick: true,
       });
 
-      const navRole = (appRole && typeof appRole === "string" ? appRole : "").toLowerCase();
+      const navRole = (
+        appRole && typeof appRole === "string" ? appRole : ""
+      ).toLowerCase();
       if (navRole === "admin" || navRole === "administrator") {
         navigate("/admin/dashboard", { replace: true });
       } else if (navRole === "lab" || navRole === "lap") {
