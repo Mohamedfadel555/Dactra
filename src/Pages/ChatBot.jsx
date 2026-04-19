@@ -4,7 +4,7 @@ import TypingDots from "../Components/ChatBot/TypingDots";
 import Message from "../Components/ChatBot/Message";
 import AnalysisPanel from "../Components/ChatBot/AnalysisPanel";
 import Sidebar from "../Components/ChatBot/Sidebar";
-import Topbar from "../Components/ChatBot/TopBar";
+import Topbar from "../Components/ChatBot/Topbar";
 import WelcomeScreen from "../Components/ChatBot/WelcomeScreen";
 import InputBar from "../Components/ChatBot/InputBar";
 
