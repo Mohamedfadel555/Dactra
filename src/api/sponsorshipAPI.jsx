@@ -3,8 +3,8 @@ import { useAxios } from "../hooks/useAxios";
 export const useSponsorshipAPI = () => {
   const axiosInstance = useAxios();
 
-  const providerOffer = (Data) => {
-    const res = axiosInstance.post("Sponsorship/provider/offer", Data);
+  const providerOffer = async (Data) => {
+    const res = await axiosInstance.post("Sponsorship/provider/offer", Data);
     return res;
   };
 
@@ -44,14 +44,19 @@ export const useSponsorshipAPI = () => {
     return res;
   };
 
-  const providerCancelOffer = async (Id) => {
+  const providerOffers = async () => {
+    const res = await axiosInstance.get("Sponsorship/provider/offers");
+    return res.data;
+  };
+
+  const providerCancelDeal = async (Id) => {
     const res = await axiosInstance.put(`Sponsorship/provider/cancel/${Id}`);
     return res;
   };
 
-  const providerOffers = async () => {
-    const res = await axiosInstance.get("Sponsorship/provider/offers");
-    return res.data;
+  const providerCancelOffer = async (Id) => {
+    const res = await axiosInstance.delete(`Sponsorship/provider/offer/${Id}`);
+    return res;
   };
 
   return {
@@ -60,8 +65,11 @@ export const useSponsorshipAPI = () => {
     offersBYStat,
     sponsoredDoctors,
     providerAcceptCounter,
-    providerCancelOffer,
+    providerCancelDeal,
     providerRejectCounter,
     providerOffers,
+    providerAcceptCounter,
+    providerRejectCounter,
+    providerCancelOffer,
   };
 };

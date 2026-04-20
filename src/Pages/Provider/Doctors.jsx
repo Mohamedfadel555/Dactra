@@ -16,34 +16,6 @@ export default function Doctors() {
     pageSize,
     searchTerm,
   );
-
-  const handleDealSubmit = async ({
-    doctorId,
-    discount,
-    description,
-    startDate,
-    endDate,
-  }) => {
-    const response = await fetch("/api/deals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        doctorId,
-        discount,
-        description,
-        startDate,
-        endDate,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("فشل إرسال الديل");
-    }
-
-    const data = await response.json();
-    console.log("Deal created:", data);
-  };
-
   const columns = [
     {
       label: "Name",
@@ -114,11 +86,7 @@ export default function Doctors() {
       />
 
       {selectedDoctor && (
-        <Deal
-          doctor={selectedDoctor}
-          onClose={() => setSelectedDoctor(null)}
-          onSubmit={handleDealSubmit}
-        />
+        <Deal doctor={selectedDoctor} onClose={() => setSelectedDoctor(null)} />
       )}
     </div>
   );

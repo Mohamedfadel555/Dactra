@@ -1,77 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaRegClock } from "react-icons/fa6";
 import { PiArrowsCounterClockwise } from "react-icons/pi";
 import { TbCancel } from "react-icons/tb";
 import {
   MdPercent,
-  MdCalendarToday,
   MdEdit,
   MdClose,
   MdCheck,
   MdInfo,
+  MdBlock,
+  MdAccessTime,
 } from "react-icons/md";
 import { useOffersSummary } from "../../hooks/useOffersSummary";
 import { useOffersByStat } from "../../hooks/useOffersByStat";
-
-// ─── mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_DEALS = [
-  {
-    _id: "1",
-    status: "pending",
-    doctor: { name: "Dr. Ahmed Saber", specialization: "Cardiologist" },
-    discount: 25,
-    description: "25% off all cardiac lab panels for referred patients.",
-    startDate: "2025-06-01",
-    endDate: "2025-09-01",
-    createdAt: "2025-05-10",
-  },
-  {
-    _id: "2",
-    status: "pending",
-    doctor: { name: "Dr. Mona Khalil", specialization: "Endocrinologist" },
-    discount: 15,
-    description: "Discount on thyroid & diabetes tests.",
-    startDate: null,
-    endDate: null,
-    createdAt: "2025-05-14",
-  },
-  {
-    _id: "3",
-    status: "counter",
-    doctor: { name: "Dr. Omar Nasser", specialization: "Nephrologist" },
-    discount: 30,
-    description: "Kidney function full panel at reduced rate.",
-    counterDiscount: 20,
-    counterDescription: "We can only offer 20% — full panel still included.",
-    startDate: "2025-07-01",
-    endDate: "2025-12-31",
-    createdAt: "2025-05-08",
-  },
-  {
-    _id: "4",
-    status: "counter",
-    doctor: { name: "Dr. Sara Mostafa", specialization: "Hematologist" },
-    discount: 40,
-    description: "40% off all CBC and coagulation tests.",
-    counterDiscount: 30,
-    counterDescription: "Maximum we can do is 30% — still a great deal.",
-    startDate: null,
-    endDate: null,
-    createdAt: "2025-05-12",
-  },
-  {
-    _id: "5",
-    status: "rejected",
-    doctor: { name: "Dr. Karim Adel", specialization: "Pulmonologist" },
-    discount: 20,
-    description: "Pulmonary function + ABG tests discounted.",
-    startDate: "2025-06-15",
-    endDate: "2025-08-15",
-    createdAt: "2025-05-02",
-  },
-];
+import AvatarIcon from "../../Components/Common/AvatarIcon1";
+import { useProviderAcceptCounter } from "../../hooks/useProviderAcceptCounter";
+import { useProviderRejectCounter } from "../../hooks/useProviderRejectCounter";
+import { useProviderCancelOffer } from "../../hooks/useProviderCancelOffer";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -136,15 +82,6 @@ const fmt = (d) =>
       })
     : null;
 
-const initials = (name = "") =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 function Spinner({ cls = "border-white/30 border-t-white" }) {
   return (
@@ -161,9 +98,16 @@ function CounterModal({ deal, onClose }) {
   const [loading, setLoading] = useState(null);
   const [done, setDone] = useState(null);
 
+  const acceptMutation = useProviderAcceptCounter();
+  const rejectMutation = useProviderRejectCounter();
+
+  const newDeal = deal.counterOffers[0];
+
   const act = async (type) => {
     setLoading(type);
-    await new Promise((r) => setTimeout(r, 900));
+    type === "accepted"
+      ? await acceptMutation.mutateAsync(newDeal.id)
+      : await rejectMutation.mutateAsync(newDeal.id);
     setLoading(null);
     setDone(type);
     setTimeout(() => onClose(type), 1600);
@@ -185,7 +129,6 @@ function CounterModal({ deal, onClose }) {
         className="w-full sm:max-w-[480px] bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
       >
         {done ? (
-          /* ── result screen ── */
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -227,29 +170,25 @@ function CounterModal({ deal, onClose }) {
             </p>
             <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
               {done === "accepted"
-                ? `You've accepted the counter offer of ${deal.counterDiscount}% discount from ${deal.doctor.name}.`
-                : `You've rejected the counter offer from ${deal.doctor.name}.`}
+                ? `You've accepted the counter offer of ${newDeal.discountPercentage}% discount from ${newDeal.doctorName}.`
+                : `You've rejected the counter offer from ${newDeal.doctorName}.`}
             </p>
           </motion.div>
         ) : (
           <>
-            {/* drag handle */}
             <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
               <div className="w-10 h-1 rounded-full bg-gray-200" />
             </div>
 
-            {/* header */}
             <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-sm font-bold text-violet-700 shrink-0">
-                  {initials(deal.doctor.name)}
-                </div>
+                <AvatarIcon />
                 <div className="min-w-0">
                   <p className="text-sm sm:text-[15px] font-semibold text-gray-900 leading-tight truncate">
                     Counter Offer
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">
-                    {deal.doctor.name} · {deal.doctor.specialization}
+                    {newDeal.doctorName} · {newDeal.doctorSpeciality}
                   </p>
                 </div>
               </div>
@@ -261,9 +200,7 @@ function CounterModal({ deal, onClose }) {
               </button>
             </div>
 
-            {/* body — scrollable */}
             <div className="px-4 sm:px-5 py-4 flex flex-col gap-3 overflow-y-auto flex-1">
-              {/* original offer */}
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 sm:p-4">
                 <p className="text-[10px] sm:text-[11px] text-gray-400 uppercase tracking-wider mb-2">
                   Your Original Offer
@@ -271,19 +208,18 @@ function CounterModal({ deal, onClose }) {
                 <div className="flex items-start sm:items-center gap-3">
                   <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white border border-gray-200 flex flex-col items-center justify-center shrink-0">
                     <span className="text-lg sm:text-xl font-bold text-gray-500 leading-none">
-                      {deal.discount}
+                      {deal.discountPercentage}
                     </span>
                     <span className="text-[9px] sm:text-[10px] text-gray-400">
                       % OFF
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-gray-500 leading-relaxed line-through flex-1">
-                    {deal.description}
+                    {deal.offerContent}
                   </p>
                 </div>
               </div>
 
-              {/* counter */}
               <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 sm:p-4">
                 <p className="text-[10px] sm:text-[11px] text-violet-500 uppercase tracking-wider mb-2">
                   Doctor's Counter
@@ -291,19 +227,18 @@ function CounterModal({ deal, onClose }) {
                 <div className="flex items-start sm:items-center gap-3">
                   <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white border border-violet-200 flex flex-col items-center justify-center shrink-0">
                     <span className="text-lg sm:text-xl font-bold text-violet-600 leading-none">
-                      {deal.counterDiscount}
+                      {newDeal.discountPercentage}
                     </span>
                     <span className="text-[9px] sm:text-[10px] text-violet-400">
                       % OFF
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-violet-700 leading-relaxed flex-1">
-                    {deal.counterDescription}
+                    {newDeal.offerContent}
                   </p>
                 </div>
               </div>
 
-              {/* info */}
               <div className="flex gap-2 items-start bg-sky-50 border border-sky-200 rounded-xl px-3 sm:px-3.5 py-2.5">
                 <MdInfo size={14} className="text-sky-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-sky-700 leading-relaxed">
@@ -313,7 +248,6 @@ function CounterModal({ deal, onClose }) {
               </div>
             </div>
 
-            {/* footer */}
             <div className="flex gap-2 sm:gap-2.5 px-4 sm:px-5 py-3 sm:py-4 border-t border-gray-100 shrink-0">
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -353,8 +287,25 @@ function CounterModal({ deal, onClose }) {
 }
 
 // ─── DealCard ─────────────────────────────────────────────────────────────────
-function DealCard({ deal, index, onCounter }) {
-  const meta = STATUS_META[deal.status];
+function DealCard({ deal, index, onCounter, onCancel }) {
+  const statusKey =
+    deal.status === 0 ? "pending" : deal.status === 1 ? "rejected" : "counter";
+  const meta = STATUS_META[statusKey];
+
+  // حساب تاريخ الحذف التلقائي (أسبوع من تاريخ الرفض)
+  const deletionDate =
+    deal.status === 1 && deal.requestedAtUtc
+      ? new Date(
+          new Date(deal.requestedAtUtc).getTime() + 7 * 24 * 60 * 60 * 1000,
+        )
+      : null;
+
+  const daysLeft = deletionDate
+    ? Math.max(
+        0,
+        Math.ceil((deletionDate - new Date()) / (1000 * 60 * 60 * 24)),
+      )
+    : null;
 
   return (
     <motion.div
@@ -369,7 +320,6 @@ function DealCard({ deal, index, onCounter }) {
       }}
       className={`relative rounded-2xl border ${meta.border} ${meta.bg} p-3.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3 overflow-hidden`}
     >
-      {/* dot pattern */}
       <div
         className="absolute inset-0 opacity-[0.035] pointer-events-none"
         style={{
@@ -378,24 +328,21 @@ function DealCard({ deal, index, onCounter }) {
         }}
       />
 
-      {/* ── top row: avatar + name + status pill ── */}
       <div className="flex items-start justify-between gap-2 relative">
-        {/* left: avatar + name */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-xs sm:text-sm font-bold text-gray-600 shrink-0">
-            {initials(deal.doctor.name)}
+            <AvatarIcon />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
-              {deal.doctor.name}
+              {deal.doctorName}
             </p>
             <p className="text-xs text-gray-400 mt-0.5 truncate">
-              {deal.doctor.specialization}
+              {deal.doctorSpeciality}
             </p>
           </div>
         </div>
 
-        {/* right: status pill — always visible, wraps gracefully */}
         <div
           className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-medium bg-white border ${meta.border} ${meta.text} shrink-0`}
         >
@@ -404,23 +351,21 @@ function DealCard({ deal, index, onCounter }) {
         </div>
       </div>
 
-      {/* ── discount + description ── */}
       <div className="flex items-start sm:items-center gap-3 relative">
         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white shadow-sm border border-gray-100 flex flex-col items-center justify-center shrink-0">
           <span className="text-xl sm:text-2xl font-black text-gray-800 leading-none">
-            {deal.discount}
+            {deal.discountPercentage}
           </span>
           <span className="text-[9px] sm:text-[10px] text-gray-400 font-medium">
             % OFF
           </span>
         </div>
         <p className="text-xs sm:text-sm text-gray-600 leading-relaxed flex-1 pt-0.5 sm:pt-0">
-          {deal.description}
+          {deal.offerContent}
         </p>
       </div>
 
-      {/* ── counter offer box ── */}
-      {deal.status === "counter" && (
+      {deal.status === 2 && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
@@ -429,7 +374,7 @@ function DealCard({ deal, index, onCounter }) {
           <div className="flex items-start sm:items-center gap-2.5">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-violet-50 border border-violet-200 flex flex-col items-center justify-center shrink-0">
               <span className="text-sm sm:text-base font-black text-violet-600 leading-none">
-                {deal.counterDiscount}
+                {deal.counterOffers?.[0]?.discountPercentage ?? "—"}
               </span>
               <span className="text-[9px] text-violet-400">% OFF</span>
             </div>
@@ -438,11 +383,10 @@ function DealCard({ deal, index, onCounter }) {
                 Doctor's Counter
               </p>
               <p className="text-xs text-violet-700 leading-relaxed line-clamp-2">
-                {deal.counterDescription}
+                {deal.counterOffers?.[0]?.offerContent}
               </p>
             </div>
           </div>
-          {/* review button — full width on mobile for easier tap */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
@@ -455,8 +399,216 @@ function DealCard({ deal, index, onCounter }) {
       )}
 
       <p className="text-[11px] text-gray-400 relative">
-        Sent {fmt(deal.createdAt)}
+        Sent {fmt(deal.requestedAtUtc)}
       </p>
+
+      {/* زرار كانسل للـ pending */}
+      {deal.status === 0 && (
+        <motion.button
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onCancel(deal)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 text-xs font-semibold hover:bg-rose-100 transition-colors cursor-pointer relative"
+        >
+          <TbCancel size={13} /> Cancel Offer
+        </motion.button>
+      )}
+
+      {/* نوت الحذف التلقائي للـ rejected */}
+      {deal.status === 1 && daysLeft !== null && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-rose-100/60 border border-rose-200 relative"
+        >
+          <MdAccessTime size={13} className="text-rose-400 shrink-0" />
+          <p className="text-[11px] text-rose-600 leading-tight">
+            {daysLeft === 0
+              ? "Will be deleted today"
+              : daysLeft === 1
+                ? "Will be deleted tomorrow"
+                : `Auto-deleted in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`}{" "}
+            · Rejected offers are removed after 7 days
+          </p>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── LoadMore Button ──────────────────────────────────────────────────────────
+function LoadMoreButton({ onClick, loading }) {
+  return (
+    <motion.button
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      disabled={loading}
+      className="w-full py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-500 font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer"
+    >
+      {loading ? (
+        <Spinner cls="border-gray-200 border-t-gray-500" />
+      ) : (
+        "Load more"
+      )}
+    </motion.button>
+  );
+}
+
+function CancelPendingModal({ deal, onClose }) {
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const cancelMutation = useProviderCancelOffer();
+
+  const handleCancel = async () => {
+    setLoading(true);
+    await cancelMutation.mutateAsync(deal.id);
+    setLoading(false);
+    setDone(true);
+    setTimeout(() => onClose("cancelled"), 1600);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose(null)}
+    >
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 340, damping: 28 }}
+        className="w-full sm:max-w-[420px] bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
+      >
+        {done ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4 py-14 px-8 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 18,
+                delay: 0.05,
+              }}
+              className="relative w-[68px] h-[68px]"
+            >
+              <motion.span
+                className="absolute inset-0 rounded-full bg-rose-400/15"
+                animate={{ scale: [1, 2.1], opacity: [0.5, 0] }}
+                transition={{
+                  duration: 1.1,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                }}
+              />
+              <div className="relative w-full h-full rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center">
+                <TbCancel size={26} color="#fff" />
+              </div>
+            </motion.div>
+            <p className="text-lg font-bold text-gray-900">Offer Cancelled</p>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
+              Your offer to {deal.doctorName} has been cancelled successfully.
+            </p>
+          </motion.div>
+        ) : (
+          <>
+            <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-200" />
+            </div>
+
+            {/* header */}
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <AvatarIcon />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
+                    Cancel Offer
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">
+                    {deal.doctorName} · {deal.doctorSpeciality}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => onClose(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors cursor-pointer shrink-0 ml-2"
+              >
+                <MdClose size={17} />
+              </button>
+            </div>
+
+            {/* body */}
+            <div className="px-4 sm:px-5 py-4 flex flex-col gap-3 overflow-y-auto flex-1">
+              {/* offer summary */}
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
+                <p className="text-[10px] sm:text-[11px] text-amber-500 uppercase tracking-wider mb-2">
+                  Pending Offer
+                </p>
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white border border-amber-200 flex flex-col items-center justify-center shrink-0">
+                    <span className="text-lg sm:text-xl font-bold text-amber-600 leading-none">
+                      {deal.discountPercentage}
+                    </span>
+                    <span className="text-[9px] sm:text-[10px] text-amber-400">
+                      % OFF
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-amber-800 leading-relaxed flex-1">
+                    {deal.offerContent}
+                  </p>
+                </div>
+              </div>
+
+              {/* warning */}
+              <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 bg-rose-50 border border-rose-200">
+                <MdBlock size={15} className="text-rose-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-rose-800 leading-relaxed">
+                  This will permanently cancel the offer sent to{" "}
+                  <strong>{deal.doctorName}</strong>. The doctor will no longer
+                  be able to respond to it.
+                </p>
+              </div>
+            </div>
+
+            {/* footer */}
+            <div className="flex gap-2 px-4 sm:px-5 py-3 sm:py-4 border-t border-gray-100 shrink-0">
+              <button
+                onClick={() => onClose(null)}
+                className="flex-1 py-2.5 text-sm border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Keep Pending
+              </button>
+              <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                disabled={loading}
+                onClick={handleCancel}
+                className="flex-[2] py-2.5 text-sm font-semibold rounded-xl text-white flex items-center justify-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
+                style={{
+                  background: "linear-gradient(135deg,#e11d48,#be123c)",
+                }}
+              >
+                {loading ? (
+                  <Spinner />
+                ) : (
+                  <>
+                    <TbCancel size={15} /> Cancel Offer
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </>
+        )}
+      </motion.div>
     </motion.div>
   );
 }
@@ -464,31 +616,27 @@ function DealCard({ deal, index, onCounter }) {
 export default function OurDeals() {
   const [activeTab, setActiveTab] = useState("pending");
   const [counterDeal, setCounterDeal] = useState(null);
+  const [cancelDeal, setCancelDeal] = useState(null);
 
   const { data: summary } = useOffersSummary();
 
-  const { data: deals } = useOffersByStat(
+  const {
+    data: dealsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useOffersByStat(
     activeTab === "pending" ? 0 : activeTab === "rejected" ? 1 : 2,
   );
 
-  const filtered = deals?.pages[0]?.itmes || [];
+  const allDeals = dealsData?.pages.flatMap((page) => page.items) ?? [];
+  console.log(allDeals);
 
-  const [counts, setCounts] = useState({
-    pending: summary ? summary.pendingCount : 0,
-    counter: summary ? summary.counterCount : 0,
-    rejected: summary ? summary.rejectedCount : 0,
-  });
-
-  useEffect(() => {
-    if (!summary) return;
-    setCounts({
-      pending: summary.pendingCount || 0,
-      counter: summary.counterCount || 0,
-      rejected: summary.rejectedCount || 0,
-    });
-  }, [summary]);
-
-  // const filtered = deals.filter((d) => d.status === activeTab);
+  const counts = {
+    pending: summary?.pendingCount ?? 0,
+    counter: summary?.counterCount ?? 0,
+    rejected: summary?.rejectedCount ?? 0,
+  };
 
   return (
     <>
@@ -511,6 +659,7 @@ export default function OurDeals() {
           </div>
         </motion.div>
 
+        {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -554,9 +703,10 @@ export default function OurDeals() {
           })}
         </motion.div>
 
+        {/* Cards */}
         <div className="flex flex-col gap-3 sm:gap-4">
           <AnimatePresence mode="popLayout">
-            {filtered && filtered.length === 0 ? (
+            {allDeals.length === 0 ? (
               <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
@@ -575,23 +725,42 @@ export default function OurDeals() {
                 </p>
               </motion.div>
             ) : (
-              filtered &&
-              filtered.map((deal, i) => (
+              allDeals.map((deal, i) => (
                 <DealCard
-                  key={deal._id}
+                  key={deal.id}
                   deal={deal}
                   index={i}
                   onCounter={setCounterDeal}
+                  onCancel={setCancelDeal}
                 />
               ))
             )}
           </AnimatePresence>
+
+          {hasNextPage && (
+            <LoadMoreButton
+              onClick={() => fetchNextPage()}
+              loading={isFetchingNextPage}
+            />
+          )}
         </div>
       </div>
 
       <AnimatePresence>
         {counterDeal && (
-          <CounterModal deal={counterDeal} onClose={handleCounterClose} />
+          <CounterModal
+            deal={counterDeal}
+            onClose={() => setCounterDeal(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cancelDeal && (
+          <CancelPendingModal
+            deal={cancelDeal}
+            onClose={() => setCancelDeal(null)}
+          />
         )}
       </AnimatePresence>
     </>

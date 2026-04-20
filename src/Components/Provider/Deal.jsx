@@ -9,16 +9,11 @@ import {
   MdInfo,
   MdCheckCircle,
 } from "react-icons/md";
+import { useProviderOffer } from "../../hooks/useProviderOffer";
 
-/**
- * Deal Modal
- * Props:
- *   doctor   – { _id, name, specialization }
- *   onClose  – () => void
- *   onSubmit – (payload) => Promise<void>
- */
-export function Deal({ doctor, onClose, onSubmit }) {
+export function Deal({ doctor, onClose }) {
   const [success, setSuccess] = useState(false);
+  const offerMutation = useProviderOffer();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -39,8 +34,6 @@ export function Deal({ doctor, onClose, onSubmit }) {
     initialValues: {
       discount: "",
       description: "",
-      startDate: "",
-      endDate: "",
     },
     validationSchema: Yup.object({
       discount: Yup.number()
@@ -51,23 +44,12 @@ export function Deal({ doctor, onClose, onSubmit }) {
       description: Yup.string()
         .trim()
         .required("Please enter a deal description"),
-      startDate: Yup.date().nullable().notRequired(),
-      endDate: Yup.date()
-        .nullable()
-        .notRequired()
-        .when("startDate", (startDate, schema) =>
-          startDate?.[0]
-            ? schema.min(startDate[0], "End date must be after start date")
-            : schema,
-        ),
     }),
     onSubmit: async (values) => {
-      await onSubmit({
-        doctorId: doctor._id,
-        discount: Number(values.discount),
-        description: values.description,
-        startDate: values.startDate || null,
-        endDate: values.endDate || null,
+      await offerMutation.mutateAsync({
+        doctorId: doctor.id,
+        offerContent: values.description,
+        discountPercentage: values.discount,
       });
       setSuccess(true);
       setTimeout(onClose, 2000);
