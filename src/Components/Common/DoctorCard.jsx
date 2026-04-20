@@ -1,17 +1,52 @@
 import Doctor from "../../assets/images/Frame93.webp";
 import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
 import { FaStar } from "react-icons/fa";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function DoctorCard({
+  doctorId = null,
   name,
   specialist,
   rating,
   ratingNo,
   isFavourite = false,
 }) {
+  const favStorageKey = "dactra_favourite_doctors";
   const [isFav, setIsFav] = useState(isFavourite);
+
+  useEffect(() => {
+    if (!doctorId) {
+      setIsFav(isFavourite);
+      return;
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(favStorageKey) || "[]");
+      const savedIds = Array.isArray(saved) ? saved.map(String) : [];
+      setIsFav(savedIds.includes(String(doctorId)));
+    } catch {
+      setIsFav(isFavourite);
+    }
+  }, [doctorId, isFavourite]);
+
+  const toggleFavourite = () => {
+    if (!doctorId) {
+      setIsFav((prev) => !prev);
+      return;
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(favStorageKey) || "[]");
+      const savedIds = Array.isArray(saved) ? saved.map(String) : [];
+      const id = String(doctorId);
+      const next = savedIds.includes(id)
+        ? savedIds.filter((item) => item !== id)
+        : [...savedIds, id];
+      localStorage.setItem(favStorageKey, JSON.stringify(next));
+      setIsFav(next.includes(id));
+    } catch {
+      setIsFav((prev) => !prev);
+    }
+  };
 
   return (
     <div className="w-[300px] bg-white p-[18px] rounded-[20px] flex flex-col gap-1 shadow-[0_3px_6px_rgba(0,0,0,0.06),0_12px_28px_rgba(0,0,0,0.10)]">
@@ -34,9 +69,11 @@ export default function DoctorCard({
           </p>
         </div>
 
-        <div
-          onClick={() => setIsFav((prev) => !prev)}
-          className="cursor-pointer"
+        <button
+          type="button"
+          onClick={toggleFavourite}
+          className="cursor-pointer border-none bg-transparent p-0"
+          aria-label={isFav ? "Remove doctor from favourites" : "Add doctor to favourites"}
         >
           <AnimatePresence mode="wait">
             {isFav ? (
@@ -69,7 +106,7 @@ export default function DoctorCard({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </button>
       </div>
     </div>
   );

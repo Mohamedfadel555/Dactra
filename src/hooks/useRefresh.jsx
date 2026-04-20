@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRefreshApi } from "../api/authAPI";
 import { useAuth } from "../Context/AuthContext";
+import { mapAppRoleFromToken } from "../utils/authRole";
 
 export const useRefresh = () => {
   const { refreshApi } = useRefreshApi();
@@ -10,10 +11,7 @@ export const useRefresh = () => {
     onSuccess: (data) => {
       const newAccessToken = data.data.accessToken;
       console.log(newAccessToken);
-      login(
-        newAccessToken,
-        JSON.parse(atob(newAccessToken.split(".")[1])).role
-      );
+      login(newAccessToken, mapAppRoleFromToken(newAccessToken));
     },
     onError: () => {
       logout();

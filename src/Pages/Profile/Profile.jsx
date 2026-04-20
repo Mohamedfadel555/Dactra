@@ -24,6 +24,7 @@ import { useParams } from "react-router-dom";
 import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 import Schedule from "../../Components/Profile/Schedule";
 import { useGetDoctorSlots } from "../../hooks/useGetDoctorSlots";
+import { Link } from "react-router-dom";
 
 const genderData = ["Male", "Female"];
 
@@ -340,6 +341,23 @@ export default function Profile({ role }) {
                     </p>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button className="px-4 py-2 rounded-lg bg-[#316BE8] text-white text-sm font-semibold">
+                  Message
+                </button>
+                {role === "Doctor" && (
+                  <button className="px-4 py-2 rounded-lg border border-[#316BE8] text-[#316BE8] text-sm font-semibold">
+                    Book Appointment
+                  </button>
+                )}
+                <Link
+                  to="/complaints/submit"
+                  state={{ against: role === "Doctor" ? "Doctor" : "Patient" }}
+                  className="px-4 py-2 rounded-lg border border-amber-400 text-amber-700 bg-amber-50 text-sm font-semibold"
+                >
+                  Report / Make Complaint
+                </Link>
               </div>
             </motion.div>
 

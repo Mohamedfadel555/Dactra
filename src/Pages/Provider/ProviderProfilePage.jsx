@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useAuth } from "../../Context/AuthContext";
+import { useLocation } from "react-router-dom";
 import { useProviderPortalAPI } from "../../api/providerPortalAPI";
 import {
   useMedicalProviderMe,
@@ -16,15 +17,16 @@ import {
   DAY_LABELS_AR_EN,
 } from "../../utils/workingHours";
 
-export default function ProviderProfilePage() {
+export default function ProviderProfilePage({ type }) {
   const { role, accessToken } = useAuth();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const portal = useProviderPortalAPI();
 
-  const isLab =
-    (role || "").toLowerCase() === "lab" ||
-    (role || "").toLowerCase() === "lap";
-  const titlePrefix = isLab ? "Lab" : "Scan Center";
+  const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
+  const normalizedType = (type || pathType || role || "").toLowerCase();
+  const isLab = normalizedType !== "scan";
+  const titlePrefix = isLab ? "Lab Center" : "Scan Center";
 
   const { data: provider, isLoading, isError } = useMedicalProviderMe();
 

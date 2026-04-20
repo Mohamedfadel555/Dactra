@@ -28,6 +28,9 @@ import CommentItem from "../../Components/Community/CommentItem";
 import EditModal from "../../Components/Community/EditModal";
 import { useEditQuestion } from "../../hooks/useEditQuestion";
 import { useEditPost } from "../../hooks/useEditPost";
+import ReportModal from "../../Components/Common/ReportModal";
+import { toast } from "react-toastify";
+import { addReport, createReporterFromToken } from "../../utils/moderationStore";
 
 function handleTime(create) {
   const diff = Date.now() - new Date(create).getTime();
@@ -68,6 +71,7 @@ export default function PostDetailPage() {
   const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [displayContent, setDisplayContent] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!post) return;
@@ -154,6 +158,20 @@ export default function PostDetailPage() {
     );
   };
 
+  const handleSubmitReport = ({ reason, details }) => {
+    const reporter = createReporterFromToken(accessToken);
+    addReport({
+      contentType: "Question",
+      contentId: post?.id,
+      contentPreview: displayContent,
+      reason,
+      details,
+      createdBy: reporter,
+    });
+    setReportOpen(false);
+    toast.success("Report submitted.", { position: "top-center" });
+  };
+
   const timeAgo = post?.createdAt ? handleTime(post.createdAt) : "";
   const authorName = post?.patient?.fullName ?? post?.doctor?.fullName;
 
@@ -225,7 +243,7 @@ export default function PostDetailPage() {
                             setEditOpen(true);
                           }}
                           onDelete={() => console.log("delete post", post?.id)}
-                          onReport={() => console.log("report post", post?.id)}
+                          onReport={() => setReportOpen(true)}
                           onClose={() => setPostMenuOpen(false)}
                         />
                       )}
@@ -433,6 +451,12 @@ export default function PostDetailPage() {
         onSave={handleEditSave}
         isPending={editMutation.isPending}
         title={type === "Question" ? "Edit Question" : "Edit Article"}
+      />
+      <ReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleSubmitReport}
+        contentLabel="question"
       />
     </>
   );
