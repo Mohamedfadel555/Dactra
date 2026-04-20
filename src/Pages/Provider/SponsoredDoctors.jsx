@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MdSearch,
@@ -12,6 +12,7 @@ import {
 import { FaUserDoctor } from "react-icons/fa6";
 import { TbPlugConnectedX } from "react-icons/tb";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
+import { useSponsoredDoctors } from "../../hooks/useSponsoredDoctors";
 
 const BLUE = "#316BE8";
 
@@ -437,7 +438,8 @@ function DoctorDetailModal({ doctor, onClose }) {
 
 // ─── DoctorCard ───────────────────────────────────────────────────────────────
 function DoctorCard({ doctor, index, onView, onCancel }) {
-  const { firstName, lastName } = splitName(doctor.name);
+  console.log(doctor);
+  const { firstName, lastName } = splitName(doctor.doctorName);
 
   return (
     <motion.div
@@ -467,7 +469,7 @@ function DoctorCard({ doctor, index, onView, onCancel }) {
           style={{ background: BLUE }}
         >
           <span className="text-sm font-black text-white leading-none">
-            {doctor.deal.discount}
+            {doctor.discountPercentage}
           </span>
           <span className="text-[8px] text-white/70">%</span>
         </div>
@@ -478,7 +480,7 @@ function DoctorCard({ doctor, index, onView, onCancel }) {
         className="text-xs text-gray-500 leading-relaxed line-clamp-2 cursor-pointer"
         onClick={() => onView(doctor)}
       >
-        {doctor.deal.description}
+        {doctor.description}
       </p>
 
       {/* patients + since */}
@@ -491,10 +493,10 @@ function DoctorCard({ doctor, index, onView, onCancel }) {
           style={{ color: BLUE }}
         >
           <FaUserDoctor size={11} />
-          <span>{doctor.patientsReferred} patients</span>
+          <span>{doctor.patientsSentCount} patients</span>
         </div>
         <span className="text-[11px] text-gray-400">
-          Since {fmtSince(doctor.joinedAt)}
+          Since {fmtSince(doctor.offerDate)}
         </span>
       </div>
 
@@ -516,17 +518,25 @@ function DoctorCard({ doctor, index, onView, onCancel }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function SponsoredDoctors() {
-  const [doctors, setDoctors] = useState(MOCK_DOCTORS);
+  const [doctors, setDoctors] = useState([]);
   const [search, setSearch] = useState("");
   const [detailDoc, setDetailDoc] = useState(null);
   const [cancelDoc, setCancelDoc] = useState(null);
+
+  const { data: sponsoredD } = useSponsoredDoctors();
+  console.log(sponsoredD);
+
+  useEffect(() => {
+    if (!sponsoredD) return;
+    setDoctors(sponsoredD.pages[0].items);
+  }, [sponsoredD]);
 
   const filtered = doctors.filter((d) =>
     `${d.name} ${d.specialization}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  const totalPatients = doctors.reduce((s, d) => s + d.patientsReferred, 0);
+  const totalPatients = sponsoredD && sponsoredD.pages[0].totalPatientsSent;
 
   const handleCancelClose = (result) => {
     if (result === "cancelled")
@@ -572,7 +582,7 @@ export default function SponsoredDoctors() {
             {
               label: "Avg Disc",
               value: doctors.length
-                ? `${Math.round(doctors.reduce((s, d) => s + d.deal.discount, 0) / doctors.length)}%`
+                ? `${sponsoredD && sponsoredD.pages[0].averageDiscount}%`
                 : "—",
               bg: "#f59e0b",
             },

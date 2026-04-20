@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaRegClock } from "react-icons/fa6";
 import { PiArrowsCounterClockwise } from "react-icons/pi";
@@ -11,8 +11,11 @@ import {
   MdCheck,
   MdInfo,
 } from "react-icons/md";
+import { useOffersSummary } from "../../hooks/useOffersSummary";
+import { useOffersByStat } from "../../hooks/useOffersByStat";
 
 // ─── mock data ────────────────────────────────────────────────────────────────
+
 const MOCK_DEALS = [
   {
     _id: "1",
@@ -460,27 +463,32 @@ function DealCard({ deal, index, onCounter }) {
 
 export default function OurDeals() {
   const [activeTab, setActiveTab] = useState("pending");
-  const [deals, setDeals] = useState(MOCK_DEALS);
   const [counterDeal, setCounterDeal] = useState(null);
 
-  const counts = Object.fromEntries(
-    TABS.map((t) => [t.key, deals.filter((d) => d.status === t.key).length]),
+  const { data: summary } = useOffersSummary();
+
+  const { data: deals } = useOffersByStat(
+    activeTab === "pending" ? 0 : activeTab === "rejected" ? 1 : 2,
   );
 
-  const filtered = deals.filter((d) => d.status === activeTab);
+  const filtered = deals?.pages[0]?.itmes || [];
 
-  const handleCounterClose = (result) => {
-    if (result) {
-      setDeals((prev) =>
-        prev.map((d) =>
-          d._id === counterDeal._id
-            ? { ...d, status: result === "accepted" ? "pending" : "rejected" }
-            : d,
-        ),
-      );
-    }
-    setCounterDeal(null);
-  };
+  const [counts, setCounts] = useState({
+    pending: summary ? summary.pendingCount : 0,
+    counter: summary ? summary.counterCount : 0,
+    rejected: summary ? summary.rejectedCount : 0,
+  });
+
+  useEffect(() => {
+    if (!summary) return;
+    setCounts({
+      pending: summary.pendingCount || 0,
+      counter: summary.counterCount || 0,
+      rejected: summary.rejectedCount || 0,
+    });
+  }, [summary]);
+
+  // const filtered = deals.filter((d) => d.status === activeTab);
 
   return (
     <>
@@ -548,7 +556,7 @@ export default function OurDeals() {
 
         <div className="flex flex-col gap-3 sm:gap-4">
           <AnimatePresence mode="popLayout">
-            {filtered.length === 0 ? (
+            {filtered && filtered.length === 0 ? (
               <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
@@ -567,6 +575,7 @@ export default function OurDeals() {
                 </p>
               </motion.div>
             ) : (
+              filtered &&
               filtered.map((deal, i) => (
                 <DealCard
                   key={deal._id}

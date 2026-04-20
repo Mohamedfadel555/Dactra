@@ -153,7 +153,6 @@ function buildHistory(messages, maxTurns = 10) {
 async function callGeminiWithFallback({ systemPrompt, contents, retries = 3 }) {
   if (!GEMINI_API_KEY) throw new Error("Missing GEMINI API key");
   let lastError = null;
-  const triedModels = [];
 
   for (const model of MODEL_CHAIN) {
     const url = `${GEMINI_BASE}/${model}:generateContent?key=${GEMINI_API_KEY}`;
@@ -163,7 +162,8 @@ async function callGeminiWithFallback({ systemPrompt, contents, retries = 3 }) {
       generationConfig: { maxOutputTokens: 4096, temperature: 0.4 },
     };
 
-    let modelFailed = false;
+    let succeeded = false;
+
     for (let attempt = 0; attempt < retries; attempt++) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
@@ -183,8 +183,9 @@ async function callGeminiWithFallback({ systemPrompt, contents, retries = 3 }) {
             .join("")
             .trim();
           if (!text) throw new Error("Empty response from Gemini");
-          return { text, model };
+          return { text, model }; // ✅ نجح، خروج فوري
         }
+
         if (res.status === 429) {
           const retryAfter = Number(res.headers.get("retry-after"));
           await sleep(
@@ -192,44 +193,39 @@ async function callGeminiWithFallback({ systemPrompt, contents, retries = 3 }) {
               ? retryAfter * 1000
               : 3000 * (attempt + 1),
           );
-          continue;
+          continue; // حاول تاني مع نفس الموديل
         }
+
+        // 404 أو 400 = الموديل ده مش موجود، انتقل للتالي فوراً
         if (res.status === 404 || res.status === 400) {
           const errBody = await res.json().catch(() => ({}));
           lastError = new Error(
             errBody?.error?.message || `API error ${res.status} on ${model}`,
           );
-          modelFailed = true;
-          break;
+          break; // اخرج من loop الـ retries وجرب الموديل الجاي
         }
+
         const errBody = await res.json().catch(() => ({}));
         lastError = new Error(
           errBody?.error?.message || `API error ${res.status}`,
         );
-        if (attempt === retries - 1) modelFailed = true;
+        // خطأ تاني - حاول مرة كمان
+        if (attempt < retries - 1) await sleep(2000 * (attempt + 1));
       } catch (err) {
         clearTimeout(timer);
         lastError = err;
-        if (err.name === "AbortError") {
-          modelFailed = true;
-          break;
-        }
-        if (attempt < retries - 1) {
-          await sleep(2000 * (attempt + 1));
-          continue;
-        }
-        modelFailed = true;
+        if (err.name === "AbortError") break; // timeout = انتقل للموديل الجاي
+        if (attempt < retries - 1) await sleep(2000 * (attempt + 1));
       }
     }
-    triedModels.push(model);
-    if (!modelFailed) break;
+
+    // لو succeeded مش true، الـ loop الخارجي هيكمل للموديل الجاي تلقائياً
   }
 
   throw new Error(
-    `MODEL_ALL_FAILED: tried ${triedModels.join(" → ")}. Last error: ${lastError?.message || "unknown"}`,
+    `MODEL_ALL_FAILED: tried ${MODEL_CHAIN.join(" → ")}. Last error: ${lastError?.message || "unknown"}`,
   );
 }
-
 async function callGeminiChat({ userMessage, history = [] }) {
   const contents = [
     ...history,
