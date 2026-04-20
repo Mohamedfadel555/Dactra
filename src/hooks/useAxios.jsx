@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
+import { mapAppRoleFromToken } from "../utils/authRole";
 
 export const useAxios = () => {
   const { accessToken, login, logout } = useAuth();
@@ -27,10 +28,7 @@ export const useAxios = () => {
             { withCredentials: true }
           );
           const newAccessToken = res.data.accessToken;
-          await login(
-            newAccessToken,
-            JSON.parse(atob(newAccessToken.split(".")[1])).role
-          );
+          await login(newAccessToken, mapAppRoleFromToken(newAccessToken));
           originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         } catch (err) {
           logout();

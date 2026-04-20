@@ -1,9 +1,9 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { MdFilterList } from "react-icons/md";
 import { FaStar } from "react-icons/fa";
-import { IoIosHeartEmpty } from "react-icons/io";
+import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 
 import { useDoctors } from "../hooks/useDoctors";
@@ -17,8 +17,32 @@ export default function DoctorsListPage() {
     useState(null);
   const [sortedByRating, setSortedByRating] = useState(null); // null = default, true = highest, false = lowest
   const [currentPage, setCurrentPage] = useState(1);
+  const [favouriteDoctorIds, setFavouriteDoctorIds] = useState([]);
   const pageSize = 9;
   const specialtiesRef = useRef(null);
+  const favStorageKey = "dactra_favourite_doctors";
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(favStorageKey) || "[]");
+      setFavouriteDoctorIds(Array.isArray(saved) ? saved : []);
+    } catch {
+      setFavouriteDoctorIds([]);
+    }
+  }, []);
+
+  const toggleFavouriteDoctor = (doctor) => {
+    const doctorId = doctor.id || doctor.profileId || doctor.userId;
+    if (!doctorId) return;
+    setFavouriteDoctorIds((prev) => {
+      const id = String(doctorId);
+      const next = prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id];
+      localStorage.setItem(favStorageKey, JSON.stringify(next));
+      return next;
+    });
+  };
 
   const handleDoctorClick = (doctor) => {
     const doctorId = doctor.id || doctor.profileId || doctor.userId;
@@ -373,9 +397,21 @@ export default function DoctorsListPage() {
                                 {/* Favourite icon aligned with rating */}
                                 <button
                                   type="button"
+                                  onClick={() => toggleFavouriteDoctor(doctor)}
                                   className="text-[#316BE8] hover:text-[#274fb3]"
                                 >
-                                  <IoIosHeartEmpty className="w-5 h-5" />
+                                  {favouriteDoctorIds.includes(
+                                    String(
+                                      doctor.id ||
+                                        doctor.profileId ||
+                                        doctor.userId ||
+                                        "",
+                                    ),
+                                  ) ? (
+                                    <IoIosHeart className="w-5 h-5 text-red-500" />
+                                  ) : (
+                                    <IoIosHeartEmpty className="w-5 h-5" />
+                                  )}
                                 </button>
                               </div>
                             </div>

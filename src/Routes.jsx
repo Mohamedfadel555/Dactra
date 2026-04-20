@@ -89,6 +89,12 @@ const ServiceProvidersPage = lazy(
 const ServiceProviderDetailPage = lazy(
   () => import("./Pages/ServiceProviders/ServiceProviderDetailPage"),
 );
+const SubmitComplaintPage = lazy(
+  () => import("./Pages/Complaints/SubmitComplaintPage"),
+);
+const SupportHelpPage = lazy(
+  () => import("./Pages/Support/SupportHelpPage"),
+);
 
 export const route = createBrowserRouter([
   { path: "/Dactra/Chat", element: <MedicalChat /> },
@@ -201,6 +207,26 @@ export const route = createBrowserRouter([
         element: (
           <Suspense fallback={<Loader />}>
             <ServiceProviderDetailPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "complaints/submit",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ProtectedRoutes>
+              <SubmitComplaintPage />
+            </ProtectedRoutes>
+          </Suspense>
+        ),
+      },
+      {
+        path: "support",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <ProtectedRoutes>
+              <SupportHelpPage />
+            </ProtectedRoutes>
           </Suspense>
         ),
       },
@@ -390,7 +416,7 @@ export const route = createBrowserRouter([
     element: (
       <Suspense fallback={<Loader />}>
         <ProtectedProvider allowedRoles={["Lab"]}>
-          <ProviderLayout />
+          <ProviderLayout type="Lab" />
         </ProtectedProvider>
       </Suspense>
     ),
@@ -400,7 +426,7 @@ export const route = createBrowserRouter([
         path: "profile",
         element: (
           <Suspense fallback={<Loader />}>
-            <ProviderProfilePage />
+            <ProviderProfilePage type="Lab" />
           </Suspense>
         ),
       },
@@ -408,7 +434,7 @@ export const route = createBrowserRouter([
         path: "services",
         element: (
           <Suspense fallback={<Loader />}>
-            <ProviderServicesPage />
+            <ProviderServicesPage type="Lab" />
           </Suspense>
         ),
       },
@@ -426,7 +452,7 @@ export const route = createBrowserRouter([
     element: (
       <Suspense fallback={<Loader />}>
         <ProtectedProvider allowedRoles={["Scan"]}>
-          <ProviderLayout />
+          <ProviderLayout type="Scan" />
         </ProtectedProvider>
       </Suspense>
     ),
@@ -436,7 +462,7 @@ export const route = createBrowserRouter([
         path: "profile",
         element: (
           <Suspense fallback={<Loader />}>
-            <ProviderProfilePage />
+            <ProviderProfilePage type="Scan" />
           </Suspense>
         ),
       },
@@ -444,7 +470,7 @@ export const route = createBrowserRouter([
         path: "services",
         element: (
           <Suspense fallback={<Loader />}>
-            <ProviderServicesPage />
+            <ProviderServicesPage type="Scan" />
           </Suspense>
         ),
       },

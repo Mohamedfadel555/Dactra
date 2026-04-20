@@ -337,6 +337,11 @@ export default function Navbar() {
                           icon: <IoIosHeartEmpty className="w-4 h-4" />,
                           label: "Favourites",
                         },
+                        {
+                          to: "/support",
+                          icon: <IoIosHeartEmpty className="w-4 h-4" />,
+                          label: "Support / Help",
+                        },
                       ].map(({ to, icon, label }) => (
                         <Link
                           key={to}

@@ -22,6 +22,9 @@ import ReplyItem from "./ReplyItem";
 import { useDeleteComment } from "../../hooks/useDeleteComment";
 import { useEditComment } from "../../hooks/useEditComment";
 import EditModal from "./EditModal";
+import ReportModal from "../Common/ReportModal";
+import { toast } from "react-toastify";
+import { addReport, createReporterFromToken } from "../../utils/moderationStore";
 
 export default function CommentItem({ comment, idx, type }) {
   const [showReplies, setShowReplies] = useState(false);
@@ -30,6 +33,7 @@ export default function CommentItem({ comment, idx, type }) {
   const [visibleRepliesCount, setVisibleRepliesCount] = useState(5);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [displayContent, setDisplayContent] = useState(comment.content ?? "");
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
@@ -122,6 +126,20 @@ export default function CommentItem({ comment, idx, type }) {
     );
   };
 
+  const handleSubmitReport = ({ reason, details }) => {
+    const reporter = createReporterFromToken(accessToken);
+    addReport({
+      contentType: "Comment",
+      contentId: comment.id,
+      contentPreview: displayContent,
+      reason,
+      details,
+      createdBy: reporter,
+    });
+    setReportOpen(false);
+    toast.success("Report submitted.", { position: "top-center" });
+  };
+
   return (
     <>
       <motion.div
@@ -170,9 +188,7 @@ export default function CommentItem({ comment, idx, type }) {
                           setEditOpen(true);
                         }}
                         onDelete={handleDelete}
-                        onReport={() =>
-                          console.log("report comment", comment.id)
-                        }
+                        onReport={() => setReportOpen(true)}
                         onClose={() => setMenuOpen(false)}
                       />
                     )}
@@ -335,6 +351,12 @@ export default function CommentItem({ comment, idx, type }) {
         onSave={handleEditSave}
         isPending={editCommentMutation.isPending}
         title="Edit Comment"
+      />
+      <ReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleSubmitReport}
+        contentLabel="comment"
       />
     </>
   );

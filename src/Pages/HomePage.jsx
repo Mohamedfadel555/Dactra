@@ -40,6 +40,8 @@ import ReviewsDetailsSection from "../Components/Common/ReviewsDetailsSection";
 import { useQuery } from "@tanstack/react-query";
 import { useProviderAPI } from "../api/providerAPI";
 import ServiceProviderCard from "../Components/ServiceProviders/ServiceProviderCard";
+import { useSiteReviews, useSiteReviewsStats } from "../hooks/useSiteReviews";
+import { useDoctors } from "../hooks/useDoctors";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -57,7 +59,7 @@ const sectionFade = {
   },
 };
 
-const doctors = [
+const doctorsFallback = [
   {
     name: "Mohamed Ahmed",
     specialist: "Cardiac",
@@ -214,8 +216,50 @@ export default function HomePage() {
     queryKey: ["medicalTestsProviders"],
     queryFn: () => providerAPI.getMedicalTestsProviders(),
   });
+  const { data: siteReviews = [] } = useSiteReviews();
+  const { data: siteReviewsStats } = useSiteReviewsStats();
+  const { data: topDoctorsResponse } = useDoctors(1, 10, "", null, null, true);
   const labs = (providers || []).filter((p) => p.type === 0);
   const scans = (providers || []).filter((p) => p.type === 1);
+  const topDoctors = topDoctorsResponse?.doctors || [];
+
+  const effectiveReviews =
+    Array.isArray(siteReviews) && siteReviews.length > 0 ? siteReviews : comments;
+  const mappedSiteReviews = effectiveReviews.map((item, index) => ({
+    name:
+      item.name ||
+      item.reviewerName ||
+      (item.id != null ? `User #${item.id}` : `User #${index + 1}`),
+    photo: profilePhoto,
+    starsNo: Number(item.score ?? item.starsNo ?? 0),
+    heading: item.heading || "Site Review",
+    body: item.comment || item.body || "",
+  }));
+  const fallbackReviewsCount = mappedSiteReviews.length;
+  const fallbackReviewsAvg =
+    fallbackReviewsCount > 0
+      ? (
+          mappedSiteReviews.reduce((sum, r) => sum + (Number(r.starsNo) || 0), 0) /
+          fallbackReviewsCount
+        ).toFixed(1)
+      : "0.0";
+  const reviewsCount =
+    siteReviewsStats?.count != null
+      ? Number(siteReviewsStats.count)
+      : fallbackReviewsCount;
+  const reviewsAvg =
+    siteReviewsStats?.avg != null
+      ? Number(siteReviewsStats.avg).toFixed(1)
+      : fallbackReviewsAvg;
+  const ratingsDist = mappedSiteReviews.reduce(
+    (acc, r) => {
+      const score = Math.min(5, Math.max(1, Math.round(Number(r.starsNo) || 0)));
+      acc[score] += 1;
+      return acc;
+    },
+    { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  );
+  const doctorsToRender = topDoctors.length > 0 ? topDoctors : doctorsFallback;
 
   return (
     <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
@@ -363,7 +407,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 grabCursor={true}
                 className="!overflow-visible pb-20"
               >
-                {doctors.map((doc, index) => (
+                {doctorsToRender.map((doc, index) => (
                   <SwiperSlide key={index}>
                     <motion.div
                       initial="hidden"
@@ -373,11 +417,28 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                       className="flex justify-center"
                     >
                       <DoctorCard
-                        name={doc.name}
-                        specialist={doc.specialist}
-                        rating={doc.rating}
-                        ratingNo={doc.ratingNo}
-                        isFavourite={doc.isFavourite}
+                        doctorId={doc.id || doc.profileId || doc.userId || index}
+                        name={
+                          doc.name ||
+                          `${doc.firstName || ""} ${doc.lastName || ""}`.trim()
+                        }
+                        specialist={
+                          doc.specializationName ||
+                          doc.specialization ||
+                          doc.specialist ||
+                          "General"
+                        }
+                        rating={
+                          doc.averageRating != null
+                            ? Number(doc.averageRating).toFixed(1)
+                            : doc.rating || "0.0"
+                        }
+                        ratingNo={
+                          doc.totalRatings != null
+                            ? String(doc.totalRatings)
+                            : doc.ratingNo || "0"
+                        }
+                        isFavourite={doc.isFavourite || false}
                       />
                     </motion.div>
                   </SwiperSlide>
@@ -662,9 +723,9 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 className="w-[80%] m-auto flex flex-col justify-center items-center gap-10"
               >
                 <ReviewsDetailsSection
-                  data={{ 1: 10, 2: 30, 3: 90, 4: 60, 5: 70 }}
-                  NumOfReviews={500}
-                  avgRating={"5.0"}
+                  data={ratingsDist}
+                  NumOfReviews={reviewsCount}
+                  avgRating={reviewsAvg}
                 />
                 <div className=" pb-[30px] overflow-hidden w-full max-w-screen-2xl mx-auto">
                   <Swiper
@@ -692,7 +753,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                     grabCursor={true}
                     className="!overflow-visible pb-20"
                   >
-                    {comments.map((comment, index) => (
+                    {mappedSiteReviews.map((comment, index) => (
                       <SwiperSlide key={index}>
                         <motion.div
                           initial="hidden"

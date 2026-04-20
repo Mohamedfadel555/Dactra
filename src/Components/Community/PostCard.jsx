@@ -21,6 +21,9 @@ import { useDeletePost } from "../../hooks/useDeletePost";
 import { useEditQuestion } from "../../hooks/useEditQuestion";
 import { useEditPost } from "../../hooks/useEditPost";
 import EditModal from "./EditModal";
+import ReportModal from "../Common/ReportModal";
+import { toast } from "react-toastify";
+import { addReport, createReporterFromToken } from "../../utils/moderationStore";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -40,6 +43,7 @@ export default function PostCard({ post, type, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   // optimistic content update
   const [displayContent, setDisplayContent] = useState(
     post.content ?? post.text ?? "",
@@ -117,7 +121,21 @@ export default function PostCard({ post, type, onUpdate }) {
   };
 
   const handleReport = () => {
-    console.log("report", post.id);
+    setReportOpen(true);
+  };
+
+  const handleSubmitReport = ({ reason, details }) => {
+    const reporter = createReporterFromToken(accessToken);
+    addReport({
+      contentType: type === "Question" ? "Question" : "Article",
+      contentId: post.id,
+      contentPreview: displayContent,
+      reason,
+      details,
+      createdBy: reporter,
+    });
+    setReportOpen(false);
+    toast.success("Report submitted.", { position: "top-center" });
   };
 
   const handleEditSave = (newContent) => {
@@ -307,6 +325,12 @@ export default function PostCard({ post, type, onUpdate }) {
         onSave={handleEditSave}
         isPending={editMutation.isPending}
         title={type === "Question" ? "Edit Question" : "Edit Article"}
+      />
+      <ReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleSubmitReport}
+        contentLabel={type === "Question" ? "question" : "article"}
       />
     </>
   );

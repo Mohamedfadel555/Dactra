@@ -90,6 +90,16 @@ export const useUserAPI = () => {
     return res.data;
   };
 
+  const getSiteReviews = async () => {
+    const res = await axiosInstance.get("SiteReviews");
+    return res.data;
+  };
+
+  const getSiteReviewsStats = async () => {
+    const res = await axiosInstance.get("SiteReviews/stats");
+    return res.data;
+  };
+
   return {
     getMePatient,
     getMeDoctor,
@@ -109,5 +119,7 @@ export const useUserAPI = () => {
     editchronics,
     getDoctorProfile,
     getPatientProfile,
+    getSiteReviews,
+    getSiteReviewsStats,
   };
 };

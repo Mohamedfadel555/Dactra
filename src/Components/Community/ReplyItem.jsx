@@ -21,6 +21,9 @@ import Spinner from "./Spinner";
 import { useDeleteComment } from "../../hooks/useDeleteComment";
 import { useEditComment } from "../../hooks/useEditComment";
 import EditModal from "./EditModal";
+import ReportModal from "../Common/ReportModal";
+import { toast } from "react-toastify";
+import { addReport, createReporterFromToken } from "../../utils/moderationStore";
 // import EditModal from "./EditModal";
 
 export default function ReplyItem({
@@ -41,6 +44,7 @@ export default function ReplyItem({
   const [visibleNested, setVisibleNested] = useState(5);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [displayContent, setDisplayContent] = useState(reply.content ?? "");
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
@@ -126,6 +130,20 @@ export default function ReplyItem({
     );
   };
 
+  const handleSubmitReport = ({ reason, details }) => {
+    const reporter = createReporterFromToken(accessToken);
+    addReport({
+      contentType: "Comment",
+      contentId: reply.id,
+      contentPreview: displayContent,
+      reason,
+      details,
+      createdBy: reporter,
+    });
+    setReportOpen(false);
+    toast.success("Report submitted.", { position: "top-center" });
+  };
+
   const canNestFurther = depth < 2;
   const hasNestedReplies = reply.repliesCount > 0 || nestedReplies.length > 0;
 
@@ -173,7 +191,7 @@ export default function ReplyItem({
                         setEditOpen(true);
                       }}
                       onDelete={handleDelete}
-                      onReport={() => console.log("report reply", reply.id)}
+                      onReport={() => setReportOpen(true)}
                       onClose={() => setMenuOpen(false)}
                     />
                   )}
@@ -318,6 +336,12 @@ export default function ReplyItem({
         onSave={handleEditSave}
         isPending={editCommentMutation.isPending}
         title="Edit Reply"
+      />
+      <ReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleSubmitReport}
+        contentLabel="comment"
       />
     </>
   );

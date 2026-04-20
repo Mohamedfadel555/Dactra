@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useSendOTP } from "./useSendOTP";
 import { useAuth } from "../Context/AuthContext";
+import { mapAppRoleFromPayload } from "../utils/authRole";
 
 export const useLogin = () => {
   const { login } = useAuth();
@@ -18,6 +19,9 @@ export const useLogin = () => {
     onSuccess: async (data) => {
       const tokenPayload = JSON.parse(atob(data.data.token.split(".")[1]));
       console.log("Login success payload:", tokenPayload);
+<<<<<<< HEAD
+      const appRole = mapAppRoleFromPayload(tokenPayload);
+=======
 
       // Try to extract role from different possible claim keys
       let rawRole =
@@ -55,6 +59,7 @@ export const useLogin = () => {
           appRole = "Lab";
         }
       }
+>>>>>>> 4a93a4fdb80f0bb17805ca8c243d1234f0ab8cf4
 
       await login(data.data.token, appRole);
       toast.success("Logged in successfully!", {

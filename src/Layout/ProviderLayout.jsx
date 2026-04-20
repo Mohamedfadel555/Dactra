@@ -15,7 +15,7 @@ import Icon from "../assets/images/icons/dactraIcon.webp";
 import { useLogout } from "../hooks/useLogout";
 import { TbContract } from "react-icons/tb";
 
-export default function ProviderLayout() {
+export default function ProviderLayout({ type }) {
   const { role, accessToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,9 +23,9 @@ export default function ProviderLayout() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isLab =
-    (role || "").toLowerCase() === "lab" ||
-    (role || "").toLowerCase() === "lap";
+  const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
+  const normalizedType = (type || pathType || role || "").toLowerCase();
+  const isLab = normalizedType !== "scan";
   const title = isLab ? "Lab Center" : "Scan Center";
 
   const handleLogout = () => {

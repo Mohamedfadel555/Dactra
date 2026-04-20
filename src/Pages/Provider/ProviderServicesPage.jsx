@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useAuth } from "../../Context/AuthContext";
+import { useLocation } from "react-router-dom";
 import { useProviderPortalAPI } from "../../api/providerPortalAPI";
 import { useMedicalProviderMe, pick } from "../../hooks/useMedicalProviderMe";
 import Loader from "../../Components/Common/loader";
@@ -29,13 +30,14 @@ function normTestService(t) {
   };
 }
 
-export default function ProviderServicesPage() {
+export default function ProviderServicesPage({ type }) {
   const { role } = useAuth();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const portal = useProviderPortalAPI();
-  const isLab =
-    (role || "").toLowerCase() === "lab" ||
-    (role || "").toLowerCase() === "lap";
+  const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
+  const normalizedType = (type || pathType || role || "").toLowerCase();
+  const isLab = normalizedType !== "scan";
 
   const { data: provider, isLoading: loadingProvider } = useMedicalProviderMe();
   const providerId = provider ? pick(provider, "id", "Id") : null;
