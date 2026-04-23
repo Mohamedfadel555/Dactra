@@ -15,11 +15,13 @@ export default function ProtectedProvider({ children, allowedRoles = [] }) {
     (r && typeof r === "string" ? r : "").toLowerCase(),
   );
 
+
   const isDenied =
     Boolean(isAuthReady) &&
     Boolean(accessToken) &&
     normalizedAllowed.length > 0 &&
     !normalizedAllowed.includes(normalizedRole);
+8
 
   useEffect(() => {
     if (!isDenied || hasShownDeniedToast.current) return;
