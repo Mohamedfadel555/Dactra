@@ -95,6 +95,7 @@ const SubmitComplaintPage = lazy(
 const SupportHelpPage = lazy(
   () => import("./Pages/Support/SupportHelpPage"),
 );
+const AboutUsPage = lazy(() => import("./Pages/About/AboutUsPage"));
 
 export const route = createBrowserRouter([
   { path: "/Dactra/Chat", element: <MedicalChat /> },
@@ -227,6 +228,14 @@ export const route = createBrowserRouter([
             <ProtectedRoutes>
               <SupportHelpPage />
             </ProtectedRoutes>
+          </Suspense>
+        ),
+      },
+      {
+        path: "aboutus",
+        element: (
+          <Suspense fallback={<Loader />}>
+            <AboutUsPage />
           </Suspense>
         ),
       },

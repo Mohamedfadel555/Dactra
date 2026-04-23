@@ -24,7 +24,12 @@ import { useEditComment } from "../../hooks/useEditComment";
 import EditModal from "./EditModal";
 import ReportModal from "../Common/ReportModal";
 import { toast } from "react-toastify";
-import { addReport, createReporterFromToken } from "../../utils/moderationStore";
+import {
+  REPORT_TYPE,
+  buildReportContent,
+} from "../../utils/reportConstants";
+import { useReportApi } from "../../hooks/useReportApi";
+import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 
 export default function CommentItem({ comment, idx, type }) {
   const [showReplies, setShowReplies] = useState(false);
@@ -34,6 +39,7 @@ export default function CommentItem({ comment, idx, type }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [displayContent, setDisplayContent] = useState(comment.content ?? "");
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
@@ -44,6 +50,8 @@ export default function CommentItem({ comment, idx, type }) {
   const [optimisticCount, setOptimisticCount] = useState(comment.likesCount);
 
   const { accessToken } = useAuth();
+  const { createReport } = useReportApi();
+  const { notifySentToDoctor } = useNotificationsApi();
   const userEmail = accessToken
     ? JSON.parse(atob(accessToken.split(".")[1])).email
     : null;
@@ -86,6 +94,18 @@ export default function CommentItem({ comment, idx, type }) {
     });
   };
 
+  const notifyDoctorOnComment = () => {
+    if (type !== "Artical" || isOwner) return;
+    notifySentToDoctor(comment.questionId, {
+      title: "New comment",
+      message: "Someone commented on your article.",
+    })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      })
+      .catch(() => {});
+  };
+
   const handleSendReply = () => {
     const text = replyText.trim();
     if (!text) return;
@@ -100,6 +120,7 @@ export default function CommentItem({ comment, idx, type }) {
           setReplyOpen(false);
           setShowReplies(true);
           queryClient.invalidateQueries(["replies", comment.id]);
+          notifyDoctorOnComment();
         },
       },
     );
@@ -126,18 +147,29 @@ export default function CommentItem({ comment, idx, type }) {
     );
   };
 
-  const handleSubmitReport = ({ reason, details }) => {
-    const reporter = createReporterFromToken(accessToken);
-    addReport({
-      contentType: "Comment",
-      contentId: comment.id,
-      contentPreview: displayContent,
-      reason,
-      details,
-      createdBy: reporter,
-    });
-    setReportOpen(false);
-    toast.success("Report submitted.", { position: "top-center" });
+  const handleSubmitReport = async ({ reason, details }) => {
+    setReportSubmitting(true);
+    try {
+      const text = buildReportContent(
+        (details || "").trim(),
+        {
+          questionId: comment.questionId,
+          threadType: type === "Artical" ? "Artical" : "Question",
+        },
+      );
+      await createReport({
+        type: REPORT_TYPE.COMMENT,
+        title: reason,
+        content: text,
+        relatedEntityId: comment.id,
+      });
+      setReportOpen(false);
+      toast.success("Report submitted.", { position: "top-center" });
+    } catch {
+      toast.error("Could not submit report.", { position: "top-center" });
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   return (
@@ -356,6 +388,7 @@ export default function CommentItem({ comment, idx, type }) {
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
         onSubmit={handleSubmitReport}
+        isSubmitting={reportSubmitting}
         contentLabel="comment"
       />
     </>

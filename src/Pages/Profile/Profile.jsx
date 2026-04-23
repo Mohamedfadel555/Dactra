@@ -18,13 +18,30 @@ import SwiperComponent from "../../Components/Common/SwiperComponent";
 import PatientSection from "../../Components/Profile/PatientSection";
 import { useEditAllergies } from "../../hooks/useEditAllergies";
 import { useEditChronics } from "../../hooks/useEditChronics";
-import { IoWarningOutline } from "react-icons/io5";
+import { IoWarningOutline, IoWarning } from "react-icons/io5";
 import { useGetDoctorProfile } from "../../hooks/useGetDoctorProfile";
 import { useParams } from "react-router-dom";
 import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 import Schedule from "../../Components/Profile/Schedule";
 import { useGetDoctorSlots } from "../../hooks/useGetDoctorSlots";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../Context/AuthContext";
+import { useGetUser } from "../../hooks/useGetUser";
+
+function viewerIdentityFromToken(accessToken) {
+  if (!accessToken) return { email: null };
+  try {
+    const p = JSON.parse(atob(accessToken.split(".")[1]));
+    const email =
+      p.email ??
+      p.unique_name ??
+      p.preferred_username ??
+      null;
+    return { email };
+  } catch {
+    return { email: null };
+  }
+}
 
 const genderData = ["Male", "Female"];
 
@@ -47,12 +64,30 @@ const appointmentData = [
 export default function Profile({ role }) {
   const [grouped, setGrouped] = useState([]);
   const { id } = useParams();
+  const { accessToken, role: authRole } = useAuth();
+  const { email: viewerEmail } = viewerIdentityFromToken(accessToken);
+  const { data: me } = useGetUser();
 
   const { data: slotsToBook } = useGetDoctorSlots(id);
   console.log(slotsToBook);
 
   const { data: user } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
+
+  const myId = me?.id ?? me?.Id ?? me?.userId ?? me?.UserId;
+  const emailMatch =
+    viewerEmail &&
+    user?.email &&
+    String(viewerEmail).toLowerCase() === String(user.email).toLowerCase();
+  // Only treat as "own" when same role table as this page (avoid patient id === doctor id collisions).
+  const authRoleNorm = String(authRole || "").toLowerCase();
+  const pageRoleNorm = String(role || "").toLowerCase();
+  const routeIsSelf =
+    authRoleNorm === pageRoleNorm &&
+    myId != null &&
+    id != null &&
+    String(myId) === String(id);
+  const isOwnProfile = Boolean(accessToken && user && (emailMatch || routeIsSelf));
 
   //transforming vitals data
   useEffect(() => {
@@ -196,11 +231,33 @@ export default function Profile({ role }) {
           >
             <motion.div
               variants={sidebarItem}
-              className=" relative flex flex-col justify-center items-center 
+              className="relative flex flex-col justify-center items-center 
           gap-[15px] p-[16px] rounded-[10px] bg-[#F5F6F7] shadow-md"
             >
+              {accessToken && !isOwnProfile && (
+                <Link
+                  to="/complaints/submit"
+                  state={{
+                    against: role === "Doctor" ? "Doctor" : "Patient",
+                  }}
+                  className="absolute size-[30px] rounded-full bg-white top-[10px] right-[10px] z-[60] flex justify-center items-center shadow border border-amber-200/90 text-amber-600 hover:text-amber-700 hover:border-amber-300"
+                  title="Report or Complaints"
+                  aria-label="Report or Complaints"
+                >
+                  <motion.span
+                    className="flex items-center justify-center"
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{
+                      duration: 1.8,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <IoWarning className="size-[20px]" />
+                  </motion.span>
+                </Link>
+              )}
               <motion.div
-                // variants={sidebarItem}
                 className="w-[150px] h-[150px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] 
             rounded-full overflow-hidden relative flex justify-center items-center bg-gray-200"
                 whileHover={{ scale: 1.03 }}
@@ -341,23 +398,6 @@ export default function Profile({ role }) {
                     </p>
                   </div>
                 ))}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button className="px-4 py-2 rounded-lg bg-[#316BE8] text-white text-sm font-semibold">
-                  Message
-                </button>
-                {role === "Doctor" && (
-                  <button className="px-4 py-2 rounded-lg border border-[#316BE8] text-[#316BE8] text-sm font-semibold">
-                    Book Appointment
-                  </button>
-                )}
-                <Link
-                  to="/complaints/submit"
-                  state={{ against: role === "Doctor" ? "Doctor" : "Patient" }}
-                  className="px-4 py-2 rounded-lg border border-amber-400 text-amber-700 bg-amber-50 text-sm font-semibold"
-                >
-                  Report / Make Complaint
-                </Link>
               </div>
             </motion.div>
 

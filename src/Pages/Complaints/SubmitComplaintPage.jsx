@@ -2,16 +2,15 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../../Context/AuthContext";
 import { useLocation } from "react-router-dom";
-import {
-  addComplaint,
-  createReporterFromToken,
-} from "../../utils/moderationStore";
+import { COMPLAINT_AGAINST } from "../../utils/reportConstants";
+import { useComplaintsApi } from "../../hooks/useComplaintsApi";
 
 const complaintTargets = ["Doctor", "Patient", "System"];
 
 export default function SubmitComplaintPage() {
   const { accessToken } = useAuth();
   const location = useLocation();
+  const { createComplaint } = useComplaintsApi();
   const defaultAgainst = complaintTargets.includes(location.state?.against)
     ? location.state.against
     : complaintTargets[0];
@@ -20,8 +19,12 @@ export default function SubmitComplaintPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!accessToken) {
+      toast.warning("Please sign in.", { position: "top-center" });
+      return;
+    }
     if (!reason.trim()) {
       toast.warning("Reason is required.", { position: "top-center" });
       return;
@@ -31,17 +34,23 @@ export default function SubmitComplaintPage() {
       return;
     }
     setIsSubmitting(true);
-    const reporter = createReporterFromToken(accessToken);
-    addComplaint({
-      against,
-      reason: reason.trim(),
-      description: description.trim(),
-      createdBy: reporter,
-    });
-    toast.success("Complaint submitted successfully.", { position: "top-center" });
-    setReason("");
-    setDescription("");
-    setIsSubmitting(false);
+    try {
+      const againstNum = COMPLAINT_AGAINST[against] ?? 0;
+      await createComplaint({
+        title: reason.trim(),
+        content: description.trim(),
+        against: againstNum,
+      });
+      toast.success("Complaint submitted successfully.", {
+        position: "top-center",
+      });
+      setReason("");
+      setDescription("");
+    } catch {
+      toast.error("Could not submit complaint.", { position: "top-center" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

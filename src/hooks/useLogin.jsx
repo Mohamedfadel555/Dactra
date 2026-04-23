@@ -19,47 +19,9 @@ export const useLogin = () => {
     onSuccess: async (data) => {
       const tokenPayload = JSON.parse(atob(data.data.token.split(".")[1]));
       console.log("Login success payload:", tokenPayload);
-<<<<<<< HEAD
+
       const appRole = mapAppRoleFromPayload(tokenPayload);
-=======
 
-      // Try to extract role from different possible claim keys
-      let rawRole =
-        tokenPayload.role ||
-        tokenPayload.roles ||
-        tokenPayload[
-          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-        ];
-
-      const typeValue = tokenPayload.tv; // "0" for lab, "1" for scan (from backend)
-
-      if (Array.isArray(rawRole)) {
-        rawRole = rawRole[0];
-      }
-
-      const normalizedRole = (
-        rawRole && typeof rawRole === "string" ? rawRole : ""
-      ).toLowerCase();
-
-      // Map backend roles to app roles (used across the app)
-      let appRole = rawRole;
-      if (normalizedRole === "admin" || normalizedRole === "administrator") {
-        appRole = "Admin";
-      } else if (normalizedRole === "lab" || normalizedRole === "lap") {
-        appRole = "Lab";
-      } else if (normalizedRole === "scan" || normalizedRole === "scancenter") {
-        appRole = "Scan";
-      } else if (normalizedRole === "medicaltestprovider") {
-        // MedicalTestProvider: decide Lab vs Scan based on tv claim
-        if (typeValue === "0" || typeValue === 0) {
-          appRole = "Lab";
-        } else if (typeValue === "1" || typeValue === 1) {
-          appRole = "Scan";
-        } else {
-          appRole = "Lab";
-        }
-      }
->>>>>>> 4a93a4fdb80f0bb17805ca8c243d1234f0ab8cf4
 
       await login(data.data.token, appRole);
       toast.success("Logged in successfully!", {

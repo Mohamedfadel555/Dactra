@@ -1,4 +1,9 @@
-import { IoPersonSharp } from "react-icons/io5";
+import {
+  IoPersonSharp,
+  IoTrashOutline,
+  IoCloseSharp,
+  IoWarning,
+} from "react-icons/io5";
 import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaRegEdit } from "react-icons/fa";
 import ChartComp from "../../Components/Common/ChartComp";
 import { useGetUser } from "../../hooks/useGetUser";
@@ -6,7 +11,6 @@ import { MdOutlinePassword } from "react-icons/md";
 import profilePhoto from "../../assets/images/profile.webp";
 import { useAuth } from "../../Context/AuthContext";
 import BarComp from "../../Components/Common/BarComp";
-import { IoTrashOutline } from "react-icons/io5";
 import { useEffect, useState } from "react";
 import { FaFileCirclePlus } from "react-icons/fa6";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
@@ -14,7 +18,6 @@ import { GiMedicines } from "react-icons/gi";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import FormInputField from "../../Components/Auth/FormInputField";
 import SubmitButton from "../../Components/Auth/SubmitButton";
-import { IoCloseSharp } from "react-icons/io5";
 import CommentCard from "../../Components/Common/CommentCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { PiWarningCircle } from "react-icons/pi";
@@ -77,7 +80,6 @@ export default function MyProfile() {
   const [deleteAcc, setDeleteAcc] = useState(false);
   const [grouped, setGrouped] = useState([]);
   const [editWorkDetails, setEditWorkDetails] = useState(false);
-
   const { data: user } = useGetUser();
   const { data: cities } = useCities();
   const { data: quals } = useGetMyQualifications();
@@ -107,7 +109,7 @@ export default function MyProfile() {
   // );
 
   console.log(ratings);
-  const { role } = useAuth();
+  const { role, accessToken } = useAuth();
   console.log(role);
 
   //transforming vitals data
@@ -656,7 +658,6 @@ export default function MyProfile() {
               </motion.div>
 
               <motion.div
-                // variants={sidebarItem}
                 className="w-[150px] h-[150px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] 
             rounded-full overflow-hidden relative flex justify-center items-center bg-gray-200"
                 whileHover={{ scale: 1.03 }}
@@ -898,9 +899,9 @@ export default function MyProfile() {
                       enableReinitialize
                       initialValues={{
                         workingStartTime:
-                          workingDetails?.workingStartTime.slice(0, 5) || "",
+                          workingDetails?.workingStartTime?.slice(0, 5) || "",
                         workingEndTime:
-                          workingDetails?.workingEndTime.slice(0, 5) || "",
+                          workingDetails?.workingEndTime?.slice(0, 5) || "",
                         consultationDurationMinutes:
                           workingDetails?.consultationDurationMinutes || "",
                         consultationPrice:

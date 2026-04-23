@@ -8,8 +8,6 @@ export default function ProtectedProvider({ children, allowedRoles = [] }) {
   const { accessToken, role, isAuthReady } = useAuth();
   const hasShownDeniedToast = useRef(false);
 
-  console.log(role);
-
   const normalizedRole = (
     role && typeof role === "string" ? role : ""
   ).toLowerCase();
@@ -17,30 +15,11 @@ export default function ProtectedProvider({ children, allowedRoles = [] }) {
     (r && typeof r === "string" ? r : "").toLowerCase(),
   );
 
-  if (!isAuthReady) {
-    return <Loader />;
-  }
-
-  // لو مفيش توكن بس جاي من Logout ما نطلعش Toast مزعج، بس نوديه على اللوجن
-  if (!accessToken) {
-    return <Navigate to="/auth/Login" replace />;
-  }
-
-<<<<<<< HEAD
   const isDenied =
-    normalizedAllowed.length > 0 && !normalizedAllowed.includes(normalizedRole);
-=======
-  if (
+    Boolean(isAuthReady) &&
+    Boolean(accessToken) &&
     normalizedAllowed.length > 0 &&
-    !normalizedAllowed.includes(normalizedRole)
-  ) {
-    useEffect(() => {
-      toast.error("Access denied for this role.", {
-        position: "top-center",
-        closeOnClick: true,
-      });
-    }, []);
->>>>>>> 4a93a4fdb80f0bb17805ca8c243d1234f0ab8cf4
+    !normalizedAllowed.includes(normalizedRole);
 
   useEffect(() => {
     if (!isDenied || hasShownDeniedToast.current) return;
@@ -50,6 +29,14 @@ export default function ProtectedProvider({ children, allowedRoles = [] }) {
       closeOnClick: true,
     });
   }, [isDenied]);
+
+  if (!isAuthReady) {
+    return <Loader />;
+  }
+
+  if (!accessToken) {
+    return <Navigate to="/auth/Login" replace />;
+  }
 
   if (isDenied) {
     return <Navigate to="/403" replace />;
