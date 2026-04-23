@@ -25,6 +25,7 @@ import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 import Schedule from "../../Components/Profile/Schedule";
 import { useGetDoctorSlots } from "../../hooks/useGetDoctorSlots";
 import { Link } from "react-router-dom";
+import { useGetSlotsById } from "../../hooks/useGetSlotsById";
 
 const genderData = ["Male", "Female"];
 
@@ -48,8 +49,12 @@ export default function Profile({ role }) {
   const [grouped, setGrouped] = useState([]);
   const { id } = useParams();
 
-  const { data: slotsToBook } = useGetDoctorSlots(id);
-  console.log(slotsToBook);
+  // const { data: slotsToBook } = useGetDoctorSlots(id);
+  // console.log(slotsToBook);
+
+  const { data: inPersonSlotsToBook } = useGetSlotsById("inPerson", id);
+  const { data: onlineSlotsToBook } = useGetSlotsById("online", id);
+  console.log(inPersonSlotsToBook);
 
   const { data: user } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
@@ -390,12 +395,15 @@ export default function Profile({ role }) {
                   variants={rightItem}
                   className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
                 >
-                  {slotsToBook && (
+                  {inPersonSlotsToBook && onlineSlotsToBook && (
                     <Schedule
                       title={"Appointment booking"}
                       subtitle={"Select appointment"}
                       role={"NOt a doctor"}
-                      timeSlots={slotsToBook}
+                      timeSlots={{
+                        inPerson: inPersonSlotsToBook,
+                        online: onlineSlotsToBook,
+                      }}
                     />
                   )}
                 </motion.div>

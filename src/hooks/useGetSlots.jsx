@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAppointmentAPI } from "../api/appointmentAPI";
-import { useAuth } from "../Context/AuthContext";
 
-export const useGetSlots = () => {
-  const { getSlots } = useAppointmentAPI();
-  const { role } = useAuth();
+export const useGetSlots = (role, type) => {
+  const { getInPersonSlots, getOnlineSlots } = useAppointmentAPI();
+
   return useQuery({
-    queryFn: getSlots,
-    queryKey: ["Slots"],
-    retry: 2,
+    queryKey: [type === "in-person" ? "inPersonSlots" : "onlineSlots"],
+    queryFn: type === "in-person" ? getInPersonSlots : getOnlineSlots,
+    staleTime: 1000 * 60 * 5,
     enabled: role === "Doctor",
   });
 };

@@ -23,7 +23,10 @@ import { useEditPost } from "../../hooks/useEditPost";
 import EditModal from "./EditModal";
 import ReportModal from "../Common/ReportModal";
 import { toast } from "react-toastify";
-import { addReport, createReporterFromToken } from "../../utils/moderationStore";
+import {
+  addReport,
+  createReporterFromToken,
+} from "../../utils/moderationStore";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
