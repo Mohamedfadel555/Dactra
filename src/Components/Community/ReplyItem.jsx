@@ -23,7 +23,12 @@ import { useEditComment } from "../../hooks/useEditComment";
 import EditModal from "./EditModal";
 import ReportModal from "../Common/ReportModal";
 import { toast } from "react-toastify";
-import { addReport, createReporterFromToken } from "../../utils/moderationStore";
+import {
+  REPORT_TYPE,
+  buildReportContent,
+} from "../../utils/reportConstants";
+import { useReportApi } from "../../hooks/useReportApi";
+import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 // import EditModal from "./EditModal";
 
 export default function ReplyItem({
@@ -45,11 +50,14 @@ export default function ReplyItem({
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [displayContent, setDisplayContent] = useState(reply.content ?? "");
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
 
   const { accessToken } = useAuth();
+  const { createReport } = useReportApi();
+  const { notifySentToDoctor } = useNotificationsApi();
   const userEmail = accessToken
     ? JSON.parse(atob(accessToken.split(".")[1])).email
     : null;
@@ -94,6 +102,18 @@ export default function ReplyItem({
     });
   };
 
+  const notifyDoctorOnReply = () => {
+    if (type !== "Artical" || isOwner) return;
+    notifySentToDoctor(questionId, {
+      title: "New comment",
+      message: "Someone replied on your article thread.",
+    })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      })
+      .catch(() => {});
+  };
+
   const handleSendNested = () => {
     const text = replyText.trim();
     if (!text) return;
@@ -105,6 +125,7 @@ export default function ReplyItem({
           setReplyOpen(false);
           setShowNested(true);
           queryClient.invalidateQueries(["replies", reply.id]);
+          notifyDoctorOnReply();
         },
       },
     );
@@ -130,18 +151,29 @@ export default function ReplyItem({
     );
   };
 
-  const handleSubmitReport = ({ reason, details }) => {
-    const reporter = createReporterFromToken(accessToken);
-    addReport({
-      contentType: "Comment",
-      contentId: reply.id,
-      contentPreview: displayContent,
-      reason,
-      details,
-      createdBy: reporter,
-    });
-    setReportOpen(false);
-    toast.success("Report submitted.", { position: "top-center" });
+  const handleSubmitReport = async ({ reason, details }) => {
+    setReportSubmitting(true);
+    try {
+      const text = buildReportContent(
+        (details || "").trim(),
+        {
+          questionId,
+          threadType: type === "Artical" ? "Artical" : "Question",
+        },
+      );
+      await createReport({
+        type: REPORT_TYPE.COMMENT,
+        title: reason,
+        content: text,
+        relatedEntityId: reply.id,
+      });
+      setReportOpen(false);
+      toast.success("Report submitted.", { position: "top-center" });
+    } catch {
+      toast.error("Could not submit report.", { position: "top-center" });
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   const canNestFurther = depth < 2;
@@ -341,6 +373,7 @@ export default function ReplyItem({
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
         onSubmit={handleSubmitReport}
+        isSubmitting={reportSubmitting}
         contentLabel="comment"
       />
     </>

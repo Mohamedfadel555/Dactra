@@ -10,6 +10,7 @@ import { useGetUser } from "../../hooks/useGetUser";
 import { FaChevronRight } from "react-icons/fa";
 import { IoIosHeartEmpty } from "react-icons/io";
 import AvatarIcon from "./AvatarIcon1";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -291,7 +292,12 @@ export default function Navbar() {
         </ul>
 
         {/* ── Right side ── */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {accessToken && (
+            <div className="hidden md:block">
+              <NotificationBell />
+            </div>
+          )}
           {/* Avatar / Sign-in */}
           {accessToken ? (
             <div className="hidden md:block relative">
@@ -400,6 +406,12 @@ export default function Navbar() {
             >
               Sign in
             </Link>
+          )}
+
+          {accessToken && (
+            <div className="md:hidden">
+              <NotificationBell />
+            </div>
           )}
 
           {/* Hamburger — only mobile */}

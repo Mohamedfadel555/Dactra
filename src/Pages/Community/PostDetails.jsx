@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FiMessageCircle,
   FiArrowLeft,
@@ -30,7 +31,9 @@ import { useEditQuestion } from "../../hooks/useEditQuestion";
 import { useEditPost } from "../../hooks/useEditPost";
 import ReportModal from "../../Components/Common/ReportModal";
 import { toast } from "react-toastify";
-import { addReport, createReporterFromToken } from "../../utils/moderationStore";
+import { REPORT_TYPE } from "../../utils/reportConstants";
+import { useReportApi } from "../../hooks/useReportApi";
+import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 
 function handleTime(create) {
   const diff = Date.now() - new Date(create).getTime();
@@ -72,6 +75,7 @@ export default function PostDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [displayContent, setDisplayContent] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   useEffect(() => {
     if (!post) return;
@@ -87,6 +91,9 @@ export default function PostDetailPage() {
   const editPostMutation = useEditPost();
   const editMutation =
     type === "Question" ? editQuestionMutation : editPostMutation;
+
+  const { createReport } = useReportApi();
+  const { notifySentToDoctor } = useNotificationsApi();
 
   const {
     data: commentsData,
@@ -128,7 +135,21 @@ export default function PostDetailPage() {
     if (!text) return;
     answerMutation.mutate(
       { id: post.id, Data: { content: text, parentAnswerId: null } },
-      { onSuccess: () => setNewComment("") },
+      {
+        onSuccess: () => {
+          setNewComment("");
+          if (type === "Artical" && !isOwner) {
+            notifySentToDoctor(post.id, {
+              title: "New comment",
+              message: "Someone commented on your article.",
+            })
+              .then(() => {
+                queryClient.invalidateQueries({ queryKey: ["notifications"] });
+              })
+              .catch(() => {});
+          }
+        },
+      },
     );
   };
 
@@ -158,18 +179,24 @@ export default function PostDetailPage() {
     );
   };
 
-  const handleSubmitReport = ({ reason, details }) => {
-    const reporter = createReporterFromToken(accessToken);
-    addReport({
-      contentType: "Question",
-      contentId: post?.id,
-      contentPreview: displayContent,
-      reason,
-      details,
-      createdBy: reporter,
-    });
-    setReportOpen(false);
-    toast.success("Report submitted.", { position: "top-center" });
+  const handleSubmitReport = async ({ reason, details }) => {
+    const reportType =
+      type === "Artical" ? REPORT_TYPE.POST : REPORT_TYPE.QUESTION;
+    setReportSubmitting(true);
+    try {
+      await createReport({
+        type: reportType,
+        title: reason,
+        content: (details || "").trim(),
+        relatedEntityId: post?.id,
+      });
+      setReportOpen(false);
+      toast.success("Report submitted.", { position: "top-center" });
+    } catch {
+      toast.error("Could not submit report.", { position: "top-center" });
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   const timeAgo = post?.createdAt ? handleTime(post.createdAt) : "";
@@ -456,7 +483,8 @@ export default function PostDetailPage() {
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
         onSubmit={handleSubmitReport}
-        contentLabel="question"
+        isSubmitting={reportSubmitting}
+        contentLabel={type === "Artical" ? "article" : "question"}
       />
     </>
   );

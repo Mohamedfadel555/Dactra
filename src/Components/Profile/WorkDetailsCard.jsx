@@ -55,6 +55,7 @@ function TypeForm({ type, details, editable, onSave }) {
   const saveWorkDetailsMutation = useSaveWorkDetails();
 
   const saveWorkDetails = async (values) => {
+    console.log(values);
     await saveWorkDetailsMutation.mutateAsync(values);
   };
 

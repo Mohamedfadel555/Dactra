@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import AvatarIcon from "../Common/AvatarIcon1";
 import { FiHeart, FiMessageCircle, FiMoreHorizontal } from "react-icons/fi";
 import {
@@ -23,10 +24,9 @@ import { useEditPost } from "../../hooks/useEditPost";
 import EditModal from "./EditModal";
 import ReportModal from "../Common/ReportModal";
 import { toast } from "react-toastify";
-import {
-  addReport,
-  createReporterFromToken,
-} from "../../utils/moderationStore";
+import { REPORT_TYPE } from "../../utils/reportConstants";
+import { useReportApi } from "../../hooks/useReportApi";
+import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -47,6 +47,7 @@ export default function PostCard({ post, type, onUpdate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   // optimistic content update
   const [displayContent, setDisplayContent] = useState(
     post.content ?? post.text ?? "",
@@ -68,6 +69,10 @@ export default function PostCard({ post, type, onUpdate }) {
 
   const editMutation =
     type === "Question" ? editQuestionMutation : editPostMutation;
+
+  const { createReport } = useReportApi();
+  const { notifySentToDoctor } = useNotificationsApi();
+  const queryClient = useQueryClient();
 
   // ── time formatting ──
   const now = new Date();
@@ -100,10 +105,24 @@ export default function PostCard({ post, type, onUpdate }) {
     !expanded && isLong ? displayContent.slice(0, 140) + "…" : displayContent;
 
   const handleLike = () => {
+    const wasLiked = liked;
     setLiked((prev) => !prev);
     setLikes((prev) => (liked ? prev - 1 : prev + 1));
     onUpdate("liked", liked ? "dec" : "inc");
-    likeMutation.mutate(post.id);
+    likeMutation.mutate(post.id, {
+      onSuccess: () => {
+        if (type === "Artical" && !isOwner && !wasLiked) {
+          notifySentToDoctor(post.id, {
+            title: "New like",
+            message: "Someone liked your article.",
+          })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            })
+            .catch(() => {});
+        }
+      },
+    });
   };
 
   const handleInterest = () => {
@@ -127,18 +146,24 @@ export default function PostCard({ post, type, onUpdate }) {
     setReportOpen(true);
   };
 
-  const handleSubmitReport = ({ reason, details }) => {
-    const reporter = createReporterFromToken(accessToken);
-    addReport({
-      contentType: type === "Question" ? "Question" : "Article",
-      contentId: post.id,
-      contentPreview: displayContent,
-      reason,
-      details,
-      createdBy: reporter,
-    });
-    setReportOpen(false);
-    toast.success("Report submitted.", { position: "top-center" });
+  const handleSubmitReport = async ({ reason, details }) => {
+    const reportType =
+      type === "Question" ? REPORT_TYPE.QUESTION : REPORT_TYPE.POST;
+    setReportSubmitting(true);
+    try {
+      await createReport({
+        type: reportType,
+        title: reason,
+        content: (details || "").trim(),
+        relatedEntityId: post.id,
+      });
+      setReportOpen(false);
+      toast.success("Report submitted.", { position: "top-center" });
+    } catch {
+      toast.error("Could not submit report.", { position: "top-center" });
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   const handleEditSave = (newContent) => {
@@ -333,6 +358,7 @@ export default function PostCard({ post, type, onUpdate }) {
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
         onSubmit={handleSubmitReport}
+        isSubmitting={reportSubmitting}
         contentLabel={type === "Question" ? "question" : "article"}
       />
     </>

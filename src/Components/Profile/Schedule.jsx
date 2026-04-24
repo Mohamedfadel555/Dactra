@@ -333,12 +333,20 @@ export default function Schedule({
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
 
-  const bookMutation = useBook();
+  const bookMutation = useBook(
+    consultationType === "in-person" ? "cash" : "online",
+  );
 
   async function handleBook() {
     if (!selectedSlot) return;
-    await bookMutation.mutateAsync(selectedSlot.slotId);
-    console.log("Book slot:", selectedSlot, consultationType);
+
+    const paymentMethod = consultationType === "in-person" ? "cash" : "online";
+
+    console.log(selectedSlot);
+    await bookMutation.mutateAsync(
+      selectedSlot.slotId,
+      // paymentMethod,
+    );
   }
 
   const isLoading = role === "Doctor" && (loadingIP || loadingOL);

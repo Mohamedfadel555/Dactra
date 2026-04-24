@@ -18,8 +18,11 @@ export default function AdminTable({
   showMore,
   onShowMore,
   hasMore = false,
+  showViewForRow,
 }) {
   const hasActions = Boolean(onView || onApprove || onDelete || onBlock);
+  const canShowView = (row) =>
+    showViewForRow == null || showViewForRow(row) !== false;
 
   const [expandedRow, setExpandedRow] = useState(null);
   // Show loading state
@@ -90,7 +93,7 @@ export default function AdminTable({
                   {hasActions && (
                     <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1 sm:gap-2">
-                        {onView && (
+                        {onView && canShowView(row) && (
                           <button
                             onClick={() => onView(row)}
                             className="text-blue-600 hover:text-blue-800 p-1 transition-all duration-200 hover:scale-110"

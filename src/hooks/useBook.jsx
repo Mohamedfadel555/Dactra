@@ -1,12 +1,30 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppointmentAPI } from "../api/appointmentAPI";
+import { useNotificationsApi } from "./useNotificationsApi";
+import { toast } from "react-toastify";
 
-export const useBook = () => {
+export const useBook = (type) => {
   const { Book } = useAppointmentAPI();
+  const { notifyBookAppointment } = useNotificationsApi();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: Book,
-    onSuccess: (res) => {
-      console.log(res.data.appointmentId);
+    onSuccess: (res, scheduleTableId) => {
+      notifyBookAppointment(scheduleTableId, {
+        title: "Appointment",
+        message: "Your appointment was booked.",
+      })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        })
+        .catch(() => {});
+      if (type === "cash") {
+        toast.success("Appointment booked! Pay at the clinic.", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+        return;
+      }
       window.location.href = res.data.appointmentId;
     },
     onError: (err) => {

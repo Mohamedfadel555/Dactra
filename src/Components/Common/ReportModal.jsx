@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { reportReasons } from "../../utils/moderationStore";
+import { reportReasons } from "../../utils/reportConstants";
 
 export default function ReportModal({
   isOpen,
