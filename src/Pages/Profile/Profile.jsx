@@ -28,15 +28,16 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import { useGetUser } from "../../hooks/useGetUser";
 
+import { useGetSlotsById } from "../../hooks/useGetSlotsById";
+
+
 function viewerIdentityFromToken(accessToken) {
   if (!accessToken) return { email: null };
   try {
     const p = JSON.parse(atob(accessToken.split(".")[1]));
-    const email =
-      p.email ??
-      p.unique_name ??
-      p.preferred_username ??
-      null;
+
+    const email = p.email ?? p.unique_name ?? p.preferred_username ?? null;
+
     return { email };
   } catch {
     return { email: null };
@@ -68,8 +69,8 @@ export default function Profile({ role }) {
   const { email: viewerEmail } = viewerIdentityFromToken(accessToken);
   const { data: me } = useGetUser();
 
-  const { data: slotsToBook } = useGetDoctorSlots(id);
-  console.log(slotsToBook);
+  const { data: inPersonSlotsToBook } = useGetSlotsById("inPerson", id);
+  const { data: onlineSlotsToBook } = useGetSlotsById("online", id);
 
   const { data: user } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
@@ -87,7 +88,11 @@ export default function Profile({ role }) {
     myId != null &&
     id != null &&
     String(myId) === String(id);
-  const isOwnProfile = Boolean(accessToken && user && (emailMatch || routeIsSelf));
+
+  const isOwnProfile = Boolean(
+    accessToken && user && (emailMatch || routeIsSelf),
+  );
+
 
   //transforming vitals data
   useEffect(() => {
@@ -430,12 +435,15 @@ export default function Profile({ role }) {
                   variants={rightItem}
                   className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
                 >
-                  {slotsToBook && (
+                  {inPersonSlotsToBook && onlineSlotsToBook && (
                     <Schedule
                       title={"Appointment booking"}
                       subtitle={"Select appointment"}
                       role={"NOt a doctor"}
-                      timeSlots={slotsToBook}
+                      timeSlots={{
+                        inPerson: inPersonSlotsToBook,
+                        online: onlineSlotsToBook,
+                      }}
                     />
                   )}
                 </motion.div>

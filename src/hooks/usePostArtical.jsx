@@ -11,9 +11,9 @@ export const usePostArtical = (type) => {
   return useMutation({
     mutationFn: type === "Question" ? PostQuestion : postArtical,
     onSuccess: () => {
-      queryClient.refetchQueries({
-        queryKey: [type === "Question" ? "questions" : "posts"],
-      });
+      queryClient.invalidateQueries([
+        type === "Question" ? "questions" : "posts",
+      ]);
       toast.success(
         type === "Question"
           ? "Question Posted successfully"

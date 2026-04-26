@@ -37,6 +37,42 @@ export const useAppointmentAPI = () => {
     return res;
   };
 
+  const saveInPersonSlots = async (slots) => {
+    console.log(slots);
+    const res = await axiosInstance.post(
+      "DoctorSlots/save-slots/inperson",
+      slots,
+    );
+    return res.data;
+  };
+
+  const saveOnlineSlots = async (slots) => {
+    const res = await axiosInstance.post(
+      "DoctorSlots/save-slots/online",
+      slots,
+    );
+    return res.data;
+  };
+
+  const getInPersonSlots = async () => {
+    const res = await axiosInstance.get("DoctorSlots/all-slots/inperson");
+    return res.data.slots; // { "dd-mm-yyyy": [{slotTime, isBooked}] }
+  };
+
+  const getOnlineSlots = async () => {
+    const res = await axiosInstance.get("DoctorSlots/all-slots/online");
+    return res.data.slots;
+  };
+
+  const getInpersonSlotsById = async (Id) => {
+    const res = await axiosInstance.get(`DoctorSlots/all-slots/${Id}/inperson`);
+    return res.data.slots;
+  };
+  const getOnlineSlotsById = async (Id) => {
+    const res = await axiosInstance.get(`DoctorSlots/all-slots/${Id}/online`);
+    return res.data.slots;
+  };
+
   return {
     getWorkDetails,
     saveWorkDetails,
@@ -44,5 +80,11 @@ export const useAppointmentAPI = () => {
     getSlots,
     getDoctorSlots,
     Book,
+    saveInPersonSlots,
+    saveOnlineSlots,
+    getInPersonSlots,
+    getOnlineSlots,
+    getInpersonSlotsById,
+    getOnlineSlotsById,
   };
 };

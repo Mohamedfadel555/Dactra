@@ -55,6 +55,7 @@ import { useGetWorkingDetails } from "../../hooks/useGetWorkingDetails";
 import { RiErrorWarningLine } from "react-icons/ri";
 import { useSaveWorkDetails } from "../../hooks/useSaveWorkDetails";
 import { useGetSlots } from "../../hooks/useGetSlots";
+import WorkDetailsCard from "../../Components/Profile/WorkDetailsCard";
 
 const genderData = ["Male", "Female"];
 
@@ -91,22 +92,19 @@ export default function MyProfile() {
   const { data: allchronics } = useGetAllChronic();
   const { data: workingDetails } = useGetWorkingDetails();
   const { data: Slots } = useGetSlots();
-  console.log(Slots);
+  const { data: inPersonSlots, isLoading: loadingInPerson } =
+    useGetSlots("in-person");
+
+  const { data: onlineSlots, isLoading: loadingOnline } = useGetSlots("online");
   // console.log(workingDetails);
+
+  console.log(inPersonSlots);
+
   if (workingDetails) {
     var isWorkingDetailsEmpty = Object.values(workingDetails).every(
       (v) => v === null,
     );
   }
-
-  // const temp = new Date(weekDays.at(6));
-  // console.log(
-  //   Array.from({ length: 7 }, (_, i) => {
-  //     const d = new Date(temp);
-  //     d.setDate(temp.getDate() + i);
-  //     return d;
-  //   }),
-  // );
 
   console.log(ratings);
   const { role, accessToken } = useAuth();
@@ -169,10 +167,9 @@ export default function MyProfile() {
     await useAddVitalMutation.mutateAsync(FormData);
   };
 
-  const saveWorkDetails = async (values, { setSubmitting }) => {
+  const saveWorkDetails = async (type, values) => {
     console.log(values);
-    await saveWorkDetailsMutation.mutateAsync(values);
-    setSubmitting(false);
+    // await saveWorkDetailsMutation.mutateAsync(values);
   };
 
   const editAllergies = (values) => {
@@ -867,197 +864,31 @@ export default function MyProfile() {
                   <DoctorSection title={"Experience"} />
                 </motion.div>
 
-                <motion.div
-                  variants={rightItem}
-                  whileHover={{ y: -6 }}
-                  className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
-                >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-center">
-                      <p className="text-[20px] font-bold">Work Details</p>
-                      <BiSolidEditAlt
-                        className="text-blue-600 text-[25px] cursor-pointer"
-                        onClick={() => setEditWorkDetails((prev) => !prev)}
-                      />
-                    </div>
 
-                    <div className="text-sm flex gap-[5px] items-center text-[#6D7379] ">
-                      {isWorkingDetailsEmpty && (
-                        <>
-                          <RiErrorWarningLine className="text-lg  " />
-                          <p>
-                            Fill in the details to display available time slots
-                            for booking.
-                          </p>
-                        </>
-                      )}
-                    </div>
+                <WorkDetailsCard
+                  workingDetails={workingDetails}
+                  isWorkingDetailsEmpty={isWorkingDetailsEmpty}
+                  rightItem={rightItem}
+                />
 
-                    <Formik
-                      onSubmit={saveWorkDetails}
-                      validationSchema={saveWorkDetailsValidationSchema}
-                      enableReinitialize
-                      initialValues={{
-                        workingStartTime:
-                          workingDetails?.workingStartTime?.slice(0, 5) || "",
-                        workingEndTime:
-                          workingDetails?.workingEndTime?.slice(0, 5) || "",
-                        consultationDurationMinutes:
-                          workingDetails?.consultationDurationMinutes || "",
-                        consultationPrice:
-                          workingDetails?.consultationPrice || "",
-                      }}
-                    >
-                      {({ values, isValid, dirty, isSubmitting }) => (
-                        <Form
-                          className="flex flex-col  "
-                          onClick={() =>
-                            console.log({
-                              workingStartTime:
-                                workingDetails?.workingStartTime,
-                              workingEndTime: workingDetails?.workingEndTime,
-                              consultationDurationMinutes:
-                                workingDetails?.consultationDurationMinutes,
-                              consultationPrice:
-                                workingDetails?.consultationPrice,
-                            })
-                          }
-                        >
-                          <table className="w-full border-separate border-spacing-y-3">
-                            <tbody>
-                              <tr className="bg-gray-50 rounded-lg">
-                                <td className="w-1/4 font-medium py-3 px-4">
-                                  Start Time
-                                </td>
-                                <td className="py-3 px-4">
-                                  <Field
-                                    id="workingStartTime"
-                                    name="workingStartTime"
-                                    readOnly={!editWorkDetails}
-                                    type="time"
-                                    className={`w-full h-full focus:outline-none rounded px-2 py-1
-                      ${editWorkDetails ? "bg-white" : "bg-gray-50"}`}
-                                  />
-                                  {editWorkDetails && (
-                                    <ErrorMessage
-                                      name="workingStartTime"
-                                      component="div"
-                                      className="text-red-500 text-xs"
-                                    />
-                                  )}
-                                </td>
-                              </tr>
-
-                              <tr className="bg-gray-50 rounded-lg">
-                                <td className="font-medium py-3 px-4">
-                                  End Time
-                                </td>
-                                <td className="py-3 px-4">
-                                  <Field
-                                    id="workingEndTime"
-                                    name="workingEndTime"
-                                    readOnly={!editWorkDetails}
-                                    type="time"
-                                    className={`w-full h-full focus:outline-none rounded px-2 py-1
-                      ${editWorkDetails ? "bg-white" : "bg-gray-50"}`}
-                                  />
-                                  {editWorkDetails && (
-                                    <ErrorMessage
-                                      name="workingEndTime"
-                                      component="div"
-                                      className="text-red-500 text-xs"
-                                    />
-                                  )}
-                                </td>
-                              </tr>
-
-                              <tr className="bg-gray-50 rounded-lg">
-                                <td className="font-medium py-3 px-4">
-                                  Duration
-                                </td>
-                                <td className="py-3 px-4">
-                                  <Field
-                                    id="consultationDurationMinutes"
-                                    name="consultationDurationMinutes"
-                                    // disabled={!editWorkDetails}
-                                    readOnly={!editWorkDetails}
-                                    as="select"
-                                    className={`w-full h-full pr-[5px] focus:outline-none  rounded px-2 py-1
-                      ${editWorkDetails ? "bg-white cursor-pointer " : " cursor-default appearance-none"}`}
-                                  >
-                                    <option value="">Select Duration</option>
-                                    <option value="30">30 min</option>
-                                    <option value="45">45 min</option>
-                                    <option value="60">60 min</option>
-                                  </Field>
-                                  {editWorkDetails && (
-                                    <ErrorMessage
-                                      name="consultationDurationMinutes"
-                                      component="div"
-                                      className="text-red-500 text-xs"
-                                    />
-                                  )}
-                                </td>
-                              </tr>
-
-                              <tr className="bg-gray-50 rounded-lg">
-                                <td className="font-medium py-3 px-4">Price</td>
-                                <td className="py-3 px-4 flex justify-between items-center pr-[20px]">
-                                  <div>
-                                    <Field
-                                      id="consultationPrice"
-                                      name="consultationPrice"
-                                      readOnly={!editWorkDetails}
-                                      type="number"
-                                      className={`focus:outline-none rounded px-2 py-1 w-[100px] sm:w-[150px]
-                                    [&::-webkit-inner-spin-button]:appearance-none
-                      [&::-webkit-outer-spin-button]:appearance-none
-                      [&::-moz-appearance]:textfield
-                      ${editWorkDetails ? "bg-white cursor-text" : " cursor-default"}`}
-                                    />
-                                    {editWorkDetails && (
-                                      <ErrorMessage
-                                        name="consultationPrice"
-                                        component="div"
-                                        className="text-red-500 text-xs "
-                                      />
-                                    )}
-                                  </div>
-                                  LE
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                          {editWorkDetails && (
-                            <SubmitButton
-                              text="save"
-                              disabled={!isValid || !dirty}
-                              isLoading={isSubmitting}
-                              loadingText="Saving"
-                              className=" h-[40px] w-full sm:w-[120px] bg-blue-600 self-end"
-                            />
-                          )}
-                        </Form>
-                      )}
-                    </Formik>
-                  </div>
-                </motion.div>
                 {!isWorkingDetailsEmpty && (
                   <motion.div
                     variants={rightItem}
                     whileHover={{ y: -6 }}
                     className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
                   >
-                    {Slots && (
+                    {
                       <Schedule
                         title={"My Schedule"}
-                        subtitle={"Select your available time slots"}
+                        subtitle={"Manage your available slots"}
                         role={role}
-                        start={workingDetails?.workingStartTime}
-                        end={workingDetails?.workingEndTime}
-                        data={Slots}
+                        workingDetails={workingDetails}
+                        data={{
+                          inPerson: inPersonSlots ?? {},
+                          online: onlineSlots ?? {},
+                        }}
                       />
-                    )}
+                    }
                   </motion.div>
                 )}
 
