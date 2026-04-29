@@ -1,31 +1,27 @@
 /**
- * VideoConsultation.jsx — Fixed Version
+ * VideoConsultation.jsx
  *
- * Bugs Fixed:
- * 1. Race condition: useEffect now waits for accessToken before running
- * 2. Jitsi "authentication failed": jitsiDomain is sanitized (strips markdown links)
- * 3. Waiting status: status poll response now drives callStatus transitions
- * 4. endCall useCallback had stale appointmentId in deps (missing endMutation)
- * 5. Jitsi JWT passed correctly — removed jwt if domain is meet.jit.si public server
+ * Changes from previous version:
+ * 1. Doctor enters Jitsi immediately — patient waits until isDoctorOnline === true
+ * 2. Moderator role comes from JWT automatically (backend sets it), but we also pass
+ *    isModerator via userInfo so Jitsi UI reflects it correctly
+ * 3. "End Session" (appointment) is decoupled from "End Call" (jitsi):
+ *    - Header button = ends the appointment via API, redirects
+ *    - Jitsi hangup / leaving = just closes video, user can rejoin
+ *    - Rejoin button appears when callStatus === "left"
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAxios } from "../hooks/useAxios";
 import { useAuth } from "../Context/AuthContext";
 
 // ─── HELPERS ──────────────────────────────────────────────────────
 
-/**
- * FIX #2: The API sometimes returns jitsiDomain as a markdown link
- * e.g. "[meet.jit.si](http://meet.jit.si)" — extract just the hostname.
- */
 function sanitizeDomain(raw = "") {
-  // Strip markdown link format [text](url) → extract text part
   const mdMatch = raw.match(/^\[([^\]]+)\]/);
   if (mdMatch) return mdMatch[1].trim();
-  // Strip protocol if someone passed a full URL
   return raw
     .replace(/^https?:\/\//, "")
     .replace(/\/.*$/, "")
@@ -40,7 +36,6 @@ const createVideoCallApi = (axios) => ({
   },
   getStatus: async (appointmentId) => {
     const { data } = await axios.get(`VideoCall/status/${appointmentId}`);
-    console.log(data);
     return data;
   },
   end: async (appointmentId) => {
@@ -72,97 +67,47 @@ function useTimer(active) {
     const id = setInterval(() => setSec((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [active]);
-  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(
-    sec % 60,
-  ).padStart(2, "0")}`;
+  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 }
 
 // ─── STATUS OVERLAY ───────────────────────────────────────────────
-function StatusOverlay({ status, isDoctor }) {
-  console.log(status);
-
+function StatusOverlay({ status, isDoctor, onRejoin }) {
+  // "left" = user manually left Jitsi but session still active → show rejoin
+  // "connected" = hide overlay entirely
   if (status === "connected") return null;
 
   const map = {
     loading: {
-      icon: (
-        <div className="w-16 h-16 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin" />
-      ),
+      icon: <Spinner />,
       title: "جاري تحميل الجلسة...",
       sub: "يتم جلب بيانات الاستشارة",
     },
     waiting: {
-      icon: (
-        <div className="w-16 h-16 rounded-full bg-blue-50 border-2 border-blue-200 flex items-center justify-center">
-          <svg
-            className="w-7 h-7 text-blue-500"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <path
-              d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.362a1 1 0 01-1.447.894L15 14v-4z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <rect
-              x="3"
-              y="6"
-              width="12"
-              height="12"
-              rx="2"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            />
-          </svg>
-        </div>
-      ),
+      icon: <VideoIcon />,
       title: isDoctor ? "في انتظار المريض..." : "في انتظار الطبيب...",
-      sub: "ستبدأ المكالمة تلقائياً عند انضمام الطرفين",
+      sub: isDoctor
+        ? "يمكنك البدء الآن، سينضم المريض قريباً"
+        : "ستبدأ المكالمة تلقائياً عند انضمام الطبيب",
     },
     connecting: {
-      icon: (
-        <div className="w-16 h-16 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin" />
-      ),
+      icon: <Spinner />,
       title: "جاري الاتصال...",
       sub: "يتم إعداد جلسة الفيديو الآمنة",
     },
+    left: {
+      icon: <LeftIcon />,
+      title: "غادرت المكالمة",
+      sub: "الجلسة لا تزال نشطة، يمكنك العودة إليها",
+    },
     ended: {
-      icon: (
-        <div className="w-16 h-16 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center">
-          <svg
-            className="w-7 h-7 text-green-500"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <path
-              d="M5 13l4 4L19 7"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-      ),
+      icon: <CheckIcon />,
       title: "انتهت الاستشارة",
       sub: isDoctor
         ? "يمكنك مراجعة ملاحظاتك قبل المغادرة"
         : "ستكون الوصفة الطبية متاحة قريباً",
     },
     error: {
-      icon: (
-        <div className="w-16 h-16 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center">
-          <svg className="w-7 h-7 text-red-500" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      ),
+      icon: <ErrorIcon />,
       title: "خطأ في الاتصال",
       sub: "يرجى تحديث الصفحة والمحاولة مرة أخرى",
     },
@@ -195,15 +140,103 @@ function StatusOverlay({ status, isDoctor }) {
             {c.sub}
           </p>
         </div>
+
+        {/* Rejoin button — only shown when user left but session is still active */}
+        {status === "left" && onRejoin && (
+          <button
+            onClick={onRejoin}
+            className="mt-1 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+          >
+            العودة للمكالمة
+          </button>
+        )}
+
+        {status === "error" && (
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-1 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+          >
+            إعادة المحاولة
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
+// ─── SMALL ICON COMPONENTS ────────────────────────────────────────
+const Spinner = () => (
+  <div className="w-16 h-16 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin" />
+);
+
+const VideoIcon = () => (
+  <div className="w-16 h-16 rounded-full bg-blue-50 border-2 border-blue-200 flex items-center justify-center">
+    <svg className="w-7 h-7 text-blue-500" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.362a1 1 0 01-1.447.894L15 14v-4z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <rect
+        x="3"
+        y="6"
+        width="12"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+    </svg>
+  </div>
+);
+
+const CheckIcon = () => (
+  <div className="w-16 h-16 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center">
+    <svg className="w-7 h-7 text-green-500" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M5 13l4 4L19 7"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </div>
+);
+
+const ErrorIcon = () => (
+  <div className="w-16 h-16 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center">
+    <svg className="w-7 h-7 text-red-500" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  </div>
+);
+
+const LeftIcon = () => (
+  <div className="w-16 h-16 rounded-full bg-yellow-50 border-2 border-yellow-200 flex items-center justify-center">
+    <svg className="w-7 h-7 text-yellow-500" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </div>
+);
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────
 export default function VideoConsultation() {
   const { appointmentId } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const isDoctor = (searchParams.get("role") || "patient") === "doctor";
   const queryClient = useQueryClient();
 
@@ -212,58 +245,190 @@ export default function VideoConsultation() {
 
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
+  const sessionDataRef = useRef(null); // stable ref for rejoin
 
+  /**
+   * callStatus state machine:
+   *   loading    → fetching session data from API
+   *   waiting    → doctor: Jitsi loaded, waiting for patient to join
+   *               patient: waiting for isDoctorOnline before even loading Jitsi
+   *   connecting → Jitsi script loaded, initializing iframe
+   *   connected  → videoConferenceJoined fired
+   *   left       → user clicked hangup inside Jitsi / closed tab — session still active
+   *   ended      → endSession API called — appointment is closed
+   *   error      → unrecoverable error
+   */
   const [callStatus, setCallStatus] = useState("loading");
   const [sessionData, setSessionData] = useState(null);
+  const [sessionEnded, setSessionEnded] = useState(false); // true = appointment closed by API
 
   const timer = useTimer(callStatus === "connected");
 
-  // ── FIX #3: Status poll drives callStatus transitions ──────────
-  // The old code fetched status but never used the response.
-  // Now: if both doctor & patient are online → mark connected.
+  // ── Status poll ────────────────────────────────────────────────
   const { data: statusData } = useQuery({
     queryKey: ["videoCall", "status", appointmentId],
     queryFn: () => createVideoCallApi(axios).getStatus(appointmentId),
     enabled:
       !!appointmentId &&
       !!accessToken &&
-      callStatus !== "ended" &&
+      !sessionEnded &&
       callStatus !== "error",
-    refetchInterval: 8000,
+    refetchInterval: 6000,
   });
 
-  useEffect(() => {
-    if (!statusData) return;
-
-    console.log("🔥 from useEffect:", statusData);
-
-    if (
-      statusData?.isDoctorOnline &&
-      statusData?.isPatientOnline &&
-      callStatus === "waiting"
-    ) {
-      setCallStatus("connected");
-    }
-  }, [statusData, callStatus]);
-
-  // ── React Query: End Call ──────────────────────────────────────
-  const endMutation = useMutation({
+  // ── End Session mutation (closes appointment, redirects) ────────
+  const endSessionMutation = useMutation({
     mutationFn: () => createVideoCallApi(axios).end(appointmentId),
-    onSettled: () => {
+    onSuccess: () => {
+      // Dispose Jitsi if still running
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.dispose();
+        jitsiApiRef.current = null;
+      }
+      setSessionEnded(true);
+      setCallStatus("ended");
       queryClient.invalidateQueries(["videoCall", "status", appointmentId]);
+    },
+    onError: (err) => {
+      console.error("End session error:", err);
+      // Still mark as ended in UI even if API fails
+      setSessionEnded(true);
+      setCallStatus("ended");
     },
   });
 
-  // ── FIX #1 + #2: Wait for token; sanitize domain; init Jitsi ──
-  useEffect(() => {
-    // FIX #1: Guard — don't run until we actually have a token
-    if (!appointmentId || !accessToken) {
-      console.log("⏳ Waiting for token...", {
-        appointmentId,
-        hasToken: !!accessToken,
+  // ── Core: initialize Jitsi ─────────────────────────────────────
+  const initJitsi = useCallback(
+    async (data) => {
+      if (!jitsiContainerRef.current) return;
+
+      // Clear any previous instance
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.dispose();
+        jitsiApiRef.current = null;
+      }
+
+      const jitsiDomain = sanitizeDomain(data.jitsiDomain || "meet.jit.si");
+      const { roomName, jitsiToken, displayName = "User", role } = data;
+      const isModerator = role === "moderator";
+
+      setCallStatus("connecting");
+
+      await loadJitsiScript(jitsiDomain);
+
+      if (!jitsiContainerRef.current) return;
+
+      const isPublicServer = jitsiDomain === "meet.jit.si";
+
+      const jitsiOptions = {
+        roomName,
+        parentNode: jitsiContainerRef.current,
+        configOverwrite: {
+          startWithAudioMuted: false,
+          startWithVideoMuted: false,
+          disableDeepLinking: true,
+          prejoinPageEnabled: false,
+          disableInviteFunctions: true,
+          // Moderator-specific: allow doctor to kick/mute participants
+          remoteVideoMenu: {
+            disableKick: !isModerator,
+            disableDemote: !isModerator,
+          },
+          // Disable lobby — doctor enters directly, patient waits via our own UI
+          lobby: { autoKnock: false, enableChat: false },
+          toolbarButtons: [
+            "microphone",
+            "camera",
+            "hangup",
+            "tileview",
+            "fullscreen",
+            ...(isModerator ? ["mute-everyone", "security"] : []),
+          ],
+        },
+        interfaceConfigOverwrite: {
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUESTS: false,
+          SHOW_BRAND_WATERMARK: false,
+          TOOLBAR_ALWAYS_VISIBLE: true,
+          DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+          HIDE_INVITE_MORE_HEADER: true,
+          MOBILE_APP_PROMO: false,
+        },
+        userInfo: {
+          displayName,
+          // Passing moderator here lets Jitsi UI show the crown icon
+          moderator: isModerator,
+        },
+        width: "100%",
+        height: "100%",
+      };
+
+      // JWT carries moderator claim — only attach on self-hosted servers
+      // meet.jit.si public server ignores JWT for room auth but we still send it
+      // because our JWT has the moderator context claim
+      if (jitsiToken) {
+        jitsiOptions.jwt = jitsiToken;
+      }
+
+      const jitsi = new window.JitsiMeetExternalAPI(jitsiDomain, jitsiOptions);
+      jitsiApiRef.current = jitsi;
+
+      jitsi.addEventListeners({
+        videoConferenceJoined: () => {
+          console.log("🟢 Jitsi: videoConferenceJoined");
+          setCallStatus("connected");
+        },
+        participantJoined: (participant) => {
+          console.log("👤 Participant joined:", participant);
+        },
+        videoConferenceLeft: () => {
+          /**
+           * FIX: User left Jitsi (clicked hangup button inside the video UI)
+           * This does NOT end the appointment — we just show a "rejoin" screen.
+           * The appointment is only ended when endSession() is called explicitly.
+           */
+          console.log("🟡 Jitsi: videoConferenceLeft — showing rejoin screen");
+          jitsiApiRef.current = null;
+          if (!sessionEnded) {
+            setCallStatus("left");
+          }
+        },
+        readyToClose: () => {
+          console.log("🟡 Jitsi: readyToClose");
+          if (jitsiApiRef.current) {
+            jitsiApiRef.current.dispose();
+            jitsiApiRef.current = null;
+          }
+          if (!sessionEnded) {
+            setCallStatus("left");
+          }
+        },
+        errorOccurred: (err) => {
+          console.error("❌ Jitsi error:", err);
+          if (err?.error?.isFatal) {
+            setCallStatus("error");
+          }
+        },
       });
-      return;
+    },
+    [sessionEnded],
+  );
+
+  // ── Rejoin handler — re-use stored session data ─────────────────
+  const handleRejoin = useCallback(async () => {
+    if (!sessionDataRef.current) return;
+    setCallStatus("connecting");
+    try {
+      await initJitsi(sessionDataRef.current);
+    } catch (err) {
+      console.error("Rejoin error:", err);
+      setCallStatus("error");
     }
+  }, [initJitsi]);
+
+  // ── Initial join: fetch session, then branch by role ───────────
+  useEffect(() => {
+    if (!appointmentId || !accessToken) return;
 
     let disposed = false;
     const api = createVideoCallApi(axios);
@@ -272,100 +437,25 @@ export default function VideoConsultation() {
       try {
         setCallStatus("loading");
 
-        // 1. Join — get session data
         const data = await api.join(appointmentId);
-
         if (disposed) return;
+
         setSessionData(data);
+        sessionDataRef.current = data; // keep stable ref for rejoin
 
-        // FIX #2: Sanitize jitsiDomain — API returned "[meet.jit.si](http://meet.jit.si)"
-        const jitsiDomain = sanitizeDomain(data.jitsiDomain || "meet.jit.si");
-        const { roomName, jitsiToken, displayName = "User" } = data;
-
-        console.log("✅ Session data:", { roomName, jitsiDomain, displayName });
-
-        setCallStatus("waiting");
-
-        // 2. Load Jitsi script
-        await loadJitsiScript(jitsiDomain);
-        if (disposed) return;
-
-        if (!jitsiContainerRef.current) {
-          throw new Error("Jitsi container not mounted");
+        if (isDoctor) {
+          /**
+           * DOCTOR: enters Jitsi immediately without waiting for patient.
+           * The status poll will show if patient is online.
+           */
+          await initJitsi(data);
+        } else {
+          /**
+           * PATIENT: show waiting screen until isDoctorOnline === true.
+           * The useEffect below watches statusData and calls initJitsi when ready.
+           */
+          setCallStatus("waiting");
         }
-
-        // 3. Build Jitsi config
-        // FIX #2b: meet.jit.si public server doesn't need a JWT.
-        // If you're on a self-hosted server, jwt is needed.
-        // We only pass jwt if it's a real non-empty token AND not the public server.
-        const isPublicServer = jitsiDomain === "meet.jit.si";
-        const jitsiOptions = {
-          roomName,
-          parentNode: jitsiContainerRef.current,
-          configOverwrite: {
-            startWithAudioMuted: false,
-            startWithVideoMuted: false,
-            disableDeepLinking: true,
-            prejoinPageEnabled: false,
-            disableInviteFunctions: true,
-            toolbarButtons: [
-              "microphone",
-              "camera",
-              "hangup",
-              "tileview",
-              "fullscreen",
-            ],
-          },
-          interfaceConfigOverwrite: {
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_WATERMARK_FOR_GUESTS: false,
-            SHOW_BRAND_WATERMARK: false,
-            TOOLBAR_ALWAYS_VISIBLE: true,
-            DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
-            HIDE_INVITE_MORE_HEADER: true,
-            MOBILE_APP_PROMO: false,
-          },
-          userInfo: { displayName },
-          width: "100%",
-          height: "100%",
-        };
-
-        // Only attach jwt on self-hosted servers
-        if (!isPublicServer && jitsiToken) {
-          jitsiOptions.jwt = jitsiToken;
-        }
-        console.log("🚀 creating jitsi instance");
-        const jitsi = new window.JitsiMeetExternalAPI(
-          jitsiDomain,
-          jitsiOptions,
-        );
-        jitsiApiRef.current = jitsi;
-
-        jitsi.addEventListeners({
-          videoConferenceJoined: () => {
-            console.log("🟢 Jitsi: videoConferenceJoined");
-            setCallStatus("connected");
-          },
-          participantJoined: (participant) => {
-            console.log("👤 Participant joined:", participant);
-            setCallStatus("connected");
-          },
-          videoConferenceLeft: () => {
-            console.log("🔴 Jitsi: videoConferenceLeft");
-            setCallStatus("ended");
-          },
-          readyToClose: () => {
-            console.log("🔴 Jitsi: readyToClose");
-            setCallStatus("ended");
-          },
-          errorOccurred: (err) => {
-            console.error("❌ Jitsi error:", err);
-            // Don't set error for non-fatal issues
-            if (err?.error?.isFatal) {
-              setCallStatus("error");
-            }
-          },
-        });
       } catch (err) {
         if (!disposed) {
           console.error("❌ Video call init error:", err);
@@ -381,24 +471,39 @@ export default function VideoConsultation() {
         jitsiApiRef.current = null;
       }
     };
-  }, [appointmentId, accessToken]); // axios is stable ref from useAxios, no need to add
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointmentId, accessToken]);
 
-  // ── FIX #4: endCall — correct dependencies ─────────────────────
-  const endCall = useCallback(async () => {
-    jitsiApiRef.current?.executeCommand("hangup");
-    setCallStatus("ended");
-    try {
-      await endMutation.mutateAsync();
-    } catch (err) {
-      console.error("End call error:", err);
+  // ── Patient: watch status poll → enter Jitsi when doctor is online ──
+  useEffect(() => {
+    if (isDoctor) return;
+    if (!statusData) return;
+    if (sessionEnded) return;
+    // Only trigger from "waiting" to avoid re-init on reconnects
+    if (callStatus !== "waiting") return;
+    if (!sessionDataRef.current) return;
+
+    if (statusData.isDoctorOnline) {
+      console.log("✅ Doctor is online — patient joining Jitsi now");
+      initJitsi(sessionDataRef.current).catch((err) => {
+        console.error("Patient Jitsi init error:", err);
+        setCallStatus("error");
+      });
     }
-  }, [endMutation]); // ✅ endMutation is the actual dep, not appointmentId
+  }, [statusData, isDoctor, callStatus, sessionEnded, initJitsi]);
+
+  // ── End Session (appointment) — called from header button ───────
+  const endSession = useCallback(async () => {
+    if (endSessionMutation.isPending) return;
+    endSessionMutation.mutate();
+  }, [endSessionMutation]);
 
   // ── Render ─────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden font-sans">
       {/* ══ HEADER ══════════════════════════════════════════════ */}
       <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 z-30">
+        {/* Brand */}
         <div className="flex items-center gap-3 flex-1">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm">
@@ -421,17 +526,23 @@ export default function VideoConsultation() {
           </span>
         </div>
 
+        {/* Status badge */}
         <div className="flex items-center justify-center flex-1">
           {callStatus === "connected" ? (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-600 px-4 py-1.5 rounded-full text-sm font-semibold">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               مباشر · {timer}
             </div>
+          ) : callStatus === "left" ? (
+            <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-600 px-4 py-1.5 rounded-full text-sm font-medium">
+              <span className="w-2 h-2 rounded-full bg-yellow-400" />
+              خارج المكالمة · الجلسة نشطة
+            </div>
           ) : (
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-400 px-4 py-1.5 rounded-full text-sm font-medium">
               {{
                 loading: "جاري التهيئة...",
-                waiting: "في انتظار البدء",
+                waiting: isDoctor ? "في انتظار المريض" : "في انتظار الطبيب",
                 connecting: "جاري الاتصال...",
                 ended: "انتهت الجلسة",
                 error: "خطأ في الاتصال",
@@ -440,6 +551,7 @@ export default function VideoConsultation() {
           )}
         </div>
 
+        {/* User info + End Session button */}
         <div className="flex items-center gap-3 justify-end flex-1">
           {sessionData && (
             <div className="flex items-center gap-2.5">
@@ -457,10 +569,16 @@ export default function VideoConsultation() {
             </div>
           )}
 
-          {callStatus !== "ended" && callStatus !== "error" && (
+          {/**
+           * END SESSION button:
+           * - Ends the appointment via API (not just the call)
+           * - Only shown while session is still active
+           * - Labeled clearly: "إنهاء الجلسة" (end session) not "إنهاء المكالمة"
+           */}
+          {!sessionEnded && callStatus !== "error" && (
             <button
-              onClick={endCall}
-              disabled={endMutation.isPending}
+              onClick={endSession}
+              disabled={endSessionMutation.isPending}
               className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-semibold rounded-lg transition shadow-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -471,7 +589,9 @@ export default function VideoConsultation() {
                   strokeLinecap="round"
                 />
               </svg>
-              {endMutation.isPending ? "جاري الإنهاء..." : "إنهاء المكالمة"}
+              {endSessionMutation.isPending
+                ? "جاري الإنهاء..."
+                : "إنهاء الجلسة"}
             </button>
           )}
         </div>
@@ -485,12 +605,18 @@ export default function VideoConsultation() {
             ref={jitsiContainerRef}
             className="absolute inset-0 w-full h-full"
           />
-          <StatusOverlay status={callStatus} isDoctor={isDoctor} />
 
+          <StatusOverlay
+            status={callStatus}
+            isDoctor={isDoctor}
+            onRejoin={!sessionEnded ? handleRejoin : null}
+          />
+
+          {/* Back button after session ended */}
           {(callStatus === "ended" || callStatus === "error") && (
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
               <button
-                onClick={() => window.history.back()}
+                onClick={() => navigate(-1)}
                 className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-600 font-semibold text-sm hover:bg-gray-50 transition shadow-md"
               >
                 ← العودة للوحة التحكم
@@ -525,16 +651,18 @@ export default function VideoConsultation() {
                   {
                     icon: "🎭",
                     label: "الدور",
-                    value: sessionData.role === "moderator" ? "طبيب" : "مريض",
+                    value:
+                      sessionData.role === "moderator" ? "طبيب (مشرف)" : "مريض",
                   },
                   {
                     icon: "📋",
                     label: "حالة الجلسة",
-                    value:
-                      callStatus === "connected"
+                    value: sessionEnded
+                      ? "منتهية"
+                      : callStatus === "connected"
                         ? "جارية الآن"
-                        : callStatus === "ended"
-                          ? "منتهية"
+                        : callStatus === "left"
+                          ? "خارج المكالمة"
                           : callStatus === "waiting"
                             ? "في الانتظار"
                             : "جاري الاتصال...",
@@ -545,6 +673,26 @@ export default function VideoConsultation() {
                     label: "الغرفة",
                     value: sessionData.roomName || "—",
                   },
+                  ...(statusData
+                    ? [
+                        {
+                          icon: "🩺",
+                          label: "الطبيب",
+                          value: statusData.isDoctorOnline
+                            ? "متصل"
+                            : "غير متصل",
+                          highlight: statusData.isDoctorOnline,
+                        },
+                        {
+                          icon: "🧑‍🤝‍🧑",
+                          label: "المريض",
+                          value: statusData.isPatientOnline
+                            ? "متصل"
+                            : "غير متصل",
+                          highlight: statusData.isPatientOnline,
+                        },
+                      ]
+                    : []),
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -571,6 +719,16 @@ export default function VideoConsultation() {
               </>
             )}
 
+            {/* Rejoin shortcut in sidebar */}
+            {callStatus === "left" && !sessionEnded && (
+              <button
+                onClick={handleRejoin}
+                className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+              >
+                العودة للمكالمة
+              </button>
+            )}
+
             {callStatus === "error" && (
               <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-center">
                 <p className="text-sm font-bold text-red-500 mb-1">
@@ -580,10 +738,7 @@ export default function VideoConsultation() {
                   تعذّر الاتصال بالخادم. تأكد من صلاحيتك وحاول مجدداً.
                 </p>
                 <button
-                  onClick={() => {
-                    setCallStatus("loading");
-                    window.location.reload();
-                  }}
+                  onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-red-500 text-white text-xs font-semibold rounded-lg hover:bg-red-600 transition"
                 >
                   إعادة المحاولة
