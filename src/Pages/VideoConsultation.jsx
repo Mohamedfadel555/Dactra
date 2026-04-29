@@ -267,25 +267,27 @@ export default function VideoConsultation() {
         roomName,
         parentNode: jitsiContainerRef.current,
         configOverwrite: {
-          startWithAudioMuted: false,
-          startWithVideoMuted: false,
-          disableDeepLinking: true,
-          prejoinPageEnabled: false,
-          disableInviteFunctions: true,
-          remoteVideoMenu: {
-            disableKick: !isModerator,
-            disableDemote: !isModerator,
-          },
-          lobby: { autoKnock: false, enableChat: false, enable: false },
-          toolbarButtons: [
-            "microphone",
-            "camera",
-            "hangup",
-            "tileview",
-            "fullscreen",
-            ...(isModerator ? ["mute-everyone", "security"] : []),
-          ],
-        },
+  startWithAudioMuted: false,
+  startWithVideoMuted: false,
+  disableDeepLinking: true,
+  prejoinPageEnabled: false,
+  prejoinConfig: { enabled: false },  // ← أضف
+  skipPrejoin: true,                  // ← أضف
+  disableInviteFunctions: true,
+  remoteVideoMenu: {
+    disableKick: !isModerator,
+    disableDemote: !isModerator,
+  },
+  lobby: { autoKnock: false, enableChat: false, enable: false },
+  toolbarButtons: [
+    "microphone",
+    "camera",
+    "hangup",
+    "tileview",
+    "fullscreen",
+    ...(isModerator ? ["mute-everyone", "security"] : []),
+  ],
+},
         interfaceConfigOverwrite: {
           SHOW_JITSI_WATERMARK: false,
           SHOW_WATERMARK_FOR_GUESTS: false,
