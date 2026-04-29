@@ -74,6 +74,7 @@ function useTimer(active) {
 function StatusOverlay({ status, isDoctor, onRejoin }) {
   // "left" = user manually left Jitsi but session still active → show rejoin
   // "connected" = hide overlay entirely
+
   if (status === "connected") return null;
 
   const map = {
