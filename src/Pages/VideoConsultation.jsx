@@ -40,6 +40,7 @@ const createVideoCallApi = (axios) => ({
   },
   getStatus: async (appointmentId) => {
     const { data } = await axios.get(`VideoCall/status/${appointmentId}`);
+    console.log(data);
     return data;
   },
   end: async (appointmentId) => {
@@ -78,6 +79,8 @@ function useTimer(active) {
 
 // ─── STATUS OVERLAY ───────────────────────────────────────────────
 function StatusOverlay({ status, isDoctor }) {
+  console.log(status);
+
   if (status === "connected") return null;
 
   const map = {
@@ -218,28 +221,30 @@ export default function VideoConsultation() {
   // ── FIX #3: Status poll drives callStatus transitions ──────────
   // The old code fetched status but never used the response.
   // Now: if both doctor & patient are online → mark connected.
-  useQuery({
+  const { data: statusData } = useQuery({
     queryKey: ["videoCall", "status", appointmentId],
     queryFn: () => createVideoCallApi(axios).getStatus(appointmentId),
     enabled:
       !!appointmentId &&
-      !!accessToken && // FIX #1: don't poll before token is ready
+      !!accessToken &&
       callStatus !== "ended" &&
       callStatus !== "error",
-    refetchInterval: 8_000,
-    onSuccess: (statusData) => {
-      // status === 0 → waiting, status === 1 → active/both online
-      if (
-        statusData?.isDoctorOnline &&
-        statusData?.isPatientOnline &&
-        callStatus === "waiting"
-      ) {
-        // Both are in the room — Jitsi will fire videoConferenceJoined,
-        // but if it already fired and we're still on waiting, fix it:
-        setCallStatus("connected");
-      }
-    },
+    refetchInterval: 8000,
   });
+
+  useEffect(() => {
+    if (!statusData) return;
+
+    console.log("🔥 from useEffect:", statusData);
+
+    if (
+      statusData?.isDoctorOnline &&
+      statusData?.isPatientOnline &&
+      callStatus === "waiting"
+    ) {
+      setCallStatus("connected");
+    }
+  }, [statusData, callStatus]);
 
   // ── React Query: End Call ──────────────────────────────────────
   const endMutation = useMutation({
@@ -329,7 +334,7 @@ export default function VideoConsultation() {
         if (!isPublicServer && jitsiToken) {
           jitsiOptions.jwt = jitsiToken;
         }
-
+        console.log("🚀 creating jitsi instance");
         const jitsi = new window.JitsiMeetExternalAPI(
           jitsiDomain,
           jitsiOptions,
