@@ -1,8 +1,12 @@
 /**
- * VideoConsultation.jsx
- * ─────────────────────────────────────────────────────────────────
- * Medical video consultation — Jitsi Meet + React Query + useAxios
- * ─────────────────────────────────────────────────────────────────
+ * VideoConsultation.jsx — Fixed Version
+ *
+ * Bugs Fixed:
+ * 1. Race condition: useEffect now waits for accessToken before running
+ * 2. Jitsi "authentication failed": jitsiDomain is sanitized (strips markdown links)
+ * 3. Waiting status: status poll response now drives callStatus transitions
+ * 4. endCall useCallback had stale appointmentId in deps (missing endMutation)
+ * 5. Jitsi JWT passed correctly — removed jwt if domain is meet.jit.si public server
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -11,8 +15,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAxios } from "../hooks/useAxios";
 import { useAuth } from "../Context/AuthContext";
 
+// ─── HELPERS ──────────────────────────────────────────────────────
+
+/**
+ * FIX #2: The API sometimes returns jitsiDomain as a markdown link
+ * e.g. "[meet.jit.si](http://meet.jit.si)" — extract just the hostname.
+ */
+function sanitizeDomain(raw = "") {
+  // Strip markdown link format [text](url) → extract text part
+  const mdMatch = raw.match(/^\[([^\]]+)\]/);
+  if (mdMatch) return mdMatch[1].trim();
+  // Strip protocol if someone passed a full URL
+  return raw
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .trim();
+}
+
 // ─── API FACTORY ──────────────────────────────────────────────────
-// ✅ function عادية بتاخد axios كـ argument — مش hook
 const createVideoCallApi = (axios) => ({
   join: async (appointmentId) => {
     const { data } = await axios.post(`VideoCall/join/${appointmentId}`);
@@ -36,7 +56,8 @@ function loadJitsiScript(domain) {
     script.src = `https://${domain}/external_api.js`;
     script.async = true;
     script.onload = resolve;
-    script.onerror = reject;
+    script.onerror = () =>
+      reject(new Error(`Failed to load Jitsi script from ${domain}`));
     document.head.appendChild(script);
   });
 }
@@ -183,10 +204,8 @@ export default function VideoConsultation() {
   const isDoctor = (searchParams.get("role") || "patient") === "doctor";
   const queryClient = useQueryClient();
 
-  // ✅ useAxios جوه الـ component — ده الصح
   const { accessToken } = useAuth();
   const axios = useAxios();
-  console.log("🔄 render", { axios: !!axios, appointmentId });
 
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
@@ -196,13 +215,30 @@ export default function VideoConsultation() {
 
   const timer = useTimer(callStatus === "connected");
 
-  // ── React Query: Status Polling ────────────────────────────────
+  // ── FIX #3: Status poll drives callStatus transitions ──────────
+  // The old code fetched status but never used the response.
+  // Now: if both doctor & patient are online → mark connected.
   useQuery({
     queryKey: ["videoCall", "status", appointmentId],
     queryFn: () => createVideoCallApi(axios).getStatus(appointmentId),
     enabled:
-      !!appointmentId && callStatus !== "ended" && callStatus !== "error",
-    refetchInterval: 10_000,
+      !!appointmentId &&
+      !!accessToken && // FIX #1: don't poll before token is ready
+      callStatus !== "ended" &&
+      callStatus !== "error",
+    refetchInterval: 8_000,
+    onSuccess: (statusData) => {
+      // status === 0 → waiting, status === 1 → active/both online
+      if (
+        statusData?.isDoctorOnline &&
+        statusData?.isPatientOnline &&
+        callStatus === "waiting"
+      ) {
+        // Both are in the room — Jitsi will fire videoConferenceJoined,
+        // but if it already fired and we're still on waiting, fix it:
+        setCallStatus("connected");
+      }
+    },
   });
 
   // ── React Query: End Call ──────────────────────────────────────
@@ -213,34 +249,53 @@ export default function VideoConsultation() {
     },
   });
 
-  // ── Init: Join then load Jitsi ─────────────────────────────────
+  // ── FIX #1 + #2: Wait for token; sanitize domain; init Jitsi ──
   useEffect(() => {
-    console.log("🚀 useEffect fired", { appointmentId, axios: !!axios });
-    if (!appointmentId || !accessToken) return;
+    // FIX #1: Guard — don't run until we actually have a token
+    if (!appointmentId || !accessToken) {
+      console.log("⏳ Waiting for token...", {
+        appointmentId,
+        hasToken: !!accessToken,
+      });
+      return;
+    }
 
+    let disposed = false;
     const api = createVideoCallApi(axios);
 
     (async () => {
       try {
-        // 1. Join — جيب بيانات الجلسة
+        setCallStatus("loading");
+
+        // 1. Join — get session data
         const data = await api.join(appointmentId);
+
+        if (disposed) return;
         setSessionData(data);
+
+        // FIX #2: Sanitize jitsiDomain — API returned "[meet.jit.si](http://meet.jit.si)"
+        const jitsiDomain = sanitizeDomain(data.jitsiDomain || "meet.jit.si");
+        const { roomName, jitsiToken, displayName = "User" } = data;
+
+        console.log("✅ Session data:", { roomName, jitsiDomain, displayName });
+
         setCallStatus("waiting");
 
-        const {
-          roomName,
-          jitsiToken,
-          jitsiDomain = "meet.jit.si",
-          displayName = "User",
-        } = data;
-
-        // 2. حمّل Jitsi script
+        // 2. Load Jitsi script
         await loadJitsiScript(jitsiDomain);
+        if (disposed) return;
 
-        // 3. ابدأ الـ Jitsi
-        const jitsi = new window.JitsiMeetExternalAPI(jitsiDomain, {
+        if (!jitsiContainerRef.current) {
+          throw new Error("Jitsi container not mounted");
+        }
+
+        // 3. Build Jitsi config
+        // FIX #2b: meet.jit.si public server doesn't need a JWT.
+        // If you're on a self-hosted server, jwt is needed.
+        // We only pass jwt if it's a real non-empty token AND not the public server.
+        const isPublicServer = jitsiDomain === "meet.jit.si";
+        const jitsiOptions = {
           roomName,
-          jwt: jitsiToken,
           parentNode: jitsiContainerRef.current,
           configOverwrite: {
             startWithAudioMuted: false,
@@ -268,28 +323,62 @@ export default function VideoConsultation() {
           userInfo: { displayName },
           width: "100%",
           height: "100%",
-        });
+        };
 
+        // Only attach jwt on self-hosted servers
+        if (!isPublicServer && jitsiToken) {
+          jitsiOptions.jwt = jitsiToken;
+        }
+
+        const jitsi = new window.JitsiMeetExternalAPI(
+          jitsiDomain,
+          jitsiOptions,
+        );
         jitsiApiRef.current = jitsi;
 
         jitsi.addEventListeners({
-          videoConferenceJoined: () => setCallStatus("connected"),
-          participantJoined: () => setCallStatus("connected"),
-          videoConferenceLeft: () => setCallStatus("ended"),
-          readyToClose: () => setCallStatus("ended"),
+          videoConferenceJoined: () => {
+            console.log("🟢 Jitsi: videoConferenceJoined");
+            setCallStatus("connected");
+          },
+          participantJoined: (participant) => {
+            console.log("👤 Participant joined:", participant);
+            setCallStatus("connected");
+          },
+          videoConferenceLeft: () => {
+            console.log("🔴 Jitsi: videoConferenceLeft");
+            setCallStatus("ended");
+          },
+          readyToClose: () => {
+            console.log("🔴 Jitsi: readyToClose");
+            setCallStatus("ended");
+          },
+          errorOccurred: (err) => {
+            console.error("❌ Jitsi error:", err);
+            // Don't set error for non-fatal issues
+            if (err?.error?.isFatal) {
+              setCallStatus("error");
+            }
+          },
         });
       } catch (err) {
-        console.error("Video call init error:", err);
-        setCallStatus("error");
+        if (!disposed) {
+          console.error("❌ Video call init error:", err);
+          setCallStatus("error");
+        }
       }
     })();
 
     return () => {
-      jitsiApiRef.current?.dispose();
+      disposed = true;
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.dispose();
+        jitsiApiRef.current = null;
+      }
     };
-  }, [appointmentId, accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [appointmentId, accessToken]); // axios is stable ref from useAxios, no need to add
 
-  // ── End Call ───────────────────────────────────────────────────
+  // ── FIX #4: endCall — correct dependencies ─────────────────────
   const endCall = useCallback(async () => {
     jitsiApiRef.current?.executeCommand("hangup");
     setCallStatus("ended");
@@ -298,7 +387,7 @@ export default function VideoConsultation() {
     } catch (err) {
       console.error("End call error:", err);
     }
-  }, [appointmentId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [endMutation]); // ✅ endMutation is the actual dep, not appointmentId
 
   // ── Render ─────────────────────────────────────────────────────
   return (
@@ -462,7 +551,9 @@ export default function VideoConsultation() {
                         {item.label}
                       </p>
                       <p
-                        className={`text-sm font-semibold truncate ${item.highlight ? "text-green-500" : "text-gray-700"}`}
+                        className={`text-sm font-semibold truncate ${
+                          item.highlight ? "text-green-500" : "text-gray-700"
+                        }`}
                       >
                         {item.value}
                         {item.highlight && (
