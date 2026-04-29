@@ -331,7 +331,7 @@ export default function VideoConsultation() {
         };
 
         // Only attach jwt on self-hosted servers
-        if (jitsiToken) {
+        if (!isPublicServer && jitsiToken) {
           jitsiOptions.jwt = jitsiToken;
         }
         console.log("🚀 creating jitsi instance");
