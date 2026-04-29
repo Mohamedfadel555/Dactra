@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { BiCalendar, BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import { BsCameraVideo, BsPeopleFill } from "react-icons/bs";
 import { RiErrorWarningLine } from "react-icons/ri";
@@ -136,8 +136,8 @@ export default function Schedule({
   timeSlots = { inPerson: {}, online: {} },
   onlineAppointments = [],
 }) {
-  const today = new Date();
-
+  const todayRef = useRef(new Date());
+  const today = todayRef.current;
   // const {data:daaaa}=useGetSlotsById()
 
   // ── type toggle ──
@@ -254,11 +254,26 @@ export default function Schedule({
   const generatedSlots =
     typeKey === "inPerson" ? generatedInPerson : generatedOnline;
 
-  console.log(timeSlots[typeKey]);
-  const visibleSlots =
-    role === "Doctor"
-      ? generatedSlots
-      : (timeSlots[typeKey]?.[dayKey] || []).filter((s) => !s.isBooked);
+  const visibleSlots = useMemo(() => {
+    const isToday = dayKey === formatDateKey(today);
+
+    const rawSlots =
+      role === "Doctor"
+        ? generatedSlots
+        : (timeSlots[typeKey]?.[dayKey] || []).filter((s) => !s.isBooked);
+
+    if (!isToday) return rawSlots;
+
+    const cutoff = new Date(today.getTime() + 30 * 60 * 1000);
+
+    return rawSlots.filter((slot) => {
+      const slotTime = role === "Doctor" ? slot : slot.slotTime;
+      const [h, m] = slotTime.split(":");
+      const slotDate = new Date(today);
+      slotDate.setHours(+h, +m, 0, 0);
+      return slotDate >= cutoff;
+    });
+  }, [role, generatedSlots, timeSlots, typeKey, dayKey, today]);
 
   const isEmpty = visibleSlots.length === 0;
 
