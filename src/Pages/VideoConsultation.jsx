@@ -41,17 +41,6 @@ function loadJitsiScript(domain) {
   });
 }
 
-function useTimer(active) {
-  const [sec, setSec] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    setSec(0);
-    const id = setInterval(() => setSec((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [active]);
-  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
-}
-
 function StatusOverlay({ status, isDoctor, onRejoin }) {
   if (status === "connected") return null;
   const map = {
@@ -200,6 +189,223 @@ const LeftIcon = () => (
   </div>
 );
 
+// ─── PRESCRIPTION SIDEBAR ─────────────────────────────────────────
+function PrescriptionSidebar({ open, onClose, onSave }) {
+  const [diagnosis, setDiagnosis] = useState("");
+  const [medicines, setMedicines] = useState([
+    { name: "", dose: "", notes: "" },
+  ]);
+
+  const addMedicine = () =>
+    setMedicines([...medicines, { name: "", dose: "", notes: "" }]);
+  const removeMedicine = (i) =>
+    setMedicines(medicines.filter((_, idx) => idx !== i));
+  const updateMedicine = (i, field, value) => {
+    const updated = [...medicines];
+    updated[i][field] = value;
+    setMedicines(updated);
+  };
+
+  const handleSave = () => {
+    onSave({ diagnosis, medicines });
+  };
+
+  return (
+    <>
+      {/* Overlay */}
+      {open && (
+        <div className="fixed inset-0 z-20 bg-black/20" onClick={onClose} />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl z-30 flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-800">
+              📋 الروشتة والتشخيص
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              أضف تشخيص المريض والأدوية الموصوفة
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M18 6L6 18M6 6l12 12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+          {/* Diagnosis */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              🩺 التشخيص
+            </label>
+            <textarea
+              value={diagnosis}
+              onChange={(e) => setDiagnosis(e.target.value)}
+              placeholder="اكتب التشخيص هنا..."
+              rows={3}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 resize-none transition"
+            />
+          </div>
+
+          {/* Medicines */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-semibold text-gray-700">
+                💊 الأدوية
+              </label>
+              <button
+                onClick={addMedicine}
+                className="flex items-center gap-1.5 text-xs font-semibold text-blue-500 hover:text-blue-600 transition"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 5v14M5 12h14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                إضافة دواء
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {medicines.map((med, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-500">
+                      دواء {i + 1}
+                    </span>
+                    {medicines.length > 1 && (
+                      <button
+                        onClick={() => removeMedicine(i)}
+                        className="text-red-400 hover:text-red-500 transition"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <path
+                            d="M18 6L6 18M6 6l12 12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    value={med.name}
+                    onChange={(e) => updateMedicine(i, "name", e.target.value)}
+                    placeholder="اسم الدواء"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                  />
+                  <input
+                    value={med.dose}
+                    onChange={(e) => updateMedicine(i, "dose", e.target.value)}
+                    placeholder="الجرعة (مثال: حبة كل 8 ساعات)"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                  />
+                  <input
+                    value={med.notes}
+                    onChange={(e) => updateMedicine(i, "notes", e.target.value)}
+                    placeholder="ملاحظات إضافية (اختياري)"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-gray-100">
+          <button
+            onClick={handleSave}
+            className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm rounded-xl transition shadow-sm"
+          >
+            💾 حفظ الروشتة
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── CONFIRM END MODAL ────────────────────────────────────────────
+function ConfirmEndModal({ open, onConfirm, onCancel, onOpenPrescription }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 max-w-sm w-full mx-4 flex flex-col items-center gap-5 text-center">
+        <div className="w-16 h-16 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-orange-400"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <div>
+          <p className="text-gray-800 font-bold text-lg">
+            لم تضف التشخيص والروشتة بعد
+          </p>
+          <p className="text-gray-400 text-sm mt-2 leading-relaxed">
+            المريض يحتاج للروشتة والتشخيص. هل تريد إضافتهم قبل إنهاء الجلسة؟
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 w-full">
+          <button
+            onClick={onOpenPrescription}
+            className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm rounded-xl transition"
+          >
+            إضافة الروشتة والتشخيص
+          </button>
+          <button
+            onClick={onConfirm}
+            className="w-full py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold text-sm rounded-xl transition"
+          >
+            إنهاء الجلسة بدون روشتة
+          </button>
+          <button
+            onClick={onCancel}
+            className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold text-sm rounded-xl transition"
+          >
+            إلغاء
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────
 export default function VideoConsultation() {
   const { appointmentId } = useParams();
   const [searchParams] = useSearchParams();
@@ -217,7 +423,10 @@ export default function VideoConsultation() {
   const [sessionData, setSessionData] = useState(null);
   const [sessionEnded, setSessionEnded] = useState(false);
 
-  const timer = useTimer(callStatus === "connected");
+  // Doctor UI state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [prescriptionSaved, setPrescriptionSaved] = useState(false);
+  const [showConfirmEnd, setShowConfirmEnd] = useState(false);
 
   const { data: statusData } = useQuery({
     queryKey: ["videoCall", "status", appointmentId],
@@ -271,8 +480,8 @@ export default function VideoConsultation() {
           startWithVideoMuted: false,
           disableDeepLinking: true,
           prejoinPageEnabled: false,
-          prejoinConfig: { enabled: false }, // ← أضف
-          skipPrejoin: true, // ← أضف
+          prejoinConfig: { enabled: false },
+          skipPrejoin: true,
           disableInviteFunctions: true,
           remoteVideoMenu: {
             disableKick: !isModerator,
@@ -302,19 +511,13 @@ export default function VideoConsultation() {
         height: "100%",
       };
 
-      // ✅ التغيير الأول — بعت الـ JWT دايماً مع JaaS
-      if (jitsiToken) {
-        jitsiOptions.jwt = jitsiToken;
-      }
+      if (jitsiToken) jitsiOptions.jwt = jitsiToken;
 
       const jitsi = new window.JitsiMeetExternalAPI(jitsiDomain, jitsiOptions);
       jitsiApiRef.current = jitsi;
 
       const fallbackTimer = setTimeout(() => {
-        if (jitsiApiRef.current) {
-          console.log("⚡ Fallback: forcing connected");
-          setCallStatus("connected");
-        }
+        if (jitsiApiRef.current) setCallStatus("connected");
       }, 8000);
 
       jitsi.addEventListeners({
@@ -350,16 +553,13 @@ export default function VideoConsultation() {
     }
   }, [initJitsi]);
 
-  // ✅ التغيير الثاني — المريض ميعملش join هنا
   useEffect(() => {
     if (!appointmentId || !accessToken) return;
     let disposed = false;
     const api = createVideoCallApi(axios);
-
     (async () => {
       try {
         setCallStatus("loading");
-
         if (isDoctor) {
           const data = await api.join(appointmentId);
           if (disposed) return;
@@ -367,7 +567,6 @@ export default function VideoConsultation() {
           sessionDataRef.current = data;
           await initJitsi(data);
         } else {
-          // ✅ المريض بس بيستنى — من غير join
           setCallStatus("waiting");
         }
       } catch (err) {
@@ -377,7 +576,6 @@ export default function VideoConsultation() {
         }
       }
     })();
-
     return () => {
       disposed = true;
       if (jitsiApiRef.current) {
@@ -388,13 +586,11 @@ export default function VideoConsultation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId, accessToken]);
 
-  // ✅ المريض بيعمل join بس لما isDoctorOnline = true
   useEffect(() => {
     if (isDoctor) return;
     if (!statusData?.isDoctorOnline) return;
     if (sessionEnded) return;
     if (callStatus !== "waiting") return;
-
     const api = createVideoCallApi(axios);
     api
       .join(appointmentId)
@@ -406,46 +602,82 @@ export default function VideoConsultation() {
       .catch(() => setCallStatus("error"));
   }, [statusData?.isDoctorOnline, callStatus, sessionEnded]);
 
-  const endSession = useCallback(() => {
+  // ── End session with prescription check (doctor only) ──
+  const handleEndClick = useCallback(() => {
     if (endSessionMutation.isPending) return;
+    if (isDoctor && !prescriptionSaved) {
+      setShowConfirmEnd(true);
+      return;
+    }
     endSessionMutation.mutate();
-  }, [endSessionMutation]);
+  }, [isDoctor, prescriptionSaved, endSessionMutation]);
+
+  const handlePrescriptionSave = useCallback((data) => {
+    console.log("Prescription saved:", data);
+    // TODO: بعتي للـ API هنا
+    setPrescriptionSaved(true);
+    setSidebarOpen(false);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden font-sans">
+      {/* ══ CONFIRM END MODAL ══ */}
+      <ConfirmEndModal
+        open={showConfirmEnd}
+        onConfirm={() => {
+          setShowConfirmEnd(false);
+          endSessionMutation.mutate();
+        }}
+        onCancel={() => setShowConfirmEnd(false)}
+        onOpenPrescription={() => {
+          setShowConfirmEnd(false);
+          setSidebarOpen(true);
+        }}
+      />
+
+      {/* ══ PRESCRIPTION SIDEBAR ══ */}
+      {isDoctor && (
+        <PrescriptionSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onSave={handlePrescriptionSave}
+        />
+      )}
+
+      {/* ══ HEADER ══ */}
       <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 z-30">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path
-                  d="M4 9h10M9 4v10"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <span className="text-lg font-bold text-gray-800 tracking-tight">
-              Dactara
-            </span>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path
+                d="M4 9h10M9 4v10"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
-          <div className="w-px h-5 bg-gray-200" />
+          <span className="text-lg font-bold text-gray-800 tracking-tight">
+            Dactara
+          </span>
+          <div className="w-px h-5 bg-gray-200 mx-1" />
           <span className="text-sm text-gray-400 font-medium">
             استشارة أونلاين
           </span>
         </div>
 
-        <div className="flex items-center justify-center flex-1">
+        {/* Status badge */}
+        <div className="flex items-center gap-2">
           {callStatus === "connected" ? (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-600 px-4 py-1.5 rounded-full text-sm font-semibold">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              مباشر · {timer}
+              مباشر
             </div>
           ) : callStatus === "left" ? (
             <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-600 px-4 py-1.5 rounded-full text-sm font-medium">
               <span className="w-2 h-2 rounded-full bg-yellow-400" />
-              خارج المكالمة · الجلسة نشطة
+              خارج المكالمة
             </div>
           ) : (
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-400 px-4 py-1.5 rounded-full text-sm font-medium">
@@ -460,25 +692,31 @@ export default function VideoConsultation() {
           )}
         </div>
 
-        <div className="flex items-center gap-3 justify-end flex-1">
-          {sessionData && (
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                {sessionData.displayName?.[0]?.toUpperCase() || "U"}
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 leading-none mb-0.5">
-                  {isDoctor ? "دكتور" : "مريض"}
-                </p>
-                <p className="text-sm font-semibold text-gray-700 leading-none">
-                  {sessionData.displayName}
-                </p>
-              </div>
-            </div>
-          )}
-          {!sessionEnded && callStatus !== "error" && (
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* Prescription button — doctor only */}
+          {isDoctor && !sessionEnded && (
             <button
-              onClick={endSession}
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-semibold rounded-lg transition border border-blue-200"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {prescriptionSaved ? "✓ تم الحفظ" : "الروشتة"}
+            </button>
+          )}
+
+          {/* End session — doctor only */}
+          {isDoctor && !sessionEnded && callStatus !== "error" && (
+            <button
+              onClick={handleEndClick}
               disabled={endSessionMutation.isPending}
               className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-semibold rounded-lg transition shadow-sm"
             >
@@ -498,187 +736,27 @@ export default function VideoConsultation() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 relative bg-gray-900 overflow-hidden">
-          <div
-            ref={jitsiContainerRef}
-            className="absolute inset-0 w-full h-full"
-          />
-          <StatusOverlay
-            status={callStatus}
-            isDoctor={isDoctor}
-            onRejoin={!sessionEnded ? handleRejoin : null}
-          />
-          {(callStatus === "ended" || callStatus === "error") && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
-              <button
-                onClick={() => navigate(-1)}
-                className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-600 font-semibold text-sm hover:bg-gray-50 transition shadow-md"
-              >
-                ← العودة للوحة التحكم
-              </button>
-            </div>
-          )}
-        </div>
-
-        <aside className="w-96 flex-shrink-0 bg-white border-l border-gray-100 flex flex-col overflow-hidden shadow-lg">
-          <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
-            <h2 className="text-base font-bold text-gray-800">تفاصيل الجلسة</h2>
-            {sessionData?.sessionId && (
-              <p className="text-xs text-gray-400 mt-0.5">
-                رقم الجلسة:{" "}
-                <span className="font-semibold text-gray-600">
-                  #{sessionData.sessionId}
-                </span>
-              </p>
-            )}
+      {/* ══ BODY ══ */}
+      <div className="flex-1 relative bg-gray-900 overflow-hidden">
+        <div
+          ref={jitsiContainerRef}
+          className="absolute inset-0 w-full h-full"
+        />
+        <StatusOverlay
+          status={callStatus}
+          isDoctor={isDoctor}
+          onRejoin={!sessionEnded ? handleRejoin : null}
+        />
+        {(callStatus === "ended" || callStatus === "error") && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-600 font-semibold text-sm hover:bg-gray-50 transition shadow-md"
+            >
+              ← العودة للوحة التحكم
+            </button>
           </div>
-
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-            {sessionData && (
-              <>
-                {[
-                  {
-                    icon: "👤",
-                    label: "المشارك",
-                    value: sessionData.displayName || "—",
-                  },
-                  {
-                    icon: "🎭",
-                    label: "الدور",
-                    value:
-                      sessionData.role === "moderator" ? "طبيب (مشرف)" : "مريض",
-                  },
-                  {
-                    icon: "📋",
-                    label: "حالة الجلسة",
-                    value: sessionEnded
-                      ? "منتهية"
-                      : callStatus === "connected"
-                        ? "جارية الآن"
-                        : callStatus === "left"
-                          ? "خارج المكالمة"
-                          : callStatus === "waiting"
-                            ? "في الانتظار"
-                            : "جاري الاتصال...",
-                    highlight: callStatus === "connected",
-                  },
-                  {
-                    icon: "🚪",
-                    label: "الغرفة",
-                    value: sessionData.roomName || "—",
-                  },
-                  ...(statusData
-                    ? [
-                        {
-                          icon: "🩺",
-                          label: "الطبيب",
-                          value: statusData.isDoctorOnline
-                            ? "متصل"
-                            : "غير متصل",
-                          highlight: statusData.isDoctorOnline,
-                        },
-                        {
-                          icon: "🧑‍🤝‍🧑",
-                          label: "المريض",
-                          value: statusData.isPatientOnline
-                            ? "متصل"
-                            : "غير متصل",
-                          highlight: statusData.isPatientOnline,
-                        },
-                      ]
-                    : []),
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center gap-3 p-3.5 bg-gray-50 border border-gray-100 rounded-xl"
-                  >
-                    <span className="text-xl">{item.icon}</span>
-                    <div className="min-w-0">
-                      <p className="text-xs text-gray-400 font-medium">
-                        {item.label}
-                      </p>
-                      <p
-                        className={`text-sm font-semibold truncate ${item.highlight ? "text-green-500" : "text-gray-700"}`}
-                      >
-                        {item.value}
-                        {item.highlight && (
-                          <span className="inline-block w-2 h-2 rounded-full bg-green-400 ml-1.5 animate-pulse" />
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {callStatus === "left" && !sessionEnded && (
-              <button
-                onClick={handleRejoin}
-                className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
-              >
-                العودة للمكالمة
-              </button>
-            )}
-
-            {callStatus === "error" && (
-              <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-center">
-                <p className="text-sm font-bold text-red-500 mb-1">
-                  ⚠️ فشل الاتصال
-                </p>
-                <p className="text-xs text-gray-400 mb-3">
-                  تعذّر الاتصال بالخادم. تأكد من صلاحيتك وحاول مجدداً.
-                </p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-red-500 text-white text-xs font-semibold rounded-lg hover:bg-red-600 transition"
-                >
-                  إعادة المحاولة
-                </button>
-              </div>
-            )}
-
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mt-1">
-              <p className="text-sm font-bold text-blue-600 mb-2">
-                💡 نصائح للاستشارة
-              </p>
-              <ul className="space-y-1.5 text-xs text-gray-500 list-disc list-inside leading-relaxed">
-                {(isDoctor
-                  ? [
-                      "استمع جيداً لوصف المريض",
-                      "اطرح أسئلة واضحة ومحددة",
-                      "وضّح التشخيص والخطوات التالية",
-                      "تأكد من فهم المريض للتعليمات",
-                    ]
-                  : [
-                      "اشرح أعراضك بوضوح",
-                      "اذكر الأدوية التي تتناولها حالياً",
-                      "اسأل عن التشخيص والخطوات التالية",
-                      "ستُحفظ الوصفة تلقائياً",
-                    ]
-                ).map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-gray-400 p-3 bg-gray-50 border border-gray-100 rounded-xl">
-              <svg
-                className="w-3.5 h-3.5 flex-shrink-0"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path
-                  d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              محمية بتشفير Jitsi Meet من طرف لطرف
-            </div>
-          </div>
-        </aside>
+        )}
       </div>
     </div>
   );
