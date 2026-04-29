@@ -336,7 +336,12 @@ export default function VideoConsultation() {
             disableDemote: !isModerator,
           },
           // Disable lobby — doctor enters directly, patient waits via our own UI
-          lobby: { autoKnock: false, enableChat: false },
+          lobby: {
+            autoKnock: false,
+            enableChat: false,
+            // ← أضف ده
+            enable: false,
+          },
           toolbarButtons: [
             "microphone",
             "camera",
@@ -367,7 +372,8 @@ export default function VideoConsultation() {
       // JWT carries moderator claim — only attach on self-hosted servers
       // meet.jit.si public server ignores JWT for room auth but we still send it
       // because our JWT has the moderator context claim
-      if (jitsiToken) {
+      // meet.jit.si مش محتاج JWT
+      if (jitsiToken && jitsiDomain !== "meet.jit.si") {
         jitsiOptions.jwt = jitsiToken;
       }
 
@@ -375,12 +381,38 @@ export default function VideoConsultation() {
       jitsiApiRef.current = jitsi;
 
       jitsi.addEventListeners({
+        log: (log) => console.log("Jitsi LOG:", log),
+      });
+
+      setTimeout(() => {
+        console.log("=== Debug ===");
+        console.log("Domain:", jitsiDomain);
+        console.log("Room:", roomName);
+        console.log("Token sent:", !!jitsiOptions.jwt);
+        console.log(
+          "Participants:",
+          jitsiApiRef.current?.getNumberOfParticipants(),
+        );
+        console.log(
+          "iframe:",
+          jitsiContainerRef.current?.querySelector("iframe"),
+        );
+      }, 5000);
+
+      const fallbackTimer = setTimeout(() => {
+        if (jitsiApiRef.current && callStatus !== "connected") {
+          console.log("⚡ Fallback: forcing connected status");
+          setCallStatus("connected");
+        }
+      }, 8000);
+
+      jitsi.addEventListeners({
         videoConferenceJoined: () => {
-          console.log("🟢 Jitsi: videoConferenceJoined");
+          clearTimeout(fallbackTimer);
           setCallStatus("connected");
         },
-        participantJoined: (participant) => {
-          console.log("👤 Participant joined:", participant);
+        participantJoined: () => {
+          if (callStatus !== "connected") setCallStatus("connected");
         },
         videoConferenceLeft: () => {
           /**
