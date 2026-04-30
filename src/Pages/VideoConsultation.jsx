@@ -3,7 +3,9 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAxios } from "../hooks/useAxios";
 import { useAuth } from "../Context/AuthContext";
+import BrandLogo from "../Components/Common/BrandLogo";
 
+// ─── UTILS ────────────────────────────────────────────────────────
 function sanitizeDomain(raw = "") {
   const mdMatch = raw.match(/^\[([^\]]+)\]/);
   if (mdMatch) return mdMatch[1].trim();
@@ -13,6 +15,7 @@ function sanitizeDomain(raw = "") {
     .trim();
 }
 
+// ─── API FACTORY ─────────────────────────────────────────────────
 const createVideoCallApi = (axios) => ({
   join: async (appointmentId) => {
     const { data } = await axios.post(`VideoCall/join/${appointmentId}`);
@@ -24,6 +27,11 @@ const createVideoCallApi = (axios) => ({
   },
   end: async (appointmentId) => {
     const { data } = await axios.post(`VideoCall/end/${appointmentId}`);
+    return data;
+  },
+  savePrescription: async (appointmentId, payload) => {
+    // TODO: replace with your actual endpoint
+    const { data } = await axios.post(`Prescription/${appointmentId}`, payload);
     return data;
   },
 });
@@ -41,45 +49,49 @@ function loadJitsiScript(domain) {
   });
 }
 
+// ─── STATUS OVERLAY ───────────────────────────────────────────────
 function StatusOverlay({ status, isDoctor, onRejoin }) {
   if (status === "connected") return null;
+
   const map = {
     loading: {
       icon: <Spinner />,
-      title: "جاري تحميل الجلسة...",
-      sub: "يتم جلب بيانات الاستشارة",
+      title: "Loading session...",
+      sub: "Fetching consultation data",
     },
     waiting: {
       icon: <VideoIcon />,
-      title: isDoctor ? "في انتظار المريض..." : "في انتظار الطبيب...",
+      title: isDoctor ? "Waiting for patient..." : "Waiting for doctor...",
       sub: isDoctor
-        ? "يمكنك البدء الآن، سينضم المريض قريباً"
-        : "ستبدأ المكالمة تلقائياً عند انضمام الطبيب",
+        ? "You can start now, the patient will join shortly"
+        : "The call will start automatically when the doctor joins",
     },
     connecting: {
       icon: <Spinner />,
-      title: "جاري الاتصال...",
-      sub: "يتم إعداد جلسة الفيديو الآمنة",
+      title: "Connecting...",
+      sub: "Setting up your secure video session",
     },
     left: {
       icon: <LeftIcon />,
-      title: "غادرت المكالمة",
-      sub: "الجلسة لا تزال نشطة، يمكنك العودة إليها",
+      title: "You left the call",
+      sub: "The session is still active, you can rejoin",
     },
     ended: {
       icon: <CheckIcon />,
-      title: "انتهت الاستشارة",
+      title: "Consultation ended",
       sub: isDoctor
-        ? "يمكنك مراجعة ملاحظاتك قبل المغادرة"
-        : "ستكون الوصفة الطبية متاحة قريباً",
+        ? "You can review your notes before leaving"
+        : "Your prescription will be available shortly",
     },
     error: {
       icon: <ErrorIcon />,
-      title: "خطأ في الاتصال",
-      sub: "يرجى تحديث الصفحة والمحاولة مرة أخرى",
+      title: "Connection error",
+      sub: "Please refresh the page and try again",
     },
   };
+
   const c = map[status] || map.loading;
+
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-b from-blue-50 to-white">
       <div
@@ -110,7 +122,7 @@ function StatusOverlay({ status, isDoctor, onRejoin }) {
             onClick={onRejoin}
             className="mt-1 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
           >
-            العودة للمكالمة
+            Rejoin call
           </button>
         )}
         {status === "error" && (
@@ -118,7 +130,7 @@ function StatusOverlay({ status, isDoctor, onRejoin }) {
             onClick={() => window.location.reload()}
             className="mt-1 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
           >
-            إعادة المحاولة
+            Retry
           </button>
         )}
       </div>
@@ -126,6 +138,7 @@ function StatusOverlay({ status, isDoctor, onRejoin }) {
   );
 }
 
+// ─── ICONS ────────────────────────────────────────────────────────
 const Spinner = () => (
   <div className="w-16 h-16 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin" />
 );
@@ -189,46 +202,240 @@ const LeftIcon = () => (
   </div>
 );
 
+// ─── TREATMENT SCHEDULE BUILDER ───────────────────────────────────
+const TIMES_OF_DAY = [
+  { label: "Morning", key: "morning", default: "08:00" },
+  { label: "Afternoon", key: "afternoon", default: "13:00" },
+  { label: "Evening", key: "evening", default: "18:00" },
+  { label: "Night", key: "night", default: "21:00" },
+];
+
+const MEAL_OPTIONS = [
+  { label: "Before meals", value: "before_meals" },
+  { label: "After meals", value: "after_meals" },
+  { label: "With food", value: "with_food" },
+  { label: "Any time", value: "any_time" },
+];
+
+const FREQ_OPTIONS = [
+  { label: "Once daily", value: 1, slots: ["morning"] },
+  { label: "Twice daily", value: 2, slots: ["morning", "evening"] },
+  { label: "3× daily", value: 3, slots: ["morning", "afternoon", "evening"] },
+  {
+    label: "4× daily",
+    value: 4,
+    slots: ["morning", "afternoon", "evening", "night"],
+  },
+];
+
+function MedicineSchedule({ medicine, index, onChange }) {
+  const [freq, setFreq] = useState(FREQ_OPTIONS[1]);
+  const [mealRelation, setMealRelation] = useState(MEAL_OPTIONS[0].value);
+  const [times, setTimes] = useState({
+    morning: "08:00",
+    afternoon: "13:00",
+    evening: "18:00",
+    night: "21:00",
+  });
+
+  const updateFreq = (option) => {
+    setFreq(option);
+    notifyParent(option, mealRelation, times);
+  };
+
+  const updateMeal = (value) => {
+    setMealRelation(value);
+    notifyParent(freq, value, times);
+  };
+
+  const updateTime = (key, value) => {
+    const next = { ...times, [key]: value };
+    setTimes(next);
+    notifyParent(freq, mealRelation, next);
+  };
+
+  const notifyParent = (f, m, t) => {
+    onChange(index, {
+      frequency: f.value,
+      mealRelation: m,
+      times: f.slots.map((slot) => t[slot]),
+    });
+  };
+
+  // notify parent on mount
+  useEffect(() => {
+    notifyParent(freq, mealRelation, times);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const activeSlots = freq.slots;
+
+  const formatTime = (t) => {
+    const [h, m] = t.split(":");
+    const hr = parseInt(h);
+    return `${hr % 12 || 12}:${m} ${hr >= 12 ? "PM" : "AM"}`;
+  };
+
+  const notifPreview = activeSlots
+    .map((slot) => formatTime(times[slot]))
+    .join(" & ");
+
+  const mealLabel =
+    MEAL_OPTIONS.find((o) => o.value === mealRelation)?.label ?? "";
+
+  return (
+    <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-3">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">
+        {medicine.name || `Medicine ${index + 1}`}
+        {medicine.dose ? ` — ${medicine.dose}` : ""}
+      </p>
+
+      {/* Frequency */}
+      <div className="mb-3">
+        <p className="text-xs text-gray-500 mb-2 font-medium">Times per day</p>
+        <div className="flex gap-1.5 flex-wrap">
+          {FREQ_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => updateFreq(opt)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                freq.value === opt.value
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-500"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Meal relation */}
+      <div className="mb-3">
+        <p className="text-xs text-gray-500 mb-2 font-medium">When to take</p>
+        <div className="flex gap-1.5 flex-wrap">
+          {MEAL_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => updateMeal(opt.value)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                mealRelation === opt.value
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-500"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Time pickers — only show active slots */}
+      <div
+        className={`grid gap-2 mb-3 ${activeSlots.length > 2 ? "grid-cols-2" : "grid-cols-2"}`}
+      >
+        {TIMES_OF_DAY.filter((t) => activeSlots.includes(t.key)).map((slot) => (
+          <div key={slot.key}>
+            <p className="text-xs text-gray-400 mb-1">{slot.label}</p>
+            <input
+              type="time"
+              value={times[slot.key]}
+              onChange={(e) => updateTime(slot.key, e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Notification preview */}
+      <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5">
+        <svg
+          className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+        </svg>
+        <div>
+          <p className="text-xs font-semibold text-blue-700">
+            Reminder at: {notifPreview}
+          </p>
+          <p className="text-xs text-blue-500 mt-0.5">
+            {medicine.name || `Medicine ${index + 1}`}
+            {medicine.dose ? ` ${medicine.dose}` : ""} — {mealLabel}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PRESCRIPTION SIDEBAR ─────────────────────────────────────────
-function PrescriptionSidebar({ open, onClose, onSave }) {
+function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
+  const [activeTab, setActiveTab] = useState("rx");
   const [diagnosis, setDiagnosis] = useState("");
   const [medicines, setMedicines] = useState([
-    { name: "", dose: "", notes: "" },
+    { name: "", dose: "", duration: "" },
   ]);
+  const [schedules, setSchedules] = useState([{}]);
 
-  const addMedicine = () =>
-    setMedicines([...medicines, { name: "", dose: "", notes: "" }]);
-  const removeMedicine = (i) =>
+  const addMedicine = () => {
+    setMedicines([...medicines, { name: "", dose: "", duration: "" }]);
+    setSchedules([...schedules, {}]);
+  };
+
+  const removeMedicine = (i) => {
+    if (medicines.length === 1) return;
     setMedicines(medicines.filter((_, idx) => idx !== i));
+    setSchedules(schedules.filter((_, idx) => idx !== i));
+  };
+
   const updateMedicine = (i, field, value) => {
     const updated = [...medicines];
     updated[i][field] = value;
     setMedicines(updated);
   };
 
+  const updateSchedule = (i, scheduleData) => {
+    const updated = [...schedules];
+    updated[i] = scheduleData;
+    setSchedules(updated);
+  };
+
   const handleSave = () => {
-    onSave({ diagnosis, medicines });
+    const payload = {
+      diagnosis,
+      medicines: medicines.map((med, i) => ({
+        ...med,
+        schedule: schedules[i] || {},
+      })),
+    };
+    onSave(payload);
   };
 
   return (
     <>
-      {/* Overlay */}
       {open && (
         <div className="fixed inset-0 z-20 bg-black/20" onClick={onClose} />
       )}
-
-      {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl z-30 flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed top-0 right-0 h-full w-[440px] bg-white shadow-2xl z-30 flex flex-col transition-transform duration-300 ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-base font-bold text-gray-800">
-              📋 الروشتة والتشخيص
+              Prescription & Treatment Plan
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              أضف تشخيص المريض والأدوية الموصوفة
+              Add diagnosis, medicines, and notification schedule
             </p>
           </div>
           <button
@@ -246,104 +453,172 @@ function PrescriptionSidebar({ open, onClose, onSave }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
-          {/* Diagnosis */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              🩺 التشخيص
-            </label>
-            <textarea
-              value={diagnosis}
-              onChange={(e) => setDiagnosis(e.target.value)}
-              placeholder="اكتب التشخيص هنا..."
-              rows={3}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 resize-none transition"
-            />
-          </div>
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100 px-5 pt-3">
+          {[
+            { key: "rx", label: "Prescription" },
+            { key: "plan", label: "Treatment Plan" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`pb-2.5 mr-5 text-sm font-semibold border-b-2 transition ${
+                activeTab === tab.key
+                  ? "border-blue-500 text-blue-500"
+                  : "border-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Medicines */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-semibold text-gray-700">
-                💊 الأدوية
-              </label>
-              <button
-                onClick={addMedicine}
-                className="flex items-center gap-1.5 text-xs font-semibold text-blue-500 hover:text-blue-600 transition"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 5v14M5 12h14"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                إضافة دواء
-              </button>
-            </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          {/* ── PRESCRIPTION TAB ── */}
+          {activeTab === "rx" && (
+            <div className="flex flex-col gap-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Diagnosis
+                </label>
+                <textarea
+                  value={diagnosis}
+                  onChange={(e) => setDiagnosis(e.target.value)}
+                  placeholder="Enter diagnosis here..."
+                  rows={3}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 resize-none transition"
+                />
+              </div>
 
-            <div className="flex flex-col gap-3">
-              {medicines.map((med, i) => (
-                <div
-                  key={i}
-                  className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-500">
-                      دواء {i + 1}
-                    </span>
-                    {medicines.length > 1 && (
-                      <button
-                        onClick={() => removeMedicine(i)}
-                        className="text-red-400 hover:text-red-500 transition"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <path
-                            d="M18 6L6 18M6 6l12 12"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    value={med.name}
-                    onChange={(e) => updateMedicine(i, "name", e.target.value)}
-                    placeholder="اسم الدواء"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-                  />
-                  <input
-                    value={med.dose}
-                    onChange={(e) => updateMedicine(i, "dose", e.target.value)}
-                    placeholder="الجرعة (مثال: حبة كل 8 ساعات)"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-                  />
-                  <input
-                    value={med.notes}
-                    onChange={(e) => updateMedicine(i, "notes", e.target.value)}
-                    placeholder="ملاحظات إضافية (اختياري)"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-                  />
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Medicines
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addMedicine}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-500 hover:text-blue-600 transition"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path
+                        d="M12 5v14M5 12h14"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    Add medicine
+                  </button>
                 </div>
-              ))}
+
+                {medicines.map((med, i) => (
+                  <div
+                    key={i}
+                    className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-3"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                        Medicine {i + 1}
+                      </span>
+                      {medicines.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeMedicine(i)}
+                          className="text-gray-300 hover:text-red-400 transition"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <path
+                              d="M18 6L6 18M6 6l12 12"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      value={med.name}
+                      onChange={(e) =>
+                        updateMedicine(i, "name", e.target.value)
+                      }
+                      placeholder="Medicine name"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white mb-2"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        value={med.dose}
+                        onChange={(e) =>
+                          updateMedicine(i, "dose", e.target.value)
+                        }
+                        placeholder="Dose (e.g. 500mg)"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                      />
+                      <input
+                        value={med.duration}
+                        onChange={(e) =>
+                          updateMedicine(i, "duration", e.target.value)
+                        }
+                        placeholder="Duration (e.g. 7 days)"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* ── TREATMENT PLAN TAB ── */}
+          {activeTab === "plan" && (
+            <div>
+              <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                Set notification times for each medicine. The patient will
+                receive push notifications at each scheduled time via the
+                Dactara app.
+              </p>
+              {medicines.map((med, i) => (
+                <MedicineSchedule
+                  key={i}
+                  medicine={med}
+                  index={i}
+                  onChange={updateSchedule}
+                />
+              ))}
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mt-2">
+                <p className="text-xs font-semibold text-orange-700 mb-1">
+                  How notifications work
+                </p>
+                <p className="text-xs text-orange-500 leading-relaxed">
+                  Push notifications are sent via Firebase FCM to the patient's
+                  Dactara app. Meal-relative reminders include the meal context
+                  in the notification body (e.g. "Take Amoxicillin — before
+                  meals").
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="p-5 border-t border-gray-100">
           <button
+            type="button"
             onClick={handleSave}
-            className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm rounded-xl transition shadow-sm"
+            disabled={isSaving}
+            className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-semibold text-sm rounded-xl transition shadow-sm"
           >
-            💾 حفظ الروشتة
+            {isSaving ? "Saving..." : "Save Prescription & Schedule"}
           </button>
         </div>
       </div>
@@ -374,10 +649,11 @@ function ConfirmEndModal({ open, onConfirm, onCancel, onOpenPrescription }) {
         </div>
         <div>
           <p className="text-gray-800 font-bold text-lg">
-            لم تضف التشخيص والروشتة بعد
+            No prescription added yet
           </p>
           <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-            المريض يحتاج للروشتة والتشخيص. هل تريد إضافتهم قبل إنهاء الجلسة؟
+            The patient needs a prescription and diagnosis. Add them before
+            ending the session?
           </p>
         </div>
         <div className="flex flex-col gap-2 w-full">
@@ -385,19 +661,19 @@ function ConfirmEndModal({ open, onConfirm, onCancel, onOpenPrescription }) {
             onClick={onOpenPrescription}
             className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm rounded-xl transition"
           >
-            إضافة الروشتة والتشخيص
+            Add prescription & plan
           </button>
           <button
             onClick={onConfirm}
             className="w-full py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold text-sm rounded-xl transition"
           >
-            إنهاء الجلسة بدون روشتة
+            End session without prescription
           </button>
           <button
             onClick={onCancel}
             className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold text-sm rounded-xl transition"
           >
-            إلغاء
+            Cancel
           </button>
         </div>
       </div>
@@ -418,9 +694,11 @@ export default function VideoConsultation() {
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
   const sessionDataRef = useRef(null);
+  // FIX 1: use a ref for sessionEnded so Jitsi event listeners always see the
+  //         current value instead of the stale closure value at registration time.
+  const sessionEndedRef = useRef(false);
 
   const [callStatus, setCallStatus] = useState("loading");
-  const [sessionData, setSessionData] = useState(null);
   const [sessionEnded, setSessionEnded] = useState(false);
 
   // Doctor UI state
@@ -428,6 +706,12 @@ export default function VideoConsultation() {
   const [prescriptionSaved, setPrescriptionSaved] = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
 
+  // Keep ref in sync with state
+  useEffect(() => {
+    sessionEndedRef.current = sessionEnded;
+  }, [sessionEnded]);
+
+  // ── Poll session status ──────────────────────────────────────────
   const { data: statusData } = useQuery({
     queryKey: ["videoCall", "status", appointmentId],
     queryFn: () => createVideoCallApi(axios).getStatus(appointmentId),
@@ -439,6 +723,7 @@ export default function VideoConsultation() {
     refetchInterval: 6000,
   });
 
+  // ── End session ──────────────────────────────────────────────────
   const endSessionMutation = useMutation({
     mutationFn: () => createVideoCallApi(axios).end(appointmentId),
     onSuccess: () => {
@@ -446,104 +731,122 @@ export default function VideoConsultation() {
         jitsiApiRef.current.dispose();
         jitsiApiRef.current = null;
       }
+      sessionEndedRef.current = true;
       setSessionEnded(true);
       setCallStatus("ended");
       queryClient.invalidateQueries(["videoCall", "status", appointmentId]);
     },
     onError: () => {
+      sessionEndedRef.current = true;
       setSessionEnded(true);
       setCallStatus("ended");
     },
   });
 
-  const initJitsi = useCallback(
-    async (data) => {
-      if (!jitsiContainerRef.current) return;
-      if (jitsiApiRef.current) {
-        jitsiApiRef.current.dispose();
-        jitsiApiRef.current = null;
-      }
-
-      const jitsiDomain = sanitizeDomain(data.jitsiDomain || "8x8.vc");
-      const { roomName, jitsiToken, displayName = "User", role } = data;
-      const isModerator = role === "moderator";
-
-      setCallStatus("connecting");
-      await loadJitsiScript(jitsiDomain);
-      if (!jitsiContainerRef.current) return;
-
-      const jitsiOptions = {
-        roomName,
-        parentNode: jitsiContainerRef.current,
-        configOverwrite: {
-          startWithAudioMuted: false,
-          startWithVideoMuted: false,
-          disableDeepLinking: true,
-          prejoinPageEnabled: false,
-          prejoinConfig: { enabled: false },
-          skipPrejoin: true,
-          disableInviteFunctions: true,
-          remoteVideoMenu: {
-            disableKick: !isModerator,
-            disableDemote: !isModerator,
-          },
-          lobby: { autoKnock: false, enableChat: false, enable: false },
-          toolbarButtons: [
-            "microphone",
-            "camera",
-            "hangup",
-            "tileview",
-            "fullscreen",
-            ...(isModerator ? ["mute-everyone", "security"] : []),
-          ],
-        },
-        interfaceConfigOverwrite: {
-          SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false,
-          SHOW_BRAND_WATERMARK: false,
-          TOOLBAR_ALWAYS_VISIBLE: true,
-          DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
-          HIDE_INVITE_MORE_HEADER: true,
-          MOBILE_APP_PROMO: false,
-        },
-        userInfo: { displayName, moderator: isModerator },
-        width: "100%",
-        height: "100%",
-      };
-
-      if (jitsiToken) jitsiOptions.jwt = jitsiToken;
-
-      const jitsi = new window.JitsiMeetExternalAPI(jitsiDomain, jitsiOptions);
-      jitsiApiRef.current = jitsi;
-
-      const fallbackTimer = setTimeout(() => {
-        if (jitsiApiRef.current) setCallStatus("connected");
-      }, 8000);
-
-      jitsi.addEventListeners({
-        videoConferenceJoined: () => {
-          clearTimeout(fallbackTimer);
-          setCallStatus("connected");
-        },
-        videoConferenceLeft: () => {
-          jitsiApiRef.current = null;
-          if (!sessionEnded) setCallStatus("left");
-        },
-        readyToClose: () => {
-          if (jitsiApiRef.current) {
-            jitsiApiRef.current.dispose();
-            jitsiApiRef.current = null;
-          }
-          if (!sessionEnded) setCallStatus("left");
-        },
-        errorOccurred: (err) => {
-          if (err?.error?.isFatal) setCallStatus("error");
-        },
-      });
+  // ── Save prescription ────────────────────────────────────────────
+  const savePrescriptionMutation = useMutation({
+    mutationFn: (payload) =>
+      createVideoCallApi(axios).savePrescription(appointmentId, payload),
+    onSuccess: () => {
+      setPrescriptionSaved(true);
+      setSidebarOpen(false);
     },
-    [sessionEnded],
-  );
+    onError: (err) => {
+      // TODO: show a toast / error message to the doctor
+      console.error("Failed to save prescription:", err);
+    },
+  });
 
+  // ── Init Jitsi ───────────────────────────────────────────────────
+  const initJitsi = useCallback(async (data) => {
+    if (!jitsiContainerRef.current) return;
+    if (jitsiApiRef.current) {
+      jitsiApiRef.current.dispose();
+      jitsiApiRef.current = null;
+    }
+
+    const jitsiDomain = sanitizeDomain(data.jitsiDomain || "8x8.vc");
+    const { roomName, jitsiToken, displayName = "User", role } = data;
+    const isModerator = role === "moderator";
+
+    setCallStatus("connecting");
+    await loadJitsiScript(jitsiDomain);
+    if (!jitsiContainerRef.current) return;
+
+    const jitsiOptions = {
+      roomName,
+      parentNode: jitsiContainerRef.current,
+      configOverwrite: {
+        startWithAudioMuted: false,
+        startWithVideoMuted: false,
+        disableDeepLinking: true,
+        prejoinPageEnabled: false,
+        prejoinConfig: { enabled: false },
+        skipPrejoin: true,
+        disableInviteFunctions: true,
+        remoteVideoMenu: {
+          disableKick: !isModerator,
+          disableDemote: !isModerator,
+        },
+        lobby: { autoKnock: false, enableChat: false, enable: false },
+        toolbarButtons: [
+          "microphone",
+          "camera",
+          "hangup",
+          "tileview",
+          "fullscreen",
+          ...(isModerator ? ["mute-everyone", "security"] : []),
+        ],
+      },
+      interfaceConfigOverwrite: {
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        SHOW_BRAND_WATERMARK: false,
+        TOOLBAR_ALWAYS_VISIBLE: true,
+        DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+        HIDE_INVITE_MORE_HEADER: true,
+        MOBILE_APP_PROMO: false,
+      },
+      userInfo: { displayName, moderator: isModerator },
+      width: "100%",
+      height: "100%",
+    };
+
+    if (jitsiToken) jitsiOptions.jwt = jitsiToken;
+
+    const jitsi = new window.JitsiMeetExternalAPI(jitsiDomain, jitsiOptions);
+    jitsiApiRef.current = jitsi;
+
+    // FIX 2: fallback timer in case videoConferenceJoined never fires
+    const fallbackTimer = setTimeout(() => {
+      if (jitsiApiRef.current) setCallStatus("connected");
+    }, 8000);
+
+    jitsi.addEventListeners({
+      videoConferenceJoined: () => {
+        clearTimeout(fallbackTimer);
+        setCallStatus("connected");
+      },
+      videoConferenceLeft: () => {
+        jitsiApiRef.current = null;
+        // FIX 3: read from ref, not stale closure state
+        if (!sessionEndedRef.current) setCallStatus("left");
+      },
+      readyToClose: () => {
+        if (jitsiApiRef.current) {
+          jitsiApiRef.current.dispose();
+          jitsiApiRef.current = null;
+        }
+        // FIX 3: same — use ref
+        if (!sessionEndedRef.current) setCallStatus("left");
+      },
+      errorOccurred: (err) => {
+        if (err?.error?.isFatal) setCallStatus("error");
+      },
+    });
+  }, []); // FIX 4: no deps needed — reads sessionEndedRef at call time
+
+  // ── Rejoin ───────────────────────────────────────────────────────
   const handleRejoin = useCallback(async () => {
     if (!sessionDataRef.current) return;
     try {
@@ -553,17 +856,20 @@ export default function VideoConsultation() {
     }
   }, [initJitsi]);
 
+  // ── Doctor init on mount ─────────────────────────────────────────
   useEffect(() => {
     if (!appointmentId || !accessToken) return;
     let disposed = false;
     const api = createVideoCallApi(axios);
+
     (async () => {
       try {
         setCallStatus("loading");
         if (isDoctor) {
           const data = await api.join(appointmentId);
           if (disposed) return;
-          setSessionData(data);
+          setSessionEnded(false);
+          sessionEndedRef.current = false;
           sessionDataRef.current = data;
           await initJitsi(data);
         } else {
@@ -576,6 +882,7 @@ export default function VideoConsultation() {
         }
       }
     })();
+
     return () => {
       disposed = true;
       if (jitsiApiRef.current) {
@@ -586,23 +893,32 @@ export default function VideoConsultation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId, accessToken]);
 
+  // ── Patient: join when doctor comes online ───────────────────────
+  // FIX 5: added all missing dependencies
   useEffect(() => {
     if (isDoctor) return;
     if (!statusData?.isDoctorOnline) return;
-    if (sessionEnded) return;
+    if (sessionEndedRef.current) return;
     if (callStatus !== "waiting") return;
+
     const api = createVideoCallApi(axios);
     api
       .join(appointmentId)
       .then((data) => {
-        setSessionData(data);
         sessionDataRef.current = data;
         return initJitsi(data);
       })
       .catch(() => setCallStatus("error"));
-  }, [statusData?.isDoctorOnline, callStatus, sessionEnded]);
+  }, [
+    statusData?.isDoctorOnline,
+    callStatus,
+    isDoctor,
+    axios,
+    appointmentId,
+    initJitsi,
+  ]);
 
-  // ── End session with prescription check (doctor only) ──
+  // ── End session with prescription check (doctor only) ───────────
   const handleEndClick = useCallback(() => {
     if (endSessionMutation.isPending) return;
     if (isDoctor && !prescriptionSaved) {
@@ -612,12 +928,12 @@ export default function VideoConsultation() {
     endSessionMutation.mutate();
   }, [isDoctor, prescriptionSaved, endSessionMutation]);
 
-  const handlePrescriptionSave = useCallback((data) => {
-    console.log("Prescription saved:", data);
-    // TODO: بعتي للـ API هنا
-    setPrescriptionSaved(true);
-    setSidebarOpen(false);
-  }, []);
+  const handlePrescriptionSave = useCallback(
+    (payload) => {
+      savePrescriptionMutation.mutate(payload);
+    },
+    [savePrescriptionMutation],
+  );
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden font-sans">
@@ -641,52 +957,37 @@ export default function VideoConsultation() {
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           onSave={handlePrescriptionSave}
+          isSaving={savePrescriptionMutation.isPending}
         />
       )}
 
       {/* ══ HEADER ══ */}
       <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 z-30">
         {/* Brand */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path
-                d="M4 9h10M9 4v10"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-          <span className="text-lg font-bold text-gray-800 tracking-tight">
-            Dactara
-          </span>
-          <div className="w-px h-5 bg-gray-200 mx-1" />
-          <span className="text-sm text-gray-400 font-medium">
-            استشارة أونلاين
-          </span>
-        </div>
+        <BrandLogo />
 
         {/* Status badge */}
         <div className="flex items-center gap-2">
           {callStatus === "connected" ? (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-600 px-4 py-1.5 rounded-full text-sm font-semibold">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              مباشر
+              Live
             </div>
           ) : callStatus === "left" ? (
             <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-600 px-4 py-1.5 rounded-full text-sm font-medium">
               <span className="w-2 h-2 rounded-full bg-yellow-400" />
-              خارج المكالمة
+              Out of call
             </div>
           ) : (
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-400 px-4 py-1.5 rounded-full text-sm font-medium">
               {{
-                loading: "جاري التهيئة...",
-                waiting: isDoctor ? "في انتظار المريض" : "في انتظار الطبيب",
-                connecting: "جاري الاتصال...",
-                ended: "انتهت الجلسة",
-                error: "خطأ في الاتصال",
+                loading: "Initializing...",
+                waiting: isDoctor
+                  ? "Waiting for patient"
+                  : "Waiting for doctor",
+                connecting: "Connecting...",
+                ended: "Session ended",
+                error: "Connection error",
               }[callStatus] || "..."}
             </div>
           )}
@@ -694,11 +995,14 @@ export default function VideoConsultation() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {/* Prescription button — doctor only */}
           {isDoctor && !sessionEnded && (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-semibold rounded-lg transition border border-blue-200"
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition border ${
+                prescriptionSaved
+                  ? "bg-green-50 text-green-600 border-green-200"
+                  : "bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200"
+              }`}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <path
@@ -709,11 +1013,10 @@ export default function VideoConsultation() {
                   strokeLinejoin="round"
                 />
               </svg>
-              {prescriptionSaved ? "✓ تم الحفظ" : "الروشتة"}
+              {prescriptionSaved ? "Saved" : "Prescription"}
             </button>
           )}
 
-          {/* End session — doctor only */}
           {isDoctor && !sessionEnded && callStatus !== "error" && (
             <button
               onClick={handleEndClick}
@@ -728,9 +1031,7 @@ export default function VideoConsultation() {
                   strokeLinecap="round"
                 />
               </svg>
-              {endSessionMutation.isPending
-                ? "جاري الإنهاء..."
-                : "إنهاء الجلسة"}
+              {endSessionMutation.isPending ? "Ending..." : "End Session"}
             </button>
           )}
         </div>
@@ -753,7 +1054,7 @@ export default function VideoConsultation() {
               onClick={() => navigate(-1)}
               className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-600 font-semibold text-sm hover:bg-gray-50 transition shadow-md"
             >
-              ← العودة للوحة التحكم
+              Back to dashboard
             </button>
           </div>
         )}
