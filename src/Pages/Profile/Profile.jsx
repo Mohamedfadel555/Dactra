@@ -452,6 +452,7 @@ export default function Profile({ role }) {
                         inPerson: inPersonSlotsToBook,
                         online: onlineSlotsToBook,
                       }}
+                      id={id}
                     />
                   )}
                 </motion.div>

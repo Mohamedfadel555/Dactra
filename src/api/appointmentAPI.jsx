@@ -73,6 +73,28 @@ export const useAppointmentAPI = () => {
     return res.data.slots;
   };
 
+  const getAppointmentStat = async () => {
+    const res = await axiosInstance.get("AppointmentStatistics/statistics");
+    return res.data;
+  };
+
+  const getMyAppointments = async ({ tab, page }) => {
+    const res = await axiosInstance.get(
+      `AppointmentStatistics/appointments?status=${tab}&page=${page}&pageSize=10`,
+    );
+    return res.data;
+  };
+
+  const cancelAppointment = async ({ appointmentid, CancelledReason }) => {
+    const res = await axiosInstance.post("Appointment/refund", null, {
+      params: {
+        appointmentid,
+        CancelledReason,
+      },
+    });
+    return res;
+  };
+
   return {
     getWorkDetails,
     saveWorkDetails,
@@ -86,5 +108,8 @@ export const useAppointmentAPI = () => {
     getOnlineSlots,
     getInpersonSlotsById,
     getOnlineSlotsById,
+    getAppointmentStat,
+    getMyAppointments,
+    cancelAppointment,
   };
 };

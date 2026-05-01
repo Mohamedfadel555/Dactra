@@ -59,6 +59,14 @@ function TypeForm({ type, details, editable, onSave }) {
     await saveWorkDetailsMutation.mutateAsync(values);
   };
 
+  const fromUTC = (utcTimeStr) => {
+    if (!utcTimeStr) return "";
+    const [h, m] = utcTimeStr.slice(0, 5).split(":");
+    const d = new Date();
+    d.setUTCHours(+h, +m, 0, 0);
+    return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+  };
+
   return (
     <div className="flex flex-col gap-3">
       {isEmpty && <MissingDetailsWarning />}
@@ -67,17 +75,26 @@ function TypeForm({ type, details, editable, onSave }) {
         enableReinitialize
         validationSchema={workDetailsSchema}
         initialValues={{
-          startTime: details?.workingStartTime?.slice(0, 5) || "",
-          endTime: details?.workingEndTime?.slice(0, 5) || "",
+          startTime: fromUTC(details?.workingStartTime),
+          endTime: fromUTC(details?.workingEndTime),
           consultationDurationMinutes:
             details?.consultationDurationMinutes || "",
           consultationPrice: details?.consultationPrice || "",
         }}
         onSubmit={async (values, { setSubmitting }) => {
+          const toUTC = (localTimeStr) => {
+            const [h, m] = localTimeStr.split(":");
+            const d = new Date();
+            d.setHours(+h, +m, 0, 0);
+            const utcH = d.getUTCHours().toString().padStart(2, "0");
+            const utcM = d.getUTCMinutes().toString().padStart(2, "0");
+            return `${utcH}:${utcM}`;
+          };
+
           await saveWorkDetails({
             type: type === "online" ? 1 : 0,
-            workingStartTime: values.startTime,
-            workingEndTime: values.endTime,
+            workingStartTime: toUTC(values.startTime),
+            workingEndTime: toUTC(values.endTime),
             consultationDurationMinutes: values.consultationDurationMinutes,
             consultationPrice: values.consultationPrice,
           });
@@ -206,16 +223,6 @@ function TypeForm({ type, details, editable, onSave }) {
   );
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
-/**
- * Props:
- *   workingDetails: {
- *     inPerson: { workingStartTime, workingEndTime, consultationDurationMinutes, consultationPrice } | null,
- *     online:   { workingStartTime, workingEndTime, consultationDurationMinutes, consultationPrice } | null,
- *   }
- *   saveWorkDetails: async ({type: "in-person"|"online", values}) => void
- *   rightItem: framer-motion variant
- */
 export default function WorkDetailsCard({
   workingDetails = { inPerson: null, online: null },
   saveWorkDetails,
