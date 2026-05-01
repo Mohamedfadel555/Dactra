@@ -49,8 +49,11 @@ export const useGetSlotsById = (type, id) => {
         }
 
         await connection.invoke("JoinDoctorSchedule", numericId);
+        // ← أضف السطر ده بعدها مباشرة
+        console.log("✅ Joined group DoctorSchedule_" + numericId);
 
         connection.on("SlotsUpdated", (data) => {
+          console.log("🔄 SlotsUpdated received:", data);
           if (data?.DoctorId && data.DoctorId !== numericId) return;
           queryClient.invalidateQueries({ queryKey });
         });
