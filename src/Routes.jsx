@@ -21,6 +21,7 @@ import OurDeals from "./Pages/Provider/OurDeals";
 import SponsoredDoctors from "./Pages/Provider/SponsoredDoctors";
 import ReferredPatients from "./Pages/Provider/ReferredPatients";
 import VideoConsultation from "./Pages/VideoConsultation";
+import MyAppointments from "./Pages/Appointment/MyAppointments";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
@@ -114,6 +115,10 @@ export const route = createBrowserRouter([
             <HomePage />
           </Suspense>
         ),
+      },
+      {
+        path: "myappointments",
+        element: <MyAppointments />,
       },
       {
         path: "Community/Question/tag/:tagId/:tagName",

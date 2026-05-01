@@ -16,15 +16,20 @@ function formatDateKey(date) {
   return `${d}-${m}-${date.getFullYear()}`;
 }
 
-function formatSlotLabel(time) {
-  const [h, m] = time.split(":");
-  const hour = parseInt(h, 10);
-  if (hour === 0) return `12:${m} am`;
-  if (hour === 12) return `12:${m} pm`;
-  if (hour > 12) return `${hour - 12}:${m} pm`;
-  return `${h}:${m} am`;
+// UTC string → local 12h label
+function formatSlotLabel(utcTime) {
+  const [h, m] = utcTime.split(":");
+  const date = new Date();
+  date.setUTCHours(+h, +m, 0, 0);
+  const localH = date.getHours();
+  const localM = date.getMinutes().toString().padStart(2, "0");
+  if (localH === 0) return `12:${localM} am`;
+  if (localH === 12) return `12:${localM} pm`;
+  if (localH > 12) return `${localH - 12}:${localM} pm`;
+  return `${localH}:${localM} am`;
 }
 
+// working hours جاية من الباك بـ UTC → generate UTC slots
 function generateSlots(start, end, stepMinutes = 30) {
   if (!start || !end) return [];
   const slots = [];
@@ -32,13 +37,13 @@ function generateSlots(start, end, stepMinutes = 30) {
   const e = new Date();
   const [sh, sm] = start.split(":");
   const [eh, em] = end.split(":");
-  s.setHours(+sh, +sm, 0, 0);
-  e.setHours(+eh, +em, 0, 0);
-  if (s > e) e.setDate(e.getDate() + 1);
+  s.setUTCHours(+sh, +sm, 0, 0);
+  e.setUTCHours(+eh, +em, 0, 0);
+  if (s > e) e.setUTCDate(e.getUTCDate() + 1);
   while (s <= e) {
     slots.push(
-      `${s.getHours().toString().padStart(2, "0")}:${s
-        .getMinutes()
+      `${s.getUTCHours().toString().padStart(2, "0")}:${s
+        .getUTCMinutes()
         .toString()
         .padStart(2, "0")}`,
     );
@@ -134,11 +139,9 @@ export default function Schedule({
   role,
   workingDetails = { inPerson: null, online: null },
   timeSlots = { inPerson: {}, online: {} },
-  onlineAppointments = [],
 }) {
   const todayRef = useRef(new Date());
   const today = todayRef.current;
-  // const {data:daaaa}=useGetSlotsById()
 
   // ── type toggle ──
   const [consultationType, setConsultationType] = useState("in-person");
@@ -149,6 +152,7 @@ export default function Schedule({
     role,
     "in-person",
   );
+  console.log(inPersonData);
   const { data: onlineData = {}, isLoading: loadingOL } = useGetSlots(
     role,
     "online",
@@ -226,7 +230,7 @@ export default function Schedule({
     online: new Set(),
   });
 
-  // ── generate all slots from working hours ──
+  // ── generate all slots from working hours (UTC) ──
   const generatedInPerson = useMemo(
     () =>
       role === "Doctor"
@@ -257,37 +261,53 @@ export default function Schedule({
   const visibleSlots = useMemo(() => {
     const isToday = dayKey === formatDateKey(today);
 
-    const rawSlots =
-      role === "Doctor"
-        ? generatedSlots
-        : (timeSlots[typeKey]?.[dayKey] || []).filter((s) => !s.isBooked);
+    let rawSlots;
+
+    if (role === "Doctor") {
+      // الـ booked slots برا الـ working hours تظهر في الأول
+      const bookedOutsideWorkingHours = (tables[typeKey]?.[dayKey] || [])
+        .filter((s) => s.isBooked && !generatedSlots.includes(s.slotTime))
+        .map((s) => s.slotTime);
+
+      rawSlots = [...bookedOutsideWorkingHours, ...generatedSlots];
+    } else {
+      rawSlots = (timeSlots[typeKey]?.[dayKey] || []).filter(
+        (s) => !s.isBooked,
+      );
+    }
 
     if (!isToday) return rawSlots;
 
+    // cutoff = now + 30 min
     const cutoff = new Date(today.getTime() + 30 * 60 * 1000);
 
     return rawSlots.filter((slot) => {
       const slotTime = role === "Doctor" ? slot : slot.slotTime;
       const [h, m] = slotTime.split(":");
-      const slotDate = new Date(today);
-      slotDate.setHours(+h, +m, 0, 0);
+      // slot جاي بـ UTC → قارنه مع الـ cutoff الـ local صح
+      const slotDate = new Date();
+      slotDate.setUTCHours(+h, +m, 0, 0);
       return slotDate >= cutoff;
     });
-  }, [role, generatedSlots, timeSlots, typeKey, dayKey, today]);
+  }, [role, generatedSlots, tables, timeSlots, typeKey, dayKey, today]);
 
   const isEmpty = visibleSlots.length === 0;
 
-  // ── Doctor: toggle one slot ──
+  // ── Doctor: toggle one slot (مع منع تعديل الـ booked) ──
   function doctorToggleSlot(timeslot) {
+    const daySlots = tables[typeKey]?.[dayKey] || [];
+    // لو الـ slot محجوز، منع التعديل
+    if (daySlots.find((s) => s.slotTime === timeslot && s.isBooked)) return;
+
     setTables((prev) => {
-      const daySlots = prev[typeKey]?.[dayKey] || [];
+      const currentSlots = prev[typeKey]?.[dayKey] || [];
       return {
         ...prev,
         [typeKey]: {
           ...prev[typeKey],
-          [dayKey]: daySlots.find((s) => s.slotTime === timeslot)
-            ? daySlots.filter((s) => s.slotTime !== timeslot)
-            : [...daySlots, { slotTime: timeslot, isBooked: false }],
+          [dayKey]: currentSlots.find((s) => s.slotTime === timeslot)
+            ? currentSlots.filter((s) => s.slotTime !== timeslot)
+            : [...currentSlots, { slotTime: timeslot, isBooked: false }],
         },
       };
     });
@@ -297,18 +317,31 @@ export default function Schedule({
     }));
   }
 
-  // ── Doctor: select / deselect all ──
+  // ── Doctor: select / deselect all (مع الحفاظ على الـ booked) ──
   function doctorToggleAll() {
     setTables((prev) => {
       const daySlots = prev[typeKey]?.[dayKey] || [];
-      const allSelected = daySlots.length === generatedSlots.length;
+      const bookedSlots = daySlots.filter((s) => s.isBooked);
+      const nonBookedSelected = daySlots.filter((s) => !s.isBooked);
+      const nonBookedGenerated = generatedSlots.filter(
+        (t) => !bookedSlots.find((s) => s.slotTime === t),
+      );
+      const allSelected =
+        nonBookedSelected.length === nonBookedGenerated.length;
+
       return {
         ...prev,
         [typeKey]: {
           ...prev[typeKey],
           [dayKey]: allSelected
-            ? []
-            : generatedSlots.map((t) => ({ slotTime: t, isBooked: false })),
+            ? bookedSlots // سيب الـ booked بس
+            : [
+                ...bookedSlots,
+                ...nonBookedGenerated.map((t) => ({
+                  slotTime: t,
+                  isBooked: false,
+                })),
+              ],
         },
       };
     });
@@ -318,9 +351,19 @@ export default function Schedule({
     }));
   }
 
-  const doctorAllSelected =
-    generatedSlots.length > 0 &&
-    (tables[typeKey]?.[dayKey]?.length ?? 0) === generatedSlots.length;
+  // "Select All" يتحسب بدون الـ booked
+  const doctorAllSelected = useMemo(() => {
+    const daySlots = tables[typeKey]?.[dayKey] || [];
+    const bookedSlots = daySlots.filter((s) => s.isBooked);
+    const nonBookedSelected = daySlots.filter((s) => !s.isBooked);
+    const nonBookedGenerated = generatedSlots.filter(
+      (t) => !bookedSlots.find((s) => s.slotTime === t),
+    );
+    return (
+      nonBookedGenerated.length > 0 &&
+      nonBookedSelected.length === nonBookedGenerated.length
+    );
+  }, [tables, typeKey, dayKey, generatedSlots]);
 
   // ── Doctor slot colour ──
   function doctorSlotClass(t) {
@@ -340,7 +383,11 @@ export default function Schedule({
       days.map((date) => [date, tables[typeKey][date] || []]),
     );
 
-    console.log({ slots: slotsPayload });
+    Object.keys(slotsPayload).forEach((k) => {
+      slotsPayload[k] = slotsPayload[k].filter((i) => !i.isBooked);
+    });
+    console.log(slotsPayload);
+
     await saveSlotsMutation.mutateAsync({ slots: slotsPayload });
     setDirtyDays((prev) => ({ ...prev, [typeKey]: new Set() }));
   }
@@ -354,14 +401,10 @@ export default function Schedule({
 
   async function handleBook() {
     if (!selectedSlot) return;
-
     const paymentMethod = consultationType === "in-person" ? "cash" : "online";
-
     console.log(selectedSlot);
-    await bookMutation.mutateAsync(
-      selectedSlot.slotId,
-      // paymentMethod,
-    );
+    console.log(selectedSlot.slotTime);
+    await bookMutation.mutateAsync(selectedSlot.slotId);
   }
 
   const isLoading = role === "Doctor" && (loadingIP || loadingOL);
@@ -449,6 +492,13 @@ export default function Schedule({
               const slotTime = isDoctor ? t : t.slotTime;
               const isSelected = !isDoctor && selectedSlot?.slotId === t.slotId;
 
+              // الـ slot محجوز؟
+              const isBooked =
+                isDoctor &&
+                !!(tables[typeKey]?.[dayKey] || []).find(
+                  (s) => s.slotTime === t && s.isBooked,
+                );
+
               return (
                 <div
                   key={ind}
@@ -460,14 +510,15 @@ export default function Schedule({
                       setSelectedDay(dayPicked);
                     }
                   }}
-                  className={`flex justify-center items-center py-2 rounded-md cursor-pointer w-[90px]
+                  className={`flex justify-center items-center py-2 rounded-md w-[90px]
                     ${
                       isDoctor
                         ? doctorSlotClass(t)
                         : isSelected
                           ? "bg-blue-600 text-white"
                           : "bg-[#F5F6F7]"
-                    }`}
+                    }
+                    ${isBooked ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
                 >
                   {formatSlotLabel(slotTime)}
                 </div>

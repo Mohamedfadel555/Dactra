@@ -1,3 +1,4 @@
+// hooks/useBook.js
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppointmentAPI } from "../api/appointmentAPI";
 import { useNotificationsApi } from "./useNotificationsApi";
@@ -7,9 +8,13 @@ export const useBook = (type) => {
   const { Book } = useAppointmentAPI();
   const { notifyBookAppointment } = useNotificationsApi();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: Book,
     onSuccess: (res, scheduleTableId) => {
+      queryClient.invalidateQueries({ queryKey: ["online"] });
+      queryClient.invalidateQueries({ queryKey: ["in-person"] });
+
       notifyBookAppointment(scheduleTableId, {
         title: "Appointment",
         message: "Your appointment was booked.",
@@ -18,6 +23,7 @@ export const useBook = (type) => {
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
         })
         .catch(() => {});
+
       if (type === "cash") {
         toast.success("Appointment booked! Pay at the clinic.", {
           position: "top-center",
@@ -25,10 +31,15 @@ export const useBook = (type) => {
         });
         return;
       }
+
       window.location.href = res.data.appointmentId;
     },
     onError: (err) => {
       console.log(err);
+      toast.error("Failed to book appointment, try again later!", {
+        position: "top-center",
+        closeOnClick: true,
+      });
     },
   });
 };
