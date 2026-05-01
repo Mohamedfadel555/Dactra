@@ -139,6 +139,7 @@ export default function Schedule({
   role,
   workingDetails = { inPerson: null, online: null },
   timeSlots = { inPerson: {}, online: {} },
+  id,
 }) {
   const todayRef = useRef(new Date());
   const today = todayRef.current;
@@ -397,6 +398,7 @@ export default function Schedule({
 
   const bookMutation = useBook(
     consultationType === "in-person" ? "cash" : "online",
+    id,
   );
 
   async function handleBook() {

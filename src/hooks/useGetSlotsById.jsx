@@ -12,6 +12,7 @@ export const useGetSlotsById = (type, id) => {
   const connectionRef = useRef(null);
 
   const queryKey = [type, id];
+  console.log(queryKey);
 
   const query = useQuery({
     queryFn: () =>
