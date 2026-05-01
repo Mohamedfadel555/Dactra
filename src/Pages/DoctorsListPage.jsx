@@ -364,8 +364,21 @@ export default function DoctorsListPage() {
                               onClick={() => handleDoctorClick(doctor)}
                               className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                             >
-                              {/* TODO: replace with doctor image when backend provides imageUrl */}
-                              <span className="text-3xl text-gray-400">👨‍⚕️</span>
+                              <img
+                                src={
+                                  doctor.imageUrl ||
+                                  doctor.profileImageUrl ||
+                                  doctor.image ||
+                                  doctor.doctorImageUrl ||
+                                  doctor.imgUrl ||
+                                  ""
+                                }
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                                alt="Doctor"
+                                className="w-full h-full object-cover bg-gray-100"
+                              />
                             </div>
 
                             <div className="flex-1">

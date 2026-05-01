@@ -87,6 +87,7 @@ export default function OTPPage() {
       try {
         const res = await verifyOTPMutation.mutateAsync(FormData);
         if (res.status === 200) {
+          localStorage.setItem("pendingSignupUserType", String(userType || ""));
           navigate("/auth/CompleteSignup", {
             state: {
               email,

@@ -1,4 +1,5 @@
 import { RiVidiconLine } from "react-icons/ri";
+import { useState } from "react";
 import { ImLab } from "react-icons/im";
 import { GiRadioactive } from "react-icons/gi";
 import { FaHandHoldingMedical, FaStar } from "react-icons/fa";
@@ -28,20 +29,23 @@ import { useMajors } from "../hooks/useMajors";
 import SpecialistCard from "../Components/Home/SpecialistCard";
 import BrandLogo from "../Components/Common/BrandLogo";
 import { Link } from "react-router-dom";
-import Bar from "../Components/Common/ReviewBar";
 import CommentCard from "../Components/Common/CommentCard";
 import ServicesPricingSection from "../Components/Home/ServicesPricingSection";
 import StatisticsSection from "../Components/Home/StatisticsSection";
 import PlatformFeaturesSection from "../Components/Home/PlatformFeaturesSection";
 import FAQAccordion from "../Components/Home/FAQAccordion";
 import { useAuth } from "../Context/AuthContext";
-import axios from "axios";
 import ReviewsDetailsSection from "../Components/Common/ReviewsDetailsSection";
 import { useQuery } from "@tanstack/react-query";
 import { useProviderAPI } from "../api/providerAPI";
 import ServiceProviderCard from "../Components/ServiceProviders/ServiceProviderCard";
-import { useSiteReviews, useSiteReviewsStats } from "../hooks/useSiteReviews";
-import { useDoctors } from "../hooks/useDoctors";
+import {
+  useCreateSiteReview,
+  useSiteReviews,
+  useSiteReviewsDistribution,
+  useSiteReviewsStats,
+} from "../hooks/useSiteReviews";
+import { useTopRatedDoctors } from "../hooks/useTopRatedDoctors";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -206,6 +210,12 @@ const comments = [
 
 export default function HomePage() {
   const { role } = useAuth();
+  const [showAddReview, setShowAddReview] = useState(false);
+  const [newReview, setNewReview] = useState({
+    title: "",
+    score: 5,
+    comment: "",
+  });
   const {
     data: majors,
     isLoading: majorsLoading,
@@ -218,10 +228,11 @@ export default function HomePage() {
   });
   const { data: siteReviews = [] } = useSiteReviews();
   const { data: siteReviewsStats } = useSiteReviewsStats();
-  const { data: topDoctorsResponse } = useDoctors(1, 10, "", null, null, true);
+  const { data: siteReviewsDistribution } = useSiteReviewsDistribution();
+  const createReviewMutation = useCreateSiteReview();
+  const { data: topDoctors = [] } = useTopRatedDoctors(10);
   const labs = (providers || []).filter((p) => p.type === 0);
   const scans = (providers || []).filter((p) => p.type === 1);
-  const topDoctors = topDoctorsResponse?.doctors || [];
 
   const effectiveReviews =
     Array.isArray(siteReviews) && siteReviews.length > 0 ? siteReviews : comments;
@@ -229,10 +240,11 @@ export default function HomePage() {
     name:
       item.name ||
       item.reviewerName ||
+      item.reviewerNamee ||
       (item.id != null ? `User #${item.id}` : `User #${index + 1}`),
-    photo: profilePhoto,
+    photo: item.reviewerImageUrl || item.imageUrl || profilePhoto,
     starsNo: Number(item.score ?? item.starsNo ?? 0),
-    heading: item.heading || "Site Review",
+    heading: item.title || item.heading || "Site Review",
     body: item.comment || item.body || "",
   }));
   const fallbackReviewsCount = mappedSiteReviews.length;
@@ -251,14 +263,23 @@ export default function HomePage() {
     siteReviewsStats?.avg != null
       ? Number(siteReviewsStats.avg).toFixed(1)
       : fallbackReviewsAvg;
-  const ratingsDist = mappedSiteReviews.reduce(
-    (acc, r) => {
-      const score = Math.min(5, Math.max(1, Math.round(Number(r.starsNo) || 0)));
-      acc[score] += 1;
-      return acc;
-    },
-    { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-  );
+  const ratingsDist = siteReviewsDistribution?.scores
+    ? siteReviewsDistribution.scores.reduce(
+        (acc, s) => {
+          const score = Number(s.score);
+          acc[score] = Number(s.count || 0);
+          return acc;
+        },
+        { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      )
+    : mappedSiteReviews.reduce(
+        (acc, r) => {
+          const score = Math.min(5, Math.max(1, Math.round(Number(r.starsNo) || 0)));
+          acc[score] += 1;
+          return acc;
+        },
+        { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      );
   const doctorsToRender = topDoctors.length > 0 ? topDoctors : doctorsFallback;
 
   return (
@@ -420,6 +441,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                         doctorId={doc.id || doc.profileId || doc.userId || index}
                         name={
                           doc.name ||
+                          doc.doctorName ||
                           `${doc.firstName || ""} ${doc.lastName || ""}`.trim()
                         }
                         specialist={
@@ -439,6 +461,15 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             : doc.ratingNo || "0"
                         }
                         isFavourite={doc.isFavourite || false}
+                        imageUrl={
+                          doc.imageUrl ||
+                          doc.profileImageUrl ||
+                          doc.imageUrl1 ||
+                          doc.image ||
+                          doc.doctorImageUrl ||
+                          doc.imgUrl ||
+                          ""
+                        }
                       />
                     </motion.div>
                   </SwiperSlide>
@@ -512,6 +543,9 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             address={p.address}
                             avg_Rating={p.avg_Rating}
                             type={0}
+                            imageUrl={
+                              p.imageUrl || p.profileImageUrl || p.logoUrl || ""
+                            }
                           />
                         </motion.div>
                       ))}
@@ -529,6 +563,9 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             address={p.address}
                             avg_Rating={p.avg_Rating}
                             type={1}
+                            imageUrl={
+                              p.imageUrl || p.profileImageUrl || p.logoUrl || ""
+                            }
                           />
                         </motion.div>
                       ))}
@@ -587,13 +624,15 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                   hassle of clinic visits
                 </p>
 
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.05, backgroundColor: "#1D5EDB" }}
-                  className="w-[200px] flex justify-center items-center gap-[5px] h-[50px] rounded-xl bg-[#316BE8] text-[20px] font-bold text-white mx-auto lg:mx-0"
-                >
-                  Book Now <HiChevronRight className="text-[24px] font-bold" />
-                </motion.button>
+                <Link to="/doctors">
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.05, backgroundColor: "#1D5EDB" }}
+                    className="w-[200px] flex justify-center items-center gap-[5px] h-[50px] rounded-xl bg-[#316BE8] text-[20px] font-bold text-white mx-auto lg:mx-0"
+                  >
+                    Book Now <HiChevronRight className="text-[24px] font-bold" />
+                  </motion.button>
+                </Link>
               </motion.div>
 
               <motion.div
@@ -651,18 +690,22 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                   </p>
 
                   <div className="flex flex-row flex-wrap justify-center lg:justify-start gap-4 mt-4">
-                    <button
-                      type="button"
-                      className="bg-[#316BE8] text-white text-[20px] sm:text-[24px] font-bold w-[200px] h-[60px] rounded-xl"
-                    >
-                      Ask a Question
-                    </button>
-                    <button
-                      type="button"
-                      className="bg-white text-[#316BE8] border-2 border-[#316BE8] text-[20px] sm:text-[24px] font-bold w-[200px] h-[60px] rounded-xl"
-                    >
-                      Read Articles
-                    </button>
+                    <Link to="/Community/Questions">
+                      <button
+                        type="button"
+                        className="bg-[#316BE8] text-white text-[20px] sm:text-[24px] font-bold w-[200px] h-[60px] rounded-xl"
+                      >
+                        Ask a Question
+                      </button>
+                    </Link>
+                    <Link to="/Community/Posts">
+                      <button
+                        type="button"
+                        className="bg-white text-[#316BE8] border-2 border-[#316BE8] text-[20px] sm:text-[24px] font-bold w-[200px] h-[60px] rounded-xl"
+                      >
+                        Read Articles
+                      </button>
+                    </Link>
                   </div>
                 </div>
 
@@ -702,12 +745,14 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                   </p>
 
                   <div className="flex justify-center items-center md:block">
-                    <button
-                      type="button"
-                      className="bg-[#316BE8] text-white text-[20px] sm:text-[24px] font-bold w-[200px] h-[60px] rounded-xl"
-                    >
-                      Try It Out
-                    </button>
+                    <Link to="/service-providers">
+                      <button
+                        type="button"
+                        className="bg-[#316BE8] text-white text-[20px] sm:text-[24px] font-bold w-[200px] h-[60px] rounded-xl"
+                      >
+                        Try It Out
+                      </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -726,7 +771,75 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                   data={ratingsDist}
                   NumOfReviews={reviewsCount}
                   avgRating={reviewsAvg}
+                  onAddReview={() => setShowAddReview((v) => !v)}
                 />
+                {(role === "Patient" || role === "Doctor") && showAddReview && (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      try {
+                        await createReviewMutation.mutateAsync({
+                          title: newReview.title.trim(),
+                          score: Number(newReview.score),
+                          comment: newReview.comment.trim(),
+                        });
+                        setNewReview({ title: "", score: 5, comment: "" });
+                        setShowAddReview(false);
+                      } catch {
+                        /* handled by react-query consumer */
+                      }
+                    }}
+                    className="w-full bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3"
+                  >
+                    <p className="text-sm font-bold text-slate-800">
+                      Add site review
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input
+                        value={newReview.title}
+                        onChange={(e) =>
+                          setNewReview((p) => ({ ...p, title: e.target.value }))
+                        }
+                        placeholder="Title"
+                        required
+                        className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                      />
+                      <select
+                        value={newReview.score}
+                        onChange={(e) =>
+                          setNewReview((p) => ({
+                            ...p,
+                            score: Number(e.target.value),
+                          }))
+                        }
+                        className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                      >
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <option key={s} value={s}>
+                            {s} star{s > 1 ? "s" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={createReviewMutation.isPending}
+                        className="h-10 rounded-xl bg-[#316BE8] text-white text-sm font-semibold disabled:opacity-70"
+                      >
+                        {createReviewMutation.isPending ? "Submitting..." : "Submit"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={newReview.comment}
+                      onChange={(e) =>
+                        setNewReview((p) => ({ ...p, comment: e.target.value }))
+                      }
+                      placeholder="Comment"
+                      required
+                      rows={3}
+                      className="rounded-xl border border-slate-200 p-3 text-sm resize-none"
+                    />
+                  </form>
+                )}
                 <div className=" pb-[30px] overflow-hidden w-full max-w-screen-2xl mx-auto">
                   <Swiper
                     modules={[Navigation, Pagination, Autoplay]}

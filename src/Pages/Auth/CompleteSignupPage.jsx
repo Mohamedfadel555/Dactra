@@ -35,13 +35,35 @@ import {
 import { useMajors } from "../../hooks/useMajors";
 import { useGetAllAllergiesForSignup } from "../../hooks/useGetAllAllergiesForSignup";
 import { useGetAllChronicForSignup } from "../../hooks/useGetAllChronicForSignup";
+import {
+  buildWorkingRowsFromApi,
+  rowsToWorkingHourPayload,
+  DAY_LABELS_AR_EN,
+} from "../../utils/workingHours";
+
+function normalizeSignupUserTypeKey(raw) {
+  let k = String(raw || "").toLowerCase();
+  if (k === "lab") k = "lap";
+  if (USER_TYPE_IMAGES[k]) return k;
+  let fromLs = String(
+    localStorage.getItem("pendingSignupUserType") || "",
+  ).toLowerCase();
+  if (fromLs === "lab") fromLs = "lap";
+  if (USER_TYPE_IMAGES[fromLs]) return fromLs;
+  return "patient";
+}
 
 export default function CompleteSignupPage() {
   const { state } = useLocation();
   const email = state?.email || "";
-  const initialUserType = state?.userType || "patient";
+  const initialUserType =
+    state?.userType ||
+    localStorage.getItem("pendingSignupUserType") ||
+    "patient";
   const navigate = useNavigate();
-  const [userType] = useState(initialUserType);
+  const [userType] = useState(() =>
+    normalizeSignupUserTypeKey(initialUserType),
+  );
   const completeSignupMutation = useCompleteSignup(userType);
   // const [majors, setMajors] = useState([]);
   // const [majorsLoading, setMajorsLoading] = useState(false);
@@ -63,6 +85,18 @@ export default function CompleteSignupPage() {
     isLoading: chronicDiseasesLoading,
   } = useGetAllChronicForSignup();
 
+  const userTypeNorm = String(userType || "").toLowerCase();
+  const isProvider =
+    userTypeNorm === "scan" ||
+    userTypeNorm === "lab" ||
+    userTypeNorm === "lap" ||
+    userTypeNorm === "medicaltestsprovider" ||
+    userTypeNorm === "medicaltestprovider" ||
+    userTypeNorm === "provider";
+  const [workingRows, setWorkingRows] = useState(() => buildWorkingRowsFromApi([]));
+  const [quickFrom, setQuickFrom] = useState("09:00");
+  const [quickTo, setQuickTo] = useState("17:00");
+
   useEffect(() => {
     if (!email) {
       navigate("/auth/Signup", { replace: true });
@@ -74,14 +108,24 @@ export default function CompleteSignupPage() {
       email,
       userType,
       values,
+      workingRows,
     });
     console.log("Complete signup data being sent:", payload);
     try {
       await completeSignupMutation.mutateAsync(payload);
+      localStorage.removeItem("pendingSignupUserType");
       navigate("/auth/Login");
     } catch (error) {
       console.error("Complete signup error:", error);
       console.error("Server response:", error.response?.data);
+      const errs = error?.response?.data?.errors;
+      if (errs && typeof errs === "object") {
+        const lines = Object.entries(errs).flatMap(([k, v]) => {
+          const arr = Array.isArray(v) ? v : [String(v)];
+          return arr.map((msg) => `${k}: ${msg}`);
+        });
+        if (lines.length) console.error("Validation errors:", lines);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -139,7 +183,26 @@ export default function CompleteSignupPage() {
                           allergies,
                           allergiesLoading,
                           chronicDiseases,
-                          chronicDiseasesLoading
+                          chronicDiseasesLoading,
+                          isProvider
+                            ? {
+                                rows: workingRows,
+                                quickFrom,
+                                quickTo,
+                                setQuickFrom,
+                                setQuickTo,
+                                handleRowChange: (day, field, value) =>
+                                  setWorkingRows((prev) =>
+                                    prev.map((r) =>
+                                      r.day === day ? { ...r, [field]: value } : r,
+                                    ),
+                                  ),
+                                applyQuickToAllDays: () =>
+                                  setWorkingRows((prev) =>
+                                    prev.map((r) => ({ ...r, from: quickFrom, to: quickTo })),
+                                  ),
+                              }
+                            : null
                         )}
                       </div>
 
@@ -179,7 +242,8 @@ function renderFieldsByUserType(
   allergies = [],
   allergiesLoading = false,
   chronicDiseases = [],
-  chronicDiseasesLoading = false
+  chronicDiseasesLoading = false,
+  providerHours
 ) {
   if (userType === "patient") {
     return (
@@ -393,6 +457,7 @@ function renderFieldsByUserType(
     );
   }
 
+  // For provider (lab/scan) we pass `providerHours`; show the section when it exists.
   return (
     <>
       <FormInputField
@@ -423,12 +488,85 @@ function renderFieldsByUserType(
         placeholder="Describe your services"
         icon={MdInfoOutline}
       />
+      {providerHours ? (
+        <div className="mt-1 rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] font-bold text-slate-800">Working hours</p>
+            <button
+              type="button"
+              onClick={providerHours.applyQuickToAllDays}
+              className="text-[12px] font-semibold text-[#316BE8] hover:underline"
+              title="Apply to all days"
+            >
+              Apply to all
+            </button>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-medium text-slate-600 w-10">
+                From
+              </label>
+              <input
+                type="time"
+                value={providerHours.quickFrom}
+                onChange={(e) => providerHours.setQuickFrom(e.target.value)}
+                className="flex-1 h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-medium text-slate-600 w-10">
+                To
+              </label>
+              <input
+                type="time"
+                value={providerHours.quickTo}
+                onChange={(e) => providerHours.setQuickTo(e.target.value)}
+                className="flex-1 h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {providerHours.rows.map((r) => (
+              <div
+                key={r.day}
+                className="grid grid-cols-[86px_1fr_1fr] items-center gap-2"
+              >
+                <span className="text-[12px] font-semibold text-slate-700">
+                  {DAY_LABELS_AR_EN[r.day]?.en ?? r.label}
+                </span>
+                <input
+                  type="time"
+                  value={r.from}
+                  onChange={(e) => providerHours.handleRowChange(r.day, "from", e.target.value)}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-blue-200"
+                />
+                <input
+                  type="time"
+                  value={r.to}
+                  onChange={(e) => providerHours.handleRowChange(r.day, "to", e.target.value)}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
 
-function buildPayload({ email, userType, values }) {
+function buildPayload({ email, userType, values, workingRows }) {
   if (userType === "patient") {
+    const allergyIds =
+      values.allergies && values.allergies !== ""
+        ? [Number(values.allergies)]
+        : [];
+    const chronicDiseaseIds =
+      values.chronicDisease && values.chronicDisease !== ""
+        ? [Number(values.chronicDisease)]
+        : [];
     return {
       email,
       role: userType,
@@ -439,10 +577,10 @@ function buildPayload({ email, userType, values }) {
       height: Number(values.height),
       weight: Number(values.weight),
       bloodType: Number(values.bloodType),
-      is_Smoking: values.smokingStatus === "smoker",
       maritalStatus: Number(values.maritalStatus),
-      chronicDisease: values.chronicDisease && values.chronicDisease !== "" ? Number(values.chronicDisease) : null,
-      allergies: values.allergies && values.allergies !== "" ? Number(values.allergies) : null,
+      smokingStatus: Number(values.smokingStatus),
+      chronicDiseaseIds,
+      allergyIds,
     };
   }
 
@@ -461,12 +599,31 @@ function buildPayload({ email, userType, values }) {
     };
   }
 
+  const ut = String(userType || "").toLowerCase();
+  const providerRole = (() => {
+    if (ut === "scan") return "Scan";
+    if (ut === "lab" || ut === "lap") return "Lap";
+    if (ut.includes("scan")) return "Scan";
+    if (ut.includes("lab") || ut.includes("lap")) return "Lap";
+    const pending = String(
+      localStorage.getItem("pendingSignupUserType") || "",
+    ).toLowerCase();
+    if (pending === "scan") return "Scan";
+    if (pending === "lab" || pending === "lap") return "Lap";
+    return "Lap";
+  })();
+  const providerType = providerRole === "Scan" ? 1 : 0;
+  const workinghours = rowsToWorkingHourPayload(workingRows || []);
+
   return {
     email,
-    role: userType,
+    role: providerRole,
+    type: providerType,
     name: values.displayName,
     licenceNo: values.licenseNumber,
     address: values.address,
     about: values.about,
+    workinghours,
+    workingHours: workinghours,
   };
 }

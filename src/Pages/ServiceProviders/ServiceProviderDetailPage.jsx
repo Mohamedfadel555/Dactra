@@ -1,8 +1,16 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useProviderAPI } from "../../api/providerAPI";
 import { useProviderPortalAPI } from "../../api/providerPortalAPI";
 import { pick } from "../../hooks/useMedicalProviderMe";
+import {
+  useDeleteProviderRating,
+  usePatientProviderRatings,
+  useRateProvider,
+  useUpdateProviderRating,
+} from "../../hooks/useProviderRatings";
+import { useAuth } from "../../Context/AuthContext";
+import { useEffect, useState } from "react";
 import {
   formatWorkingHoursDisplayLines,
   durationSpanToMinutes,
@@ -20,7 +28,9 @@ function normOffering(o) {
 }
 
 export default function ServiceProviderDetailPage() {
+  const { role } = useAuth();
   const { id } = useParams();
+  const queryClient = useQueryClient();
   const providerAPI = useProviderAPI();
   const portal = useProviderPortalAPI();
   const numericId = id != null ? Number(id) : NaN;
@@ -43,6 +53,29 @@ export default function ServiceProviderDetailPage() {
     queryFn: () => portal.getProviderOfferings(numericId),
     enabled: Number.isFinite(numericId),
   });
+  const { data: myRatings = [], isPending: ratingsLoading } =
+    usePatientProviderRatings();
+  const rateMutation = useRateProvider();
+  const updateRateMutation = useUpdateProviderRating();
+  const deleteRateMutation = useDeleteProviderRating();
+  const [showRateForm, setShowRateForm] = useState(false);
+  const [rateForm, setRateForm] = useState({ heading: "", score: 5, comment: "" });
+  const providerId = provider?.id ?? provider?.Id ?? numericId;
+  const matchProviderRow = (r) => {
+    const pid =
+      pick(r, "providerId", "ProviderId") ??
+      pick(r, "medicalTestsProviderId", "MedicalTestsProviderId");
+    return pid != null && String(pid) === String(providerId);
+  };
+  const existingRate = myRatings.find(matchProviderRow);
+  useEffect(() => {
+    if (!existingRate) return;
+    setRateForm({
+      heading: pick(existingRate, "heading", "Heading") || "",
+      score: Number(pick(existingRate, "score", "Score") || 5),
+      comment: pick(existingRate, "comment", "Comment") || "",
+    });
+  }, [existingRate]);
 
   if (isLoading) {
     return (
@@ -92,7 +125,15 @@ export default function ServiceProviderDetailPage() {
           <div className="p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="w-20 h-20 rounded-2xl bg-[#316BE8] flex items-center justify-center text-white text-2xl font-bold">
-                {name.charAt(0).toUpperCase()}
+                {provider.imageUrl || provider.profileImageUrl ? (
+                  <img
+                    src={provider.imageUrl || provider.profileImageUrl}
+                    alt={name}
+                    className="w-full h-full object-cover rounded-2xl"
+                  />
+                ) : (
+                  name.charAt(0).toUpperCase()
+                )}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
@@ -229,6 +270,117 @@ export default function ServiceProviderDetailPage() {
                 </div>
               )}
             </section>
+
+            {(role || "").toLowerCase() === "patient" && (
+              <section>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Your rating
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowRateForm((v) => !v)}
+                    className="text-[#316BE8] font-bold text-sm"
+                  >
+                    {showRateForm ? "Close" : "Add Review+"}
+                  </button>
+                </div>
+                {showRateForm && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input
+                        value={rateForm.heading}
+                        onChange={(e) =>
+                          setRateForm((p) => ({ ...p, heading: e.target.value }))
+                        }
+                        placeholder="Heading (required)"
+                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm"
+                      />
+                      <select
+                        value={rateForm.score}
+                        onChange={(e) =>
+                          setRateForm((p) => ({
+                            ...p,
+                            score: Number(e.target.value),
+                          }))
+                        }
+                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm"
+                      >
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <option key={s} value={s}>
+                            {s} star{s > 1 ? "s" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={
+                          ratingsLoading ||
+                          rateMutation.isPending ||
+                          updateRateMutation.isPending ||
+                          !String(rateForm.heading || "").trim()
+                        }
+                        onClick={async () => {
+                          const userHeading = String(rateForm.heading || "").trim();
+                          if (!userHeading) return;
+                          const payload = {
+                            heading: userHeading,
+                            score: Number(rateForm.score),
+                            comment: rateForm.comment || "",
+                          };
+                          let useUpdate = !!existingRate;
+                          if (!useUpdate) {
+                            await queryClient.refetchQueries({
+                              queryKey: ["patientProviderRatings"],
+                            });
+                            const fresh =
+                              queryClient.getQueryData(["patientProviderRatings"]) ||
+                              [];
+                            useUpdate = (Array.isArray(fresh) ? fresh : []).some(
+                              matchProviderRow,
+                            );
+                          }
+                          if (useUpdate) {
+                            await updateRateMutation.mutateAsync({
+                              providerId,
+                              body: payload,
+                            });
+                          } else {
+                            await rateMutation.mutateAsync({
+                              providerId,
+                              body: payload,
+                            });
+                          }
+                        }}
+                        className="h-10 rounded-xl bg-[#316BE8] text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {existingRate ? "Update rating" : "Submit rating"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={rateForm.comment}
+                      onChange={(e) =>
+                        setRateForm((p) => ({ ...p, comment: e.target.value }))
+                      }
+                      placeholder="Comment"
+                      rows={3}
+                      className="mt-3 w-full rounded-xl border border-gray-200 p-3 text-sm resize-none"
+                    />
+                    {existingRate && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await deleteRateMutation.mutateAsync(providerId);
+                        }}
+                        className="mt-3 px-4 h-10 rounded-xl border border-red-200 text-red-600 text-sm font-semibold"
+                      >
+                        Delete my rating
+                      </button>
+                    )}
+                  </>
+                )}
+              </section>
+            )}
           </div>
         </div>
       </div>

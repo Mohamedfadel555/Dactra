@@ -14,18 +14,24 @@ import { FaUserDoctor } from "react-icons/fa6";
 import Icon from "../assets/images/icons/dactraIcon.webp";
 import { useLogout } from "../hooks/useLogout";
 import { TbContract } from "react-icons/tb";
+import { useMedicalProviderMe, pick } from "../hooks/useMedicalProviderMe";
 
 export default function ProviderLayout({ type }) {
   const { role, accessToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const logoutMutation = useLogout();
+  const { data: provider } = useMedicalProviderMe();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
   const normalizedType = (type || pathType || role || "").toLowerCase();
-  const isLab = normalizedType !== "scan";
+  const providerType = pick(provider, "type", "Type");
+  const isScanFromProvider =
+    providerType != null && String(providerType) === "1";
+  const isScanFromContext = normalizedType.includes("scan");
+  const isLab = !(isScanFromProvider || isScanFromContext);
   const title = isLab ? "Lab Center" : "Scan Center";
 
   const handleLogout = () => {

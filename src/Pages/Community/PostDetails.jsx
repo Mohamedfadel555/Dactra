@@ -34,6 +34,7 @@ import { toast } from "react-toastify";
 import { REPORT_TYPE } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
+import { avatarUserFromAuthor } from "../../utils/communityAvatars";
 
 function handleTime(create) {
   const diff = Date.now() - new Date(create).getTime();
@@ -57,6 +58,7 @@ export default function PostDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const type = location.state?.type ?? "Question";
+  const queryClient = useQueryClient();
 
   const { data: post } = useGetQuestionById(param.id);
   const { role, accessToken } = useAuth();
@@ -157,9 +159,23 @@ export default function PostDetailPage() {
   const saveMutation = useSavePost("Question");
 
   const handleInterest = () => {
+    const wasLiked = liked;
     setLiked((prev) => !prev);
     setLikes((prev) => (liked ? prev - 1 : prev + 1));
-    interestMutation.mutate(post?.id);
+    interestMutation.mutate(post?.id, {
+      onSuccess: () => {
+        if (type === "Artical" && !isOwner && !wasLiked) {
+          notifySentToDoctor(post?.id, {
+            title: "New like",
+            message: "Someone liked your article.",
+          })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            })
+            .catch(() => {});
+        }
+      },
+    });
   };
 
   const handleSave = () => {
@@ -201,6 +217,9 @@ export default function PostDetailPage() {
 
   const timeAgo = post?.createdAt ? handleTime(post.createdAt) : "";
   const authorName = post?.patient?.fullName ?? post?.doctor?.fullName;
+  const authorAvatarUser = avatarUserFromAuthor(
+    type === "Question" ? post?.patient : post?.doctor,
+  );
 
   return (
     <>
@@ -244,7 +263,7 @@ export default function PostDetailPage() {
                 {/* Author row */}
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
-                    <AvatarIcon />
+                    <AvatarIcon user={authorAvatarUser} showLabel={false} />
                     <div>
                       <p className="text-[14.5px] font-bold text-slate-800 leading-tight">
                         {authorName}

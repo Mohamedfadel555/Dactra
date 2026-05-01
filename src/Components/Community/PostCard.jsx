@@ -27,6 +27,7 @@ import { toast } from "react-toastify";
 import { REPORT_TYPE } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
+import { avatarUserFromAuthor } from "../../utils/communityAvatars";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -103,6 +104,10 @@ export default function PostCard({ post, type, onUpdate }) {
   const isLong = displayContent.length > 140;
   const body =
     !expanded && isLong ? displayContent.slice(0, 140) + "…" : displayContent;
+
+  const avatarUser = avatarUserFromAuthor(
+    type === "Question" ? post.patient : post.doctor,
+  );
 
   const handleLike = () => {
     const wasLiked = liked;
@@ -219,7 +224,7 @@ export default function PostCard({ post, type, onUpdate }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <AvatarIcon />
+            <AvatarIcon user={avatarUser} showLabel={false} />
             <div>
               <p className="font-bold text-slate-800 text-sm leading-tight">
                 {type === "Question"

@@ -11,7 +11,7 @@ import { MdOutlinePassword } from "react-icons/md";
 import profilePhoto from "../../assets/images/profile.webp";
 import { useAuth } from "../../Context/AuthContext";
 import BarComp from "../../Components/Common/BarComp";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaFileCirclePlus } from "react-icons/fa6";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
 import { GiMedicines } from "react-icons/gi";
@@ -56,6 +56,13 @@ import { RiErrorWarningLine } from "react-icons/ri";
 import { useSaveWorkDetails } from "../../hooks/useSaveWorkDetails";
 import { useGetSlots } from "../../hooks/useGetSlots";
 import WorkDetailsCard from "../../Components/Profile/WorkDetailsCard";
+import {
+  useCreateUserImage,
+  useDeleteUserImage,
+  useUpdateUserImage,
+  useUserImage,
+} from "../../hooks/useUserImage";
+import { toast } from "react-toastify";
 
 const genderData = ["Male", "Female"];
 
@@ -92,6 +99,11 @@ export default function MyProfile() {
   const { data: allchronics } = useGetAllChronic();
   const { data: workingDetails } = useGetWorkingDetails();
   const { data: Slots } = useGetSlots();
+  const { data: userImage } = useUserImage();
+  const createUserImageMutation = useCreateUserImage();
+  const updateUserImageMutation = useUpdateUserImage();
+  const deleteUserImageMutation = useDeleteUserImage();
+  const fileInputRef = useRef(null);
   const { data: inPersonSlots, isLoading: loadingInPerson } =
     useGetSlots("in-person");
 
@@ -108,6 +120,12 @@ export default function MyProfile() {
 
   console.log(ratings);
   const { role, accessToken } = useAuth();
+  const profileImageUrl =
+    userImage?.imageUrl1 ||
+    userImage?.imageUrl ||
+    user?.imageUrl ||
+    user?.profileImageUrl ||
+    "";
   console.log(role);
 
   //transforming vitals data
@@ -210,6 +228,24 @@ export default function MyProfile() {
     } finally {
       setSubmitting(false);
       setEdit(false);
+    }
+  };
+
+  const uploadProfileImage = async (file) => {
+    if (!file) return;
+    try {
+      if (profileImageUrl) {
+        await updateUserImageMutation.mutateAsync(file);
+      } else {
+        await createUserImageMutation.mutateAsync(file);
+      }
+      toast.success("Profile image uploaded.", { position: "top-center" });
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.title ||
+        "Could not upload image.";
+      toast.error(msg, { position: "top-center" });
     }
   };
 
@@ -462,10 +498,44 @@ export default function MyProfile() {
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => fileInputRef.current?.click()}
                   className="py-[5px] font-bold cursor-pointer border-blue-600 border-2 rounded-[10px] text-blue-600 px-[10px] flex justify-center items-center"
                 >
                   Upload image
                 </motion.button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    await uploadProfileImage(file);
+                    e.target.value = "";
+                  }}
+                />
+                {profileImageUrl && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await deleteUserImageMutation.mutateAsync();
+                        toast.success("Profile image removed.", {
+                          position: "top-center",
+                        });
+                      } catch (err) {
+                        const msg =
+                          err?.response?.data?.message ||
+                          err?.response?.data?.title ||
+                          "Could not delete image.";
+                        toast.error(msg, { position: "top-center" });
+                      }
+                    }}
+                    className="py-[5px] font-bold cursor-pointer border-red-500 border-2 rounded-[10px] text-red-500 px-[10px] flex justify-center items-center"
+                  >
+                    Delete image
+                  </button>
+                )}
               </div>
 
               <Formik
@@ -660,10 +730,18 @@ export default function MyProfile() {
                 whileHover={{ scale: 1.03 }}
                 transition={{ type: "spring", stiffness: 260 }}
               >
-                <IoPersonSharp
-                  className="text-[130px] md:text-[160px] lg:text-[180px] text-white 
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="Profile"
+                    className="w-full h-full object-contain bg-white"
+                  />
+                ) : (
+                  <IoPersonSharp
+                    className="text-[130px] md:text-[160px] lg:text-[180px] text-white 
               absolute bottom-[-20px] left-1/2 translate-x-[-50%]"
-                />
+                  />
+                )}
               </motion.div>
 
               <motion.div

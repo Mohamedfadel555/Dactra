@@ -37,9 +37,12 @@ export default function ProviderServicesPage({ type }) {
   const portal = useProviderPortalAPI();
   const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
   const normalizedType = (type || pathType || role || "").toLowerCase();
-  const isLab = normalizedType !== "scan";
-
   const { data: provider, isLoading: loadingProvider } = useMedicalProviderMe();
+  const providerType = pick(provider, "type", "Type");
+  const isScanFromProvider =
+    providerType != null && String(providerType) === "1";
+  const isScanFromContext = normalizedType.includes("scan");
+  const isLab = !(isScanFromProvider || isScanFromContext);
   const providerId = provider ? pick(provider, "id", "Id") : null;
 
   const { data: offeringsRaw = [], isLoading: loadingOfferings } = useQuery({

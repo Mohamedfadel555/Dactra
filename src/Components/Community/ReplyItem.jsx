@@ -29,6 +29,7 @@ import {
 } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
+import { avatarUserFromAuthor } from "../../utils/communityAvatars";
 // import EditModal from "./EditModal";
 
 export default function ReplyItem({
@@ -178,6 +179,7 @@ export default function ReplyItem({
 
   const canNestFurther = depth < 2;
   const hasNestedReplies = reply.repliesCount > 0 || nestedReplies.length > 0;
+  const avatarUser = avatarUserFromAuthor(reply.answerer);
 
   return (
     <>
@@ -192,7 +194,7 @@ export default function ReplyItem({
         className="flex gap-2 mt-3"
       >
         <div className="flex flex-col items-center flex-shrink-0">
-          <AvatarIcon />
+          <AvatarIcon user={avatarUser} showLabel={false} />
           {(hasNestedReplies || replyOpen) && canNestFurther && (
             <div className="w-0.5 flex-1 min-h-2 bg-blue-100 mt-1 rounded-full" />
           )}

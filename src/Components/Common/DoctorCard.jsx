@@ -1,8 +1,8 @@
-import Doctor from "../../assets/images/Frame93.webp";
 import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
 import { FaStar } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function DoctorCard({
   doctorId = null,
@@ -11,7 +11,9 @@ export default function DoctorCard({
   rating,
   ratingNo,
   isFavourite = false,
+  imageUrl = "",
 }) {
+  const navigate = useNavigate();
   const favStorageKey = "dactra_favourite_doctors";
   const [isFav, setIsFav] = useState(isFavourite);
 
@@ -48,15 +50,23 @@ export default function DoctorCard({
     }
   };
 
+  const displayName = (name || "").trim() || "Unknown";
+
   return (
     <div className="w-[300px] bg-white p-[18px] rounded-[20px] flex flex-col gap-1 shadow-[0_3px_6px_rgba(0,0,0,0.06),0_12px_28px_rgba(0,0,0,0.10)]">
       <img
         loading="lazy"
         alt="Doctor photo"
-        src={Doctor}
-        className="w-full rounded-[20px]"
+        src={imageUrl || ""}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+        onClick={() => {
+          if (doctorId) navigate(`/doctor/profile/${doctorId}`);
+        }}
+        className="w-full rounded-[20px] cursor-pointer object-cover aspect-[4/3] bg-gray-100"
       />
-      <h3 className="text-[#3D3D3D] text-[25px] font-bold">{"Dr." + name}</h3>
+      <h3 className="text-[#3D3D3D] text-[25px] font-bold">{"Dr. " + displayName}</h3>
       <p className="text-[#64748B] font-semibold text-[22px]">
         {specialist + " Specialist"}
       </p>

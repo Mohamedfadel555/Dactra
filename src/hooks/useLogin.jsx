@@ -21,14 +21,6 @@ export const useLogin = () => {
       console.log("Login success payload:", tokenPayload);
 
       const appRole = mapAppRoleFromPayload(tokenPayload);
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
->>>>>>> 6be7e8c827034c8c8a0a7f3725525e7dcfa7c10f
-
-=======
->>>>>>> c2851fd91a270c6d995e726b57fe224f922a0085
       await login(data.data.token, appRole);
       toast.success("Logged in successfully!", {
         position: "top-center",

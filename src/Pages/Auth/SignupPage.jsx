@@ -42,6 +42,7 @@ export default function SignupPage() {
       console.log("Signup data being sent:", signupData);
 
       await registerMutation.mutateAsync(signupData);
+      localStorage.setItem("pendingSignupUserType", String(userType || ""));
 
       navigate("/auth/OTPVerify", {
         state: {

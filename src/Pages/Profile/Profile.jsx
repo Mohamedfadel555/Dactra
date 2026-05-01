@@ -268,10 +268,18 @@ export default function Profile({ role }) {
                 whileHover={{ scale: 1.03 }}
                 transition={{ type: "spring", stiffness: 260 }}
               >
-                <IoPersonSharp
-                  className="text-[130px] md:text-[160px] lg:text-[180px] text-white 
+                {user?.imageUrl || user?.profileImageUrl ? (
+                  <img
+                    src={user?.imageUrl || user?.profileImageUrl}
+                    alt="Profile"
+                    className="w-full h-full object-contain bg-white"
+                  />
+                ) : (
+                  <IoPersonSharp
+                    className="text-[130px] md:text-[160px] lg:text-[180px] text-white 
               absolute bottom-[-20px] left-1/2 translate-x-[-50%]"
-                />
+                  />
+                )}
               </motion.div>
 
               <motion.div
