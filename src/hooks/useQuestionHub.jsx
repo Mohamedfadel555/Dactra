@@ -65,6 +65,7 @@ export const useQuestionHub = (questionId) => {
 
     connection.on("InterestUpdated", () => {
       queryClient.invalidateQueries({ queryKey: ["question", questionId] });
+      queryClient.refetchQueries({ queryKey: ["question", questionId] });
     });
 
     connection.on("AnswerUpdated", (updatedAnswer) => {
