@@ -2,12 +2,9 @@ import { useState, useMemo, useRef } from "react";
 import { BiCalendar, BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import { BsCameraVideo, BsPeopleFill } from "react-icons/bs";
 import { RiErrorWarningLine } from "react-icons/ri";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useSaveSlots } from "../../hooks/useSaveSlots";
-import { useGetSlots } from "../../hooks/useGetSlots";
-import { useGetSlotsById } from "../../hooks/useGetSlotsById";
 import { useBook } from "../../hooks/useBook";
 
 function formatDateKey(date) {
@@ -16,7 +13,6 @@ function formatDateKey(date) {
   return `${d}-${m}-${date.getFullYear()}`;
 }
 
-// UTC string → local 12h label
 function formatSlotLabel(utcTime) {
   const [h, m] = utcTime.split(":");
   const date = new Date();
@@ -29,7 +25,6 @@ function formatSlotLabel(utcTime) {
   return `${localH}:${localM} am`;
 }
 
-// working hours جاية من الباك بـ UTC → generate UTC slots
 function generateSlots(start, end, stepMinutes = 30) {
   if (!start || !end) return [];
   const slots = [];
@@ -138,28 +133,18 @@ export default function Schedule({
   subtitle,
   role,
   workingDetails = { inPerson: null, online: null },
+  // ← استقبل الداتا من الـ parent مباشرة
+  serverSlots = { inPerson: {}, online: {} },
+  isLoadingSlots = false,
   timeSlots = { inPerson: {}, online: {} },
   id,
 }) {
   const todayRef = useRef(new Date());
   const today = todayRef.current;
 
-  // ── type toggle ──
   const [consultationType, setConsultationType] = useState("in-person");
   const typeKey = consultationType === "in-person" ? "inPerson" : "online";
 
-  // ── fetch server slots (Doctor only) ──
-  const { data: inPersonData = {}, isLoading: loadingIP } = useGetSlots(
-    role,
-    "in-person",
-  );
-  console.log(inPersonData);
-  const { data: onlineData = {}, isLoading: loadingOL } = useGetSlots(
-    role,
-    "online",
-  );
-
-  // ── save mutations ──
   const saveInPersonMutation = useSaveSlots("in-person");
   const saveOnlineMutation = useSaveSlots("online");
   const saveSlotsMutation =
@@ -167,11 +152,9 @@ export default function Schedule({
       ? saveInPersonMutation
       : saveOnlineMutation;
 
-  // ── working details for active type ──
   const activeWorkDetails = workingDetails[typeKey];
   const hasWorkDetails = !!activeWorkDetails?.workingStartTime;
 
-  // ── week navigation ──
   const [weekDays, setWeekDays] = useState(() =>
     Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today);
@@ -204,34 +187,40 @@ export default function Schedule({
     );
   }
 
-  // ── Doctor: local tables initialised from server data ──
+  // ── Doctor: local tables ──
+  // بدل syncedTypes، خلي tables تتحدث دايما لما serverSlots يتغير
   const [tables, setTables] = useState({
     inPerson: {},
     online: {},
   });
 
-  // sync server data into tables when it arrives (only if local not yet dirty)
-  const [syncedTypes, setSyncedTypes] = useState({
-    inPerson: false,
-    online: false,
-  });
-
-  if (!syncedTypes.inPerson && Object.keys(inPersonData).length > 0) {
-    setTables((prev) => ({ ...prev, inPerson: inPersonData }));
-    setSyncedTypes((prev) => ({ ...prev, inPerson: true }));
-  }
-  if (!syncedTypes.online && Object.keys(onlineData).length > 0) {
-    setTables((prev) => ({ ...prev, online: onlineData }));
-    setSyncedTypes((prev) => ({ ...prev, online: true }));
-  }
-
-  // track dirty days
   const [dirtyDays, setDirtyDays] = useState({
     inPerson: new Set(),
     online: new Set(),
   });
 
-  // ── generate all slots from working hours (UTC) ──
+  // ← هنا التغيير الأساسي: بدل syncedTypes، merge الـ serverSlots مع الـ local dirty changes
+  const mergedTables = useMemo(() => {
+    const merged = {
+      inPerson: { ...serverSlots.inPerson },
+      online: { ...serverSlots.online },
+    };
+
+    // لو في dirty days، احتفظ بالتغييرات الـ local فوق الـ server data
+    Object.keys(tables.inPerson).forEach((day) => {
+      if (dirtyDays.inPerson.has(day)) {
+        merged.inPerson[day] = tables.inPerson[day];
+      }
+    });
+    Object.keys(tables.online).forEach((day) => {
+      if (dirtyDays.online.has(day)) {
+        merged.online[day] = tables.online[day];
+      }
+    });
+
+    return merged;
+  }, [serverSlots, tables, dirtyDays]);
+
   const generatedInPerson = useMemo(
     () =>
       role === "Doctor"
@@ -265,8 +254,7 @@ export default function Schedule({
     let rawSlots;
 
     if (role === "Doctor") {
-      // الـ booked slots برا الـ working hours تظهر في الأول
-      const bookedOutsideWorkingHours = (tables[typeKey]?.[dayKey] || [])
+      const bookedOutsideWorkingHours = (mergedTables[typeKey]?.[dayKey] || [])
         .filter((s) => s.isBooked && !generatedSlots.includes(s.slotTime))
         .map((s) => s.slotTime);
 
@@ -279,29 +267,26 @@ export default function Schedule({
 
     if (!isToday) return rawSlots;
 
-    // cutoff = now + 30 min
     const cutoff = new Date(today.getTime() + 30 * 60 * 1000);
 
     return rawSlots.filter((slot) => {
       const slotTime = role === "Doctor" ? slot : slot.slotTime;
       const [h, m] = slotTime.split(":");
-      // slot جاي بـ UTC → قارنه مع الـ cutoff الـ local صح
       const slotDate = new Date();
       slotDate.setUTCHours(+h, +m, 0, 0);
       return slotDate >= cutoff;
     });
-  }, [role, generatedSlots, tables, timeSlots, typeKey, dayKey, today]);
+  }, [role, generatedSlots, mergedTables, timeSlots, typeKey, dayKey, today]);
 
   const isEmpty = visibleSlots.length === 0;
 
-  // ── Doctor: toggle one slot (مع منع تعديل الـ booked) ──
   function doctorToggleSlot(timeslot) {
-    const daySlots = tables[typeKey]?.[dayKey] || [];
-    // لو الـ slot محجوز، منع التعديل
+    const daySlots = mergedTables[typeKey]?.[dayKey] || [];
     if (daySlots.find((s) => s.slotTime === timeslot && s.isBooked)) return;
 
     setTables((prev) => {
-      const currentSlots = prev[typeKey]?.[dayKey] || [];
+      // ابدأ من الـ merged عشان محدش يضيع
+      const currentSlots = mergedTables[typeKey]?.[dayKey] || [];
       return {
         ...prev,
         [typeKey]: {
@@ -318,10 +303,9 @@ export default function Schedule({
     }));
   }
 
-  // ── Doctor: select / deselect all (مع الحفاظ على الـ booked) ──
   function doctorToggleAll() {
     setTables((prev) => {
-      const daySlots = prev[typeKey]?.[dayKey] || [];
+      const daySlots = mergedTables[typeKey]?.[dayKey] || [];
       const bookedSlots = daySlots.filter((s) => s.isBooked);
       const nonBookedSelected = daySlots.filter((s) => !s.isBooked);
       const nonBookedGenerated = generatedSlots.filter(
@@ -335,7 +319,7 @@ export default function Schedule({
         [typeKey]: {
           ...prev[typeKey],
           [dayKey]: allSelected
-            ? bookedSlots // سيب الـ booked بس
+            ? bookedSlots
             : [
                 ...bookedSlots,
                 ...nonBookedGenerated.map((t) => ({
@@ -352,9 +336,8 @@ export default function Schedule({
     }));
   }
 
-  // "Select All" يتحسب بدون الـ booked
   const doctorAllSelected = useMemo(() => {
-    const daySlots = tables[typeKey]?.[dayKey] || [];
+    const daySlots = mergedTables[typeKey]?.[dayKey] || [];
     const bookedSlots = daySlots.filter((s) => s.isBooked);
     const nonBookedSelected = daySlots.filter((s) => !s.isBooked);
     const nonBookedGenerated = generatedSlots.filter(
@@ -364,30 +347,27 @@ export default function Schedule({
       nonBookedGenerated.length > 0 &&
       nonBookedSelected.length === nonBookedGenerated.length
     );
-  }, [tables, typeKey, dayKey, generatedSlots]);
+  }, [mergedTables, typeKey, dayKey, generatedSlots]);
 
-  // ── Doctor slot colour ──
   function doctorSlotClass(t) {
-    const daySlots = tables[typeKey]?.[dayKey] || [];
+    const daySlots = mergedTables[typeKey]?.[dayKey] || [];
     if (daySlots.find((s) => s.slotTime === t && s.isBooked))
       return "bg-blue-900 text-white";
     if (daySlots.find((s) => s.slotTime === t)) return "bg-blue-600 text-white";
     return "bg-[#F5F6F7]";
   }
 
-  // ── Doctor: save — all dirty days in one request ──
   async function handleSave() {
     const days = [...(dirtyDays[typeKey] || [])];
     if (!days.length) return;
 
     const slotsPayload = Object.fromEntries(
-      days.map((date) => [date, tables[typeKey][date] || []]),
+      days.map((date) => [date, mergedTables[typeKey][date] || []]),
     );
 
     Object.keys(slotsPayload).forEach((k) => {
       slotsPayload[k] = slotsPayload[k].filter((i) => !i.isBooked);
     });
-    console.log(slotsPayload);
 
     await saveSlotsMutation.mutateAsync({ slots: slotsPayload });
     setDirtyDays((prev) => ({ ...prev, [typeKey]: new Set() }));
@@ -403,19 +383,13 @@ export default function Schedule({
 
   async function handleBook() {
     if (!selectedSlot) return;
-    const paymentMethod = consultationType === "in-person" ? "cash" : "online";
-    console.log(selectedSlot);
-    console.log(selectedSlot.slotTime);
     await bookMutation.mutateAsync(selectedSlot.slotId);
   }
-
-  const isLoading = role === "Doctor" && (loadingIP || loadingOL);
 
   return (
     <div className="flex flex-col gap-[20px]">
       <p className="text-[20px] font-bold">{title}</p>
 
-      {/* type picker */}
       <ConsultationTypePicker
         value={consultationType}
         onChange={(type) => {
@@ -425,9 +399,7 @@ export default function Schedule({
         }}
       />
 
-      {/* schedule card */}
       <div className="flex flex-col gap-[10px] border p-[10px] rounded-xl border-[#BBC1C7]">
-        {/* header */}
         <div className="flex justify-between items-center gap-[5px]">
           <p className="text-[16px] text-[#404448]">{subtitle}</p>
           <div className="flex items-center gap-2 text-[#404448]">
@@ -439,7 +411,6 @@ export default function Schedule({
 
         <hr className="w-[98%] self-center border-[#BBC1C7]" />
 
-        {/* context label */}
         <div className="flex items-center gap-2 text-sm text-[#6D7379]">
           {consultationType === "online" ? (
             <BsCameraVideo className="text-blue-500" />
@@ -453,7 +424,6 @@ export default function Schedule({
           </span>
         </div>
 
-        {/* week nav */}
         <WeekNav
           weekDays={weekDays}
           dayPicked={dayPicked}
@@ -467,9 +437,8 @@ export default function Schedule({
           today={today}
         />
 
-        {/* slots grid */}
         <div className="flex flex-wrap gap-3 justify-center mt-5 max-h-[200px] overflow-scroll sm:overflow-hidden sm:max-h-[600px]">
-          {isLoading ? (
+          {isLoadingSlots ? (
             <div className="w-full flex justify-center py-6">
               <p className="text-[#6D7379] text-sm animate-pulse">
                 Loading slots...
@@ -494,10 +463,9 @@ export default function Schedule({
               const slotTime = isDoctor ? t : t.slotTime;
               const isSelected = !isDoctor && selectedSlot?.slotId === t.slotId;
 
-              // الـ slot محجوز؟
               const isBooked =
                 isDoctor &&
-                !!(tables[typeKey]?.[dayKey] || []).find(
+                !!(mergedTables[typeKey]?.[dayKey] || []).find(
                   (s) => s.slotTime === t && s.isBooked,
                 );
 
@@ -529,7 +497,6 @@ export default function Schedule({
           )}
         </div>
 
-        {/* footer */}
         <div className="flex justify-between items-center mt-5">
           {role === "Doctor" ? (
             hasWorkDetails ? (

@@ -26,6 +26,7 @@ import { useAuth } from "../../Context/AuthContext";
 import { useGetMyAppointments } from "../../hooks/useGetMyAppointments";
 import { useGetAppointmentsStat } from "../../hooks/useGetAppointmentsStat";
 import { useCancelAppointment } from "../../hooks/useCancelAppointment";
+import { useResumePay } from "./../../hooks/useResumePay";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -276,6 +277,8 @@ function CancelModal({ appt, role, onClose, onConfirm, isLoading }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState(false);
 
+  console.log(appt);
+
   const name = role === "Patient" ? appt.doctor : appt.patient;
   const sub = role === "Patient" ? appt.specialty : `Age ${appt.age}`;
 
@@ -356,8 +359,8 @@ function CancelModal({ appt, role, onClose, onConfirm, isLoading }) {
           <div className="min-w-0">
             <p className="text-sm font-black text-slate-800 truncate">{name}</p>
             <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-              {sub} · {formatDate(appt.slotDateTime)} ·{" "}
-              {formatTime(appt.slotDateTime)}
+              {sub} · {formatDate(new Date(appt.slotDateTime))} ·{" "}
+              {formatTime(new Date(appt.slotDateTime))}
             </p>
           </div>
         </div>
@@ -428,14 +431,19 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
   const sub = role === "Patient" ? appt.specialty : `Age ${appt.age}`;
   const SubIcon = role === "Patient" ? TbStethoscope : FiUser;
 
+  const { mutate } = useResumePay();
+
+  console.log(appt);
+
   return (
     <motion.div
       variants={cardV}
+      onClick={appt.status === "unpaid" ? () => mutate(appt.id) : null}
       whileHover={{
         y: -3,
         boxShadow: `0 14px 40px ${cfg.glow}, 0 2px 8px rgba(0,0,0,0.05)`,
       }}
-      className="relative bg-white rounded-2xl border overflow-hidden"
+      className={`relative ${appt.status === "unpaid" ? "cursor-pointer" : null} bg-white rounded-2xl border overflow-hidden`}
       style={{ borderColor: "#e2e8f0" }}
     >
       {/* Accent bar */}
@@ -494,11 +502,11 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
             <div className="mt-3 flex flex-wrap gap-3">
               <span className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
                 <RiCalendarCheckLine size={13} style={{ color: cfg.color }} />
-                {formatDate(appt.slotDateTime)}
+                {formatDate(new Date(appt.slotDateTime))}
               </span>
               <span className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
                 <RiTimeLine size={13} style={{ color: cfg.color }} />
-                {formatTime(appt.slotDateTime)}
+                {formatTime(new Date(appt.slotDateTime))}
               </span>
             </div>
 
@@ -756,6 +764,8 @@ export default function MyAppointments() {
     tab: TAB_TO_CODE[validTab],
     page,
   });
+
+  console.log(apptData);
 
   const rawList = apptData?.items ?? (Array.isArray(apptData) ? apptData : []);
   const appointments = rawList.map(normaliseAppt);

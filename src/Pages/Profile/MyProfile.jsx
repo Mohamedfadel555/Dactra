@@ -82,6 +82,7 @@ export default function MyProfile() {
   const [grouped, setGrouped] = useState([]);
   const [editWorkDetails, setEditWorkDetails] = useState(false);
   const { data: user } = useGetUser();
+  console.log(user);
   const { data: cities } = useCities();
   const { data: quals } = useGetMyQualifications();
   const { data: vitals } = useGetVitals();
@@ -91,11 +92,18 @@ export default function MyProfile() {
   const { data: allAllergies } = useGetAllAllergies();
   const { data: allchronics } = useGetAllChronic();
   const { data: workingDetails } = useGetWorkingDetails();
-  const { data: Slots } = useGetSlots();
-  const { data: inPersonSlots, isLoading: loadingInPerson } =
-    useGetSlots("in-person");
+  const { role, accessToken } = useAuth();
+  const { data: inPersonSlots, isLoading: loadingInPerson } = useGetSlots(
+    role,
+    "in-person",
+    user && user.id,
+  );
 
-  const { data: onlineSlots, isLoading: loadingOnline } = useGetSlots("online");
+  const { data: onlineSlots, isLoading: loadingOnline } = useGetSlots(
+    role,
+    "online",
+    user && user.id,
+  );
   // console.log(workingDetails);
 
   console.log(inPersonSlots);
@@ -107,7 +115,6 @@ export default function MyProfile() {
   }
 
   console.log(ratings);
-  const { role, accessToken } = useAuth();
   console.log(role);
 
   //transforming vitals data
@@ -881,10 +888,13 @@ export default function MyProfile() {
                         subtitle={"Manage your available slots"}
                         role={role}
                         workingDetails={workingDetails}
-                        data={{
+                        serverSlots={{
+                          // ← غير data أو timeSlots لـ serverSlots
                           inPerson: inPersonSlots ?? {},
                           online: onlineSlots ?? {},
                         }}
+                        isLoadingSlots={loadingInPerson || loadingOnline}
+                        id={user?.id}
                       />
                     }
                   </motion.div>
