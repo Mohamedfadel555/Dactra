@@ -2,7 +2,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import AvatarIcon from "../Common/AvatarIcon1";
-import { FiHeart, FiMessageCircle, FiMoreHorizontal } from "react-icons/fi";
+import {
+  FiHeart,
+  FiMessageCircle,
+  FiMoreHorizontal,
+  FiX,
+  FiZoomIn,
+} from "react-icons/fi";
 import {
   FaRegBookmark,
   FaBookmark,
@@ -27,13 +33,37 @@ import { toast } from "react-toastify";
 import { REPORT_TYPE } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
+import { avatarUserFromAuthor } from "../../utils/communityAvatars";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
 };
 
+const overlayVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.25, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: 0.2, ease: "easeIn" } },
+};
+
+const imageVariants = {
+  hidden: { opacity: 0, scale: 0.92, y: 16 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.94,
+    y: 8,
+    transition: { duration: 0.2, ease: "easeIn" },
+  },
+};
+
 export default function PostCard({ post, type, onUpdate }) {
+  console.log(post);
   const [liked, setLiked] = useState(
     type === "Question"
       ? post.isInterestedByCurrentUser
@@ -48,6 +78,9 @@ export default function PostCard({ post, type, onUpdate }) {
   const [editOpen, setEditOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   // optimistic content update
   const [displayContent, setDisplayContent] = useState(
     post.content ?? post.text ?? "",
@@ -103,6 +136,10 @@ export default function PostCard({ post, type, onUpdate }) {
   const isLong = displayContent.length > 140;
   const body =
     !expanded && isLong ? displayContent.slice(0, 140) + "…" : displayContent;
+
+  const avatarUser = avatarUserFromAuthor(
+    type === "Question" ? post.patient : post.doctor,
+  );
 
   const handleLike = () => {
     const wasLiked = liked;
@@ -219,7 +256,7 @@ export default function PostCard({ post, type, onUpdate }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <AvatarIcon />
+            <AvatarIcon user={avatarUser} showLabel={false} />
             <div>
               <p className="font-bold text-slate-800 text-sm leading-tight">
                 {type === "Question"
@@ -277,6 +314,30 @@ export default function PostCard({ post, type, onUpdate }) {
             </button>
           )}
         </p>
+
+        {/* Post Image */}
+        {post.imageUrl && (
+          <motion.div
+            whileHover="hover"
+            onClick={() => {
+              setImageLoaded(false);
+              setImageOpen(true);
+            }}
+            className="relative mb-3 rounded-xl overflow-hidden border border-blue-50 cursor-zoom-in group"
+          >
+            <img
+              src={post.imageUrl}
+              alt="post"
+              className="w-full object-cover max-h-80 transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+            {/* hover overlay hint */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg">
+                <FiZoomIn size={18} className="text-slate-700" />
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Tags */}
         {post.tags?.length > 0 && (
@@ -344,6 +405,87 @@ export default function PostCard({ post, type, onUpdate }) {
           </motion.button>
         </div>
       </motion.article>
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {imageOpen && (
+          <motion.div
+            variants={overlayVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            onClick={() => setImageOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+            style={{
+              backgroundColor: "rgba(2, 8, 23, 0.85)",
+              backdropFilter: "blur(6px)",
+            }}
+          >
+            {/* Close button */}
+            <motion.button
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.15 } }}
+              exit={{ opacity: 0 }}
+              onClick={() => setImageOpen(false)}
+              className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full p-2.5 transition-colors cursor-pointer backdrop-blur-sm"
+            >
+              <FiX size={18} />
+            </motion.button>
+
+            {/* Image container */}
+            <motion.div
+              variants={imageVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-4xl w-full"
+            >
+              {/* Loading skeleton */}
+              {!imageLoaded && (
+                <div className="w-full h-64 rounded-2xl bg-white/10 animate-pulse" />
+              )}
+
+              <img
+                src={post.imageUrl}
+                alt="post full"
+                onLoad={() => setImageLoaded(true)}
+                className={`w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl transition-opacity duration-300 ${
+                  imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"
+                }`}
+              />
+
+              {/* Bottom info bar */}
+              {imageLoaded && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0, transition: { delay: 0.1 } }}
+                  className="mt-3 flex items-center justify-between px-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <AvatarIcon user={avatarUser} showLabel={false} />
+                    <span className="text-white/80 text-sm font-medium">
+                      {type === "Question"
+                        ? post.patient?.fullName
+                        : `Dr. ${post.doctor?.fullName}`}
+                    </span>
+                  </div>
+                  <span className="text-white/40 text-xs">{timeAgo}</span>
+                </motion.div>
+              )}
+            </motion.div>
+
+            {/* Tap outside hint */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.4 } }}
+              className="absolute bottom-4 left-0 right-0 text-center text-white/30 text-xs pointer-events-none"
+            >
+              tap outside to close
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Edit Modal */}
       <EditModal

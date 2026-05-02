@@ -27,6 +27,7 @@ import { useGetMyAppointments } from "../../hooks/useGetMyAppointments";
 import { useGetAppointmentsStat } from "../../hooks/useGetAppointmentsStat";
 import { useCancelAppointment } from "../../hooks/useCancelAppointment";
 import { useResumePay } from "./../../hooks/useResumePay";
+import AvatarIcon from "./../../Components/Common/AvatarIcon1";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -80,9 +81,10 @@ function normaliseAppt(a) {
   return {
     id: a.appointmentId,
     doctorId: a.doctorId,
+    patientId: a.patientId,
     doctor: a.doctorName,
     specialty: a.doctorSpecialty,
-    imageUrl: a.doctorImageUrl,
+    imageUrl: a.doctorImageUrl || a.patientImageUrl,
     slotDateTime: a.slotDateTime,
     type: a.appointmentType === "Online" ? "online" : "inperson",
     // "Pending" from the backend = unpaid in the UI
@@ -207,19 +209,28 @@ function CancelReasonBadge({ reason }) {
 }
 
 // ─── JoinSessionButton ────────────────────────────────────────────────────────
-
 function JoinSessionButton({ appt, onJoin }) {
   const [, setTick] = useState(0);
+
   useEffect(() => {
-    const t = setInterval(() => setTick((n) => n + 1), 30_000);
-    return () => clearInterval(t);
-  }, []);
+    // كل ثانية لما الزرار يكون قريب من الميعاد
+    const interval = isSessionNear(appt.slotDateTime)
+      ? setInterval(() => setTick((n) => n + 1), 1_000)
+      : setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(interval);
+  }, [appt.slotDateTime]);
 
-  if (!isSessionNear(appt.slotDateTime)) return null;
+  const mins = diffMins(appt.slotDateTime);
+  const isVisible = mins <= 10 && mins >= -30; // يظهر من 10 دقايق قبل
+  const isLive = mins <= 0; // يشتغل لما الميعاد يجي
 
-  const mins = Math.round(diffMins(appt.slotDateTime));
-  const isLive = mins <= 0;
-  const label = isLive ? "Join Now — Session Live" : `Join in ${mins} min`;
+  if (!isVisible) return null;
+
+  // Countdown بالدقايق والثواني
+  const totalSecs = Math.max(0, Math.ceil(mins * 60));
+  const mm = String(Math.floor(totalSecs / 60)).padStart(2, "0");
+  const ss = String(totalSecs % 60).padStart(2, "0");
+  const label = isLive ? "Join Now — Session Live" : `Join in ${mm}:${ss}`;
 
   return (
     <motion.div
@@ -240,30 +251,40 @@ function JoinSessionButton({ appt, onJoin }) {
           </span>
         </div>
       )}
+
+      {!isLive && (
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />
+          <span className="text-[11px] font-black text-slate-500">
+            بيفتح بعد {mm}:{ss}
+          </span>
+        </div>
+      )}
+
       <motion.button
-        whileTap={{ scale: 0.96 }}
-        whileHover={{
-          scale: 1.02,
-          boxShadow: isLive
-            ? "0 8px 28px rgba(5,150,105,0.35)"
-            : "0 8px 28px rgba(37,99,235,0.3)",
-        }}
-        onClick={() => onJoin(appt)}
+        whileTap={isLive ? { scale: 0.96 } : {}}
+        whileHover={
+          isLive
+            ? { scale: 1.02, boxShadow: "0 8px 28px rgba(5,150,105,0.35)" }
+            : {}
+        }
+        onClick={() => isLive && onJoin(appt)} // ← مش بيعمل حاجة لو مش live
+        disabled={!isLive}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-white"
         style={{
           background: isLive
             ? "linear-gradient(135deg,#059669,#10b981)"
-            : "linear-gradient(135deg,#1d4ed8,#0ea5e9)",
-          boxShadow: isLive
-            ? "0 4px 16px rgba(5,150,105,0.25)"
-            : "0 4px 16px rgba(37,99,235,0.22)",
+            : "#94a3b8",
+          boxShadow: isLive ? "0 4px 16px rgba(5,150,105,0.25)" : "none",
+          cursor: isLive ? "pointer" : "not-allowed",
+          opacity: isLive ? 1 : 0.85,
         }}
       >
         <motion.span
           animate={isLive ? { scale: [1, 1.2, 1] } : {}}
           transition={{ repeat: Infinity, duration: 1.5 }}
         >
-          <FiVideo size={13} />
+          {isLive ? <FiVideo size={13} /> : <FiLock size={13} />}
         </motion.span>
         {label}
       </motion.button>
@@ -455,29 +476,27 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
       <div className="pl-5 pr-4 py-4 sm:py-5">
         <div className="flex items-start gap-3">
           {/* Photo / avatar */}
-          {appt.imageUrl ? (
-            <img
-              src={appt.imageUrl}
-              alt={name}
-              className="w-12 h-12 rounded-2xl object-cover flex-shrink-0 border border-slate-100 shadow-sm"
-            />
-          ) : (
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-white text-sm font-black shadow-sm"
-              style={{ background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)" }}
-            >
-              {appt.avatar}
-            </div>
-          )}
+          <AvatarIcon
+            user={{ imageUrl: appt.imageUrl }}
+            showLabel={false}
+            size="50"
+          />
 
           <div className="flex-1 min-w-0">
             {/* Name + status */}
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
                 {/* Patient can tap doctor name → profile page */}
-                {role === "Patient" && appt.doctorId ? (
+                {(role === "Patient" && appt.doctorId) ||
+                (role === "Doctor" &&
+                  (appt.status === "upcoming" ||
+                    appt.status === "completed")) ? (
                   <Link
-                    to={`/doctor/profile/${appt.doctorId}`}
+                    to={
+                      role === "Doctor"
+                        ? `/patient/profile/${appt.patientId}`
+                        : `/doctor/profile/${appt.doctorId}`
+                    }
                     className="group inline-flex items-center gap-1 font-black text-slate-800 text-sm leading-tight hover:text-blue-600 transition-colors"
                   >
                     <span className="truncate">{name}</span>
@@ -767,7 +786,7 @@ export default function MyAppointments() {
 
   console.log(apptData);
 
-  const rawList = apptData?.items ?? (Array.isArray(apptData) ? apptData : []);
+  const rawList = apptData?.items ?? [];
   const appointments = rawList.map(normaliseAppt);
   const totalPages = Math.ceil((apptData?.totalCount ?? 0) / PAGE_SIZE);
 
@@ -812,7 +831,8 @@ export default function MyAppointments() {
     },
     [queryClient, validTab, page, cancelMutation],
   );
-  const handleJoinSession = (appt) => navigate(`/video-call/${appt.id}`);
+  const handleJoinSession = (appt) =>
+    navigate(`/consultation/${appt.id}?role=${role.toLowerCase()}`);
 
   return (
     <div

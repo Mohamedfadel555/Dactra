@@ -74,7 +74,7 @@ export default function Navbar() {
   useEffect(() => {
     const handle = () =>
       setScrolled((prev) => {
-        const next = window.scrollY > 60;
+        const next = window.scrollY > 0;
         return prev !== next ? next : prev;
       });
     window.addEventListener("scroll", handle, { passive: true });

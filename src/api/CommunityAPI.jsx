@@ -18,11 +18,6 @@ export const useCommunityAPI = () => {
     return res;
   };
 
-  const postArtical = async (Data) => {
-    const res = await axiosInstance.post("Posts", Data);
-    return res;
-  };
-
   const filterPosts = async (params) => {
     console.log(params);
     const res = await axiosInstance.get("Posts/filterOn", { params });
@@ -50,12 +45,27 @@ export const useCommunityAPI = () => {
     const res = axiosInstance.post(`Questions/${Id}/save`);
     return res;
   };
+  const postArtical = async (Data) => {
+    const formData = new FormData();
+    formData.append("content", Data.content);
+    if (Data.image) formData.append("image", Data.image);
 
-  const PostQuestion = async (Data) => {
-    const res = await axiosInstance.post("Questions", Data);
+    const res = await axiosInstance.post("Posts", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res;
   };
 
+  const PostQuestion = async (Data) => {
+    const formData = new FormData();
+    formData.append("content", Data.content);
+    if (Data.image) formData.append("image", Data.image);
+
+    const res = await axiosInstance.post("Questions", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res;
+  };
   const myPosts = async (params) => {
     const res = await axiosInstance.get("Posts/my-posts", { params });
     return res.data;

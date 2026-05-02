@@ -30,6 +30,7 @@ import {
 } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
+import { avatarUserFromAuthor } from "../../utils/communityAvatars";
 
 export default function CommentItem({ comment, idx, type }) {
   const [showReplies, setShowReplies] = useState(false);
@@ -127,6 +128,7 @@ export default function CommentItem({ comment, idx, type }) {
   };
 
   const hasReplies = comment.repliesCount > 0 || replies?.length > 0;
+  const avatarUser = avatarUserFromAuthor(comment.answerer);
 
   const handleDelete = () => {
     deleteCommentMutation.mutate(idx);
@@ -185,7 +187,7 @@ export default function CommentItem({ comment, idx, type }) {
       >
         <div className="flex gap-3">
           <div className="flex flex-col items-center flex-shrink-0">
-            <AvatarIcon />
+            <AvatarIcon user={avatarUser} showLabel={false} />
             {(hasReplies || replyOpen) && (
               <motion.div
                 initial={{ scaleY: 0 }}

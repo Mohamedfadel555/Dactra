@@ -95,6 +95,7 @@ export default function ServiceProvidersPage() {
                   address={p.address}
                   avg_Rating={p.avg_Rating}
                   type={p.type}
+                  imageUrl={p.imageUrl || p.profileImageUrl || p.logoUrl || ""}
                 />
               </div>
             ))}

@@ -59,8 +59,28 @@ export function useNotificationsApi() {
         }
       },
       /** Cancel appointment — slot id */
-      notifyCancel: (slotId, body) =>
-        axios.post(`Notification/cancel/${slotId}`, body),
+      notifyCancel: async (slotId, body = {}) => {
+        const sid = Number(slotId);
+        const title = body.title ?? "Appointment";
+        const message = body.message ?? "";
+        const minimal = { title, message };
+        try {
+          return await axios.post(`Notification/cancel/${slotId}`, minimal);
+        } catch (e) {
+          if (e?.response?.status === 400) {
+            return await axios.post(`Notification/cancel/${slotId}`, {
+              id: 0,
+              title,
+              message,
+              type: body.type ?? "Booking",
+              relatedEntityId: Number.isNaN(sid) ? slotId : sid,
+              isRead: false,
+              createdAtUtc: new Date().toISOString(),
+            });
+          }
+          throw e;
+        }
+      },
       /** New booking */
       notifyBookAppointment: async (id, body = {}) => {
         const minimal = {

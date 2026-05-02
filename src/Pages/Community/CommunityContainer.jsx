@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiSend, FiLink, FiLoader } from "react-icons/fi";
+import { FiSend, FiLoader, FiImage, FiX } from "react-icons/fi";
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
 import PostCard from "../../Components/Community/PostCard";
 import { useGetPosts } from "../../hooks/useGetPosts";
@@ -8,7 +8,6 @@ import { useAuth } from "../../Context/AuthContext";
 import { usePostArtical } from "../../hooks/usePostArtical";
 import { useFilterPosts } from "../../hooks/useFilterPosts";
 import { useGetTrendingTags } from "../../hooks/useGetTrendingTags";
-
 import Sidebar from "../../Components/Community/Sidebar";
 import FeedTabs from "../../Components/Community/FeedTabs";
 
@@ -101,15 +100,16 @@ const SkeletonCard = () => (
 );
 
 export default function CommunityContainer({ type }) {
-  const [focused, setFocused] = useState(false);
+  const [expanded, setExpanded] = useState(false); // بديل focused — مش بيتأثر بالـ blur
   const [text, setText] = useState("");
-  const containerRef = useRef(null);
+  const [image, setImage] = useState(null); // { file, preview }
+  const [isPosting, setIsPosting] = useState(false);
+  const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState("all");
   const { role } = useAuth();
   const loadRef = useRef(null);
 
   const { data: trendingTags } = useGetTrendingTags(type);
-  console.log(trendingTags);
 
   const {
     data: fil,
@@ -129,8 +129,6 @@ export default function CommunityContainer({ type }) {
     type,
   );
 
-  console.log(fil);
-
   const {
     data: PostsDetails,
     hasNextPage,
@@ -138,8 +136,6 @@ export default function CommunityContainer({ type }) {
     isLoading,
     fetchNextPage,
   } = useGetPosts(type);
-
-  console.log(PostsDetails);
 
   const postMutation = usePostArtical(type);
 
@@ -191,28 +187,50 @@ export default function CommunityContainer({ type }) {
     );
   }, [activeTab, posts, fil, type]);
 
-  const handleBlur = (e) => {
-    if (
-      containerRef.current &&
-      !containerRef.current.contains(e.relatedTarget)
-    ) {
-      setFocused(false);
+  // ── Image picker ──────────────────────────────────────────
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (image?.preview) URL.revokeObjectURL(image.preview);
+    const preview = URL.createObjectURL(file);
+    setImage({ file, preview });
+    setExpanded(true);
+  };
+
+  const removeImage = () => {
+    if (image?.preview) URL.revokeObjectURL(image.preview);
+    setImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // ── Submit ────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (isPosting) return;
+    setIsPosting(true);
+    try {
+      await postMutation.mutateAsync({
+        content: text,
+        image: image?.file ?? null,
+      });
+      setText("");
+      removeImage();
+      setExpanded(false);
+    } finally {
+      setIsPosting(false);
     }
   };
+
+  const canPost = text.length >= 10 && !isPosting;
+
+  // ── Infinite scroll ───────────────────────────────────────
   const handleObserve = useCallback(
     (entries) => {
       const [entry] = entries;
       if (!entry.isIntersecting) return;
-
-      if (activeTab === "all" && hasNextPage && !isFetchingNextPage) {
+      if (activeTab === "all" && hasNextPage && !isFetchingNextPage)
         fetchNextPage();
-      } else if (
-        activeTab !== "all" &&
-        filHasNextPage &&
-        !filIsFetchingNextPage
-      ) {
+      else if (activeTab !== "all" && filHasNextPage && !filIsFetchingNextPage)
         filFetchNextPage();
-      }
     },
     [
       activeTab,
@@ -224,6 +242,7 @@ export default function CommunityContainer({ type }) {
       filIsFetchingNextPage,
     ],
   );
+
   useEffect(() => {
     const el = loadRef.current;
     if (!el) return;
@@ -232,28 +251,39 @@ export default function CommunityContainer({ type }) {
     return () => obs.disconnect();
   }, [handleObserve]);
 
+  // ── إغلاق الـ compose لو ضغط برا ────────────────────────
+  useEffect(() => {
+    if (!expanded) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest("[data-compose]")) {
+        if (!text && !image) setExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [expanded, text, image]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 font-sans pt-[60px]">
       <main className="max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 py-5 pb-24 sm:pb-8 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 lg:gap-6 items-start">
         <div className="flex flex-col gap-4">
-          {/* Compose Box */}
+          {/* ── Compose Box ───────────────────────────────── */}
           {((type === "Artical" && role === "Doctor") ||
             (type === "Question" && role === "Patient")) && (
             <motion.div
-              ref={containerRef}
+              data-compose
               variants={fadeUp}
               initial="hidden"
               animate={{
                 opacity: 1,
                 y: 0,
-                borderColor: focused
+                borderColor: expanded
                   ? "rgba(59,130,246,0.5)"
                   : "rgba(219,234,254,1)",
-                boxShadow: focused
+                boxShadow: expanded
                   ? "0 0 0 3px rgba(59,130,246,0.12)"
                   : "0 1px 3px rgba(0,0,0,0.06)",
               }}
-              onBlur={handleBlur}
               className="bg-white rounded-2xl p-4 border"
             >
               <div className="flex gap-3 items-start">
@@ -262,18 +292,47 @@ export default function CommunityContainer({ type }) {
                   <motion.textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    onFocus={() => setFocused(true)}
+                    onFocus={() => setExpanded(true)}
                     placeholder={
                       type === "Question"
                         ? "Ask a medical question…"
                         : "Share a medical insight, case, or update…"
                     }
-                    animate={{ height: focused ? 72 : 32 }}
+                    animate={{ height: expanded ? 72 : 32 }}
                     transition={{ duration: 0.25, ease: "easeInOut" }}
-                    className={`w-full ${focused ? "p-0" : "pt-[9px]"} text-sm text-slate-700 placeholder-slate-400 bg-transparent outline-none resize-none leading-relaxed overflow-hidden`}
+                    className={`w-full ${expanded ? "p-0" : "pt-[9px]"} text-sm text-slate-700 placeholder-slate-400 bg-transparent outline-none resize-none leading-relaxed overflow-hidden`}
                   />
+
+                  {/* ── Image Preview ── دايماً ظاهر لو في صورة */}
+                  <AnimatePresence>
+                    {image && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                        transition={{ duration: 0.2 }}
+                        className="relative mt-3 inline-block"
+                      >
+                        <img
+                          src={image.preview}
+                          alt="preview"
+                          className="max-h-52 max-w-full rounded-xl border border-blue-100 object-cover shadow-sm"
+                        />
+                        {/* overlay gradient */}
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+                        <button
+                          onClick={removeImage}
+                          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors backdrop-blur-sm"
+                        >
+                          <FiX size={12} />
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* ── Toolbar ── */}
                   <AnimatePresence initial={false}>
-                    {focused && (
+                    {expanded && (
                       <motion.div
                         key="toolbar"
                         initial={{ opacity: 0, y: -6 }}
@@ -282,35 +341,72 @@ export default function CommunityContainer({ type }) {
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="flex items-center justify-between mt-3 flex-wrap gap-2"
                       >
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 items-center">
+                          {/* Image btn */}
                           <motion.button
                             whileHover={{ scale: 1.12 }}
                             whileTap={{ scale: 0.92 }}
-                            tabIndex={0}
-                            className="p-2 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors focus:outline-none"
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`p-2 rounded-lg transition-colors focus:outline-none ${
+                              image
+                                ? "text-blue-500 bg-blue-50"
+                                : "text-slate-400 hover:text-blue-500 hover:bg-blue-50"
+                            }`}
                           >
-                            <FiLink size={15} />
+                            <FiImage size={15} />
                           </motion.button>
+
+                          {image && (
+                            <span className="text-[11px] text-blue-400 font-medium">
+                              1 image
+                            </span>
+                          )}
+
+                          {/* Hidden file input */}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageChange}
+                          />
                         </div>
+
+                        {/* Post btn */}
                         <motion.button
-                          whileHover={text.trim() ? { scale: 1.04 } : {}}
-                          whileTap={text.trim() ? { scale: 0.96 } : {}}
-                          tabIndex={0}
-                          disabled={text.length < 10}
-                          onClick={() => {
-                            postMutation.mutate({ content: text });
-                            setText("");
-                            setFocused(false);
-                          }}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all focus:outline-none
+                          whileHover={canPost ? { scale: 1.04 } : {}}
+                          whileTap={canPost ? { scale: 0.96 } : {}}
+                          type="button"
+                          disabled={!canPost}
+                          onClick={handleSubmit}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all focus:outline-none min-w-[80px] justify-center
                             ${
-                              text.length > 10
+                              canPost
                                 ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-200 cursor-pointer"
                                 : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-60"
                             }`}
                         >
-                          <FiSend size={13} />
-                          {type === "Question" ? "Ask" : "Post"}
+                          {isPosting ? (
+                            <>
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{
+                                  repeat: Infinity,
+                                  duration: 0.7,
+                                  ease: "linear",
+                                }}
+                              >
+                                <FiLoader size={13} />
+                              </motion.div>
+                              Posting…
+                            </>
+                          ) : (
+                            <>
+                              <FiSend size={13} />
+                              {type === "Question" ? "Ask" : "Post"}
+                            </>
+                          )}
                         </motion.button>
                       </motion.div>
                     )}
@@ -372,8 +468,6 @@ export default function CommunityContainer({ type }) {
                     <Spinner size={20} />
                   </motion.div>
                 )}
-
-                {/* all tab */}
                 {activeTab === "all" && !hasNextPage && posts.length > 0 && (
                   <motion.p
                     initial={{ opacity: 0 }}
@@ -383,8 +477,6 @@ export default function CommunityContainer({ type }) {
                     — All posts loaded —
                   </motion.p>
                 )}
-
-                {/* filtered tabs */}
                 {activeTab !== "all" &&
                   !filHasNextPage &&
                   filteredPosts.length > 0 && (

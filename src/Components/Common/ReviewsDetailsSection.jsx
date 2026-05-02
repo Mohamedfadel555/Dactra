@@ -9,6 +9,7 @@ export default function ReviewsDetailsSection({
   avgRating,
   addFlag = true,
   data,
+  onAddReview,
 }) {
   console.log(data);
   return (
@@ -20,9 +21,13 @@ export default function ReviewsDetailsSection({
         <BrandLogo />
 
         {addFlag ? (
-          <Link className="text-[16px] sm:text-[20px] text-[#567CFE] font-bold">
+          <button
+            type="button"
+            onClick={onAddReview}
+            className="text-[16px] sm:text-[20px] text-[#567CFE] font-bold"
+          >
             Add Review+
-          </Link>
+          </button>
         ) : (
           <>
             {NumOfReviews !== 0 && (

@@ -3,21 +3,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import { IoNotificationsOutline } from "react-icons/io5";
 import { useNotificationInbox } from "../../hooks/useNotificationInbox";
 import { useAuth } from "../../Context/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  pickMessage as pickMessageRaw,
+  resolveNotificationTarget,
+} from "../../utils/notificationNavigation";
 
 function pickId(n) {
   return n?.id ?? n?.Id;
 }
 
 function pickMessage(n) {
-  return (
-    n?.message ??
-    n?.Message ??
-    n?.title ??
-    n?.Title ??
-    n?.body ??
-    n?.Body ??
-    "Notification"
-  );
+  const m = pickMessageRaw(n);
+  return m || "Notification";
 }
 
 function pickTime(n) {
@@ -46,6 +44,7 @@ export default function NotificationBell() {
   const { accessToken } = useAuth();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const navigate = useNavigate();
   const {
     items,
     unreadCount,
@@ -103,7 +102,17 @@ export default function NotificationBell() {
             className="absolute right-0 top-[calc(100%+8px)] z-[60] w-[min(100vw-24px,360px)] max-h-[min(70vh,420px)] overflow-hidden flex flex-col bg-white rounded-2xl border border-slate-100 shadow-[0_4px_6px_rgba(0,0,0,0.05),0_20px_50px_rgba(0,0,0,0.12)]"
           >
             <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between gap-2">
-              <p className="text-sm font-bold text-slate-800">Notifications</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-slate-800">Notifications</p>
+                <Link
+                  to="/notifications"
+                  onClick={() => setOpen(false)}
+                  className="text-[11px] font-semibold text-[#316BE8] hover:underline"
+                  title="Open notifications page"
+                >
+                  View all →
+                </Link>
+              </div>
               {unreadCount > 0 && (
                 <span className="text-xs font-medium text-rose-600 shrink-0">
                   {unreadCount} unread
@@ -135,21 +144,30 @@ export default function NotificationBell() {
               {items.map((n) => {
                 const id = pickId(n);
                 const unread = isUnread(n);
+                const fallbackTarget = resolveNotificationTarget(n);
                 return (
                   <button
                     type="button"
                     key={String(id ?? pickMessage(n) + pickTime(n))}
                     onClick={async () => {
-                      if (id != null && unread) {
+                      let source = n;
+                      if (id != null) {
                         try {
-                          await markRead(id);
+                          const res = await markRead(id);
+                          source = res?.data?.data ?? res?.data ?? n;
                         } catch {
                           /* */
                         }
                       }
+                      const target =
+                        resolveNotificationTarget(source) || fallbackTarget;
+                      if (target) {
+                        setOpen(false);
+                        navigate(target.to, { state: target.state });
+                      }
                     }}
                     className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50/90 transition-colors ${
-                      unread ? "bg-blue-50/40" : ""
+                      unread ? "bg-blue-100/70" : ""
                     }`}
                   >
                     <p className="text-[13px] text-slate-800 leading-snug">

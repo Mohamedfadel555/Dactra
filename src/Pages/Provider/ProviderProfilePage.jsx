@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useAuth } from "../../Context/AuthContext";
@@ -16,6 +16,12 @@ import {
   rowsToWorkingHourPayload,
   DAY_LABELS_AR_EN,
 } from "../../utils/workingHours";
+import {
+  useCreateUserImage,
+  useDeleteUserImage,
+  useUpdateUserImage,
+  useUserImage,
+} from "../../hooks/useUserImage";
 
 export default function ProviderProfilePage({ type }) {
   const { role, accessToken } = useAuth();
@@ -25,10 +31,18 @@ export default function ProviderProfilePage({ type }) {
 
   const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
   const normalizedType = (type || pathType || role || "").toLowerCase();
-  const isLab = normalizedType !== "scan";
-  const titlePrefix = isLab ? "Lab Center" : "Scan Center";
-
   const { data: provider, isLoading, isError } = useMedicalProviderMe();
+  const { data: userImage } = useUserImage();
+  const createUserImageMutation = useCreateUserImage();
+  const updateUserImageMutation = useUpdateUserImage();
+  const deleteUserImageMutation = useDeleteUserImage();
+  const imageInputRef = useRef(null);
+  const providerType = pick(provider, "type", "Type");
+  const isScanFromProvider =
+    providerType != null && String(providerType) === "1";
+  const isScanFromContext = normalizedType.includes("scan");
+  const isLab = !(isScanFromProvider || isScanFromContext);
+  const titlePrefix = isLab ? "Lab Center" : "Scan Center";
 
   const providerId = provider ? pick(provider, "id", "Id") : null;
   const workingHoursApi = pick(provider, "workingHours", "WorkingHours");
@@ -163,6 +177,30 @@ export default function ProviderProfilePage({ type }) {
     pick(provider, "avg_Rating", "Avg_Rating") ??
     pick(provider, "avgRating", "AvgRating") ??
     "—";
+  const imageUrl =
+    userImage?.imageUrl1 ||
+    userImage?.imageUrl ||
+    pick(provider, "imageUrl", "ImageUrl") ||
+    pick(provider, "profileImageUrl", "ProfileImageUrl") ||
+    "";
+
+  const handleUploadImage = async (file) => {
+    if (!file) return;
+    try {
+      if (imageUrl) {
+        await updateUserImageMutation.mutateAsync(file);
+      } else {
+        await createUserImageMutation.mutateAsync(file);
+      }
+      toast.success("Profile image uploaded.", { position: "top-center" });
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.title ||
+        "Could not upload image.";
+      toast.error(msg, { position: "top-center" });
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -173,8 +211,16 @@ export default function ProviderProfilePage({ type }) {
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden mb-6">
         <div className="p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-[#316BE8] flex items-center justify-center text-white text-2xl font-bold">
-              {name.charAt(0).toUpperCase()}
+            <div className="w-20 h-20 rounded-2xl bg-[#316BE8] overflow-hidden flex items-center justify-center text-white text-2xl font-bold">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={name}
+                  className="w-full h-full object-contain bg-white"
+                />
+              ) : (
+                name.charAt(0).toUpperCase()
+              )}
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">{name}</h2>
@@ -188,6 +234,48 @@ export default function ProviderProfilePage({ type }) {
                   <span className="font-medium">{avgRating}</span>
                 </div>
               )}
+            </div>
+            <div className="sm:ms-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="px-3 py-1.5 rounded-lg border border-[#316BE8] text-[#316BE8] text-xs font-semibold"
+              >
+                Upload image
+              </button>
+              {imageUrl && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await deleteUserImageMutation.mutateAsync();
+                      toast.success("Profile image removed.", {
+                        position: "top-center",
+                      });
+                    } catch (err) {
+                      const msg =
+                        err?.response?.data?.message ||
+                        err?.response?.data?.title ||
+                        "Could not delete image.";
+                      toast.error(msg, { position: "top-center" });
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold"
+                >
+                  Delete
+                </button>
+              )}
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  await handleUploadImage(file);
+                  e.target.value = "";
+                }}
+              />
             </div>
           </div>
         </div>

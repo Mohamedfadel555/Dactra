@@ -6,28 +6,26 @@ import BarComp from "../../Components/Common/BarComp";
 import { useEffect, useState } from "react";
 import { GiMedicines } from "react-icons/gi";
 import CommentCard from "../../Components/Common/CommentCard";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { PiWarningCircle } from "react-icons/pi";
 import { FaFileMedicalAlt } from "react-icons/fa";
-import { useEditPatientProfile } from "../../hooks/useEditPatientProfile";
-import { useChangePassword } from "../../hooks/useChangePassword";
 import DoctorSection from "../../Components/Profile/DoctorSection";
-import { useDeleteMyAcc } from "../../hooks/useDeleteMyAcc";
-import { useAddVitals } from "../../hooks/useAddVitals";
 import SwiperComponent from "../../Components/Common/SwiperComponent";
 import PatientSection from "../../Components/Profile/PatientSection";
-import { useEditAllergies } from "../../hooks/useEditAllergies";
-import { useEditChronics } from "../../hooks/useEditChronics";
 import { IoWarningOutline, IoWarning } from "react-icons/io5";
 import { useGetDoctorProfile } from "../../hooks/useGetDoctorProfile";
 import { useParams } from "react-router-dom";
 import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 import Schedule from "../../Components/Profile/Schedule";
-import { useGetDoctorSlots } from "../../hooks/useGetDoctorSlots";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import { useGetUser } from "../../hooks/useGetUser";
 import { useGetSlotsById } from "../../hooks/useGetSlotsById";
+import ReferralModal from "../../Components/Profile/ReferralModal";
+import { MdOutlineScience } from "react-icons/md";
+import { HiOutlineBeaker } from "react-icons/hi2";
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
 function viewerIdentityFromToken(accessToken) {
   if (!accessToken) return { email: null };
@@ -41,11 +39,8 @@ function viewerIdentityFromToken(accessToken) {
 }
 
 const genderData = ["Male", "Female"];
-
 const bloodTypeData = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-
 const SmokingData = ["No", "Yes", "EX-Smoker"];
-
 const martialData = ["Single", "Married", "Divorced", "Widowed"];
 
 const appointmentData = [
@@ -58,8 +53,61 @@ const appointmentData = [
   { date: "2025-01-07", count: 14 },
 ];
 
+// ─── shared card wrapper ──────────────────────────────────────────────────────
+
+function Card({ children, className = "", ...props }) {
+  return (
+    <div
+      className={`bg-white rounded-2xl border border-gray-100 shadow-sm ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── stat pill ───────────────────────────────────────────────────────────────
+
+function StatPill({ label, value }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+        {label}
+      </span>
+      <span className="text-[17px] font-semibold text-gray-900">
+        {value ?? "—"}
+      </span>
+    </div>
+  );
+}
+
+// ─── animation variants ──────────────────────────────────────────────────────
+
+const fadeUp = (delay = 0) => ({
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1], delay },
+  },
+});
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+const itemFade = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: "easeOut" } },
+};
+
+// ─── component ───────────────────────────────────────────────────────────────
+
 export default function Profile({ role }) {
   const [grouped, setGrouped] = useState([]);
+  const [showReferral, setShowReferral] = useState(false);
+
   const { id } = useParams();
   const { accessToken, role: authRole } = useAuth();
   const { email: viewerEmail } = viewerIdentityFromToken(accessToken);
@@ -71,12 +119,14 @@ export default function Profile({ role }) {
   const { data: user } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
 
+  console.log(user);
+
   const myId = me?.id ?? me?.Id ?? me?.userId ?? me?.UserId;
   const emailMatch =
     viewerEmail &&
     user?.email &&
     String(viewerEmail).toLowerCase() === String(user.email).toLowerCase();
-  // Only treat as "own" when same role table as this page (avoid patient id === doctor id collisions).
+
   const authRoleNorm = String(authRole || "").toLowerCase();
   const pageRoleNorm = String(role || "").toLowerCase();
   const routeIsSelf =
@@ -84,524 +134,464 @@ export default function Profile({ role }) {
     myId != null &&
     id != null &&
     String(myId) === String(id);
+
   const isOwnProfile = Boolean(
     accessToken && user && (emailMatch || routeIsSelf),
   );
+  const canRefer =
+    accessToken && authRole === "Doctor" && role === "Patient" && !isOwnProfile;
 
-  //transforming vitals data
+  // vitals transform
   useEffect(() => {
     if (!user || role === "Doctor") return;
-    let newg = user?.vitalSigns.reduce((acc, item) => {
-      let id = item.vitalSignTypeId;
-      if (!acc[id]) acc[id] = [];
-      if (id === 1) {
+    const newg = user.vitalSigns?.reduce((acc, item) => {
+      const tid = item.vitalSignTypeId;
+      if (!acc[tid]) acc[tid] = [];
+      const dateStr = `${item.date.split("T")[0]}-[${item.date.split("T")[1]?.split(".")[0]}]`;
+      if (tid === 1)
         acc[1].unshift({
           systolic: item.value,
           diastolic: item.value2,
-          date: `${item.date.split("T")[0]}-[${
-            item.date.split("T")[1].split(".")[0]
-          }]`,
+          date: dateStr,
         });
-      } else if (id === 2) {
-        acc[2].unshift({
-          heartRate: item.value,
-          date: `${item.date.split("T")[0]}-[${
-            item.date.split("T")[1].split(".")[0]
-          }]`,
-        });
-      } else if (id === 3) {
-        acc[3].unshift({
-          glucose: item.value,
-          date: `${item.date.split("T")[0]}-[${
-            item.date.split("T")[1].split(".")[0]
-          }]`,
-        });
-      }
+      if (tid === 2) acc[2].unshift({ heartRate: item.value, date: dateStr });
+      if (tid === 3) acc[3].unshift({ glucose: item.value, date: dateStr });
       return acc;
     }, {});
-    setGrouped(newg);
-  }, [user]);
+    setGrouped(newg ?? []);
+  }, [user, role]);
 
-  const popupVariants = {
-    hidden: {
-      opacity: 0,
-      scale: 0.92,
-      y: 20,
-    },
-    show: {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 120,
-        damping: 22,
-        mass: 0.9,
-      },
-    },
-    exit: {
-      opacity: 0,
-      scale: 0.92,
-      y: 20,
-      transition: { duration: 0.2 },
-    },
-  };
+  // ─── derived display data ────────────────────────────────────────────────
+  const patientStats = [
+    { label: "Gender", value: genderData[user?.gender] },
+    { label: "Age", value: user?.age },
+    { label: "Blood type", value: bloodTypeData[user?.bloodType] },
+    { label: "Height", value: user?.height ? `${user.height} cm` : null },
+    { label: "Weight", value: user?.weight ? `${user.weight} kg` : null },
+    { label: "Smoking", value: SmokingData[user?.smokingStatus] },
+    { label: "Marital", value: martialData[user?.maritalStatus] },
+  ];
 
-  const overlayVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { duration: 0.25 },
+  const doctorStats = [
+    { label: "Gender", value: genderData[user?.gender] },
+    { label: "Age", value: user?.age },
+    { label: "Specialization", value: user?.specializationName },
+    {
+      label: "Experience",
+      value: user?.yearsOfExperience ? `${user.yearsOfExperience} yrs` : null,
     },
-    exit: {
-      opacity: 0,
-      transition: { duration: 0.2 },
-    },
-  };
+    { label: "Rating", value: user?.averageRating },
+  ];
 
-  const rightContainer = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.05,
-      },
+  const charts = [
+    {
+      title: "Blood pressure",
+      data: grouped[1] ?? [],
+      domain: [40, 200],
+      fields: [
+        {
+          key: "systolic",
+          label: "Systolic",
+          min: 40,
+          max: 200,
+          color: "#ef4444",
+        },
+        {
+          key: "diastolic",
+          label: "Diastolic",
+          min: 40,
+          max: 130,
+          color: "#14b8a6",
+        },
+      ],
     },
-  };
+    {
+      title: "Heart rate",
+      data: grouped[2] ?? [],
+      domain: [40, 180],
+      fields: [
+        {
+          key: "heartRate",
+          label: "Heart rate (BPM)",
+          min: 40,
+          max: 180,
+          color: "#f97316",
+        },
+      ],
+    },
+    {
+      title: "Glucose",
+      data: grouped[3] ?? [],
+      domain: [40, 180],
+      fields: [
+        {
+          key: "glucose",
+          label: "Glucose (mg/dL)",
+          min: 70,
+          max: 180,
+          color: "#eab308",
+        },
+      ],
+    },
+  ];
 
-  const rightItem = {
-    hidden: {
-      opacity: 0,
-      x: 25,
-    },
-    show: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.4,
-        ease: "easeOut",
-      },
-    },
-    exit: {
-      opacity: 0,
-      x: 20,
-      transition: { duration: 0.2 },
-    },
-  };
-
-  const sidebarContainer = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: 0.04,
-        delayChildren: 0.04,
-      },
-    },
-  };
-
-  const sidebarItem = {
-    hidden: {
-      opacity: 0,
-      x: -20,
-    },
-    show: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.35,
-        ease: "easeOut",
-      },
-    },
-  };
-
+  // ────────────────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="flex flex-col gap-[70px] justify-center pb-[50px]">
-        <div
-          className="pt-[100px] w-full overflow-hidden pb-[10px] px-4 md:px-[30px] lg:px-[50px] min-h-screen font-english 
-      flex flex-col lg:flex-row gap-[30px] lg:gap-[50px] justify-center"
-        >
-          {/* Sidebar */}
-          <motion.div
-            className="w-full lg:w-[350px] flex flex-col gap-[20px] flex-shrink-0 "
-            variants={sidebarContainer}
-            initial="hidden"
-            animate="show"
+      {/* ── page ── */}
+      <div className="min-h-screen bg-[#f8f9fb] font-english pt-[60px]">
+        {/* ── Hero banner ─────────────────────────────────────────────────── */}
+        <div className="relative h-[200px] md:h-[240px] overflow-hidden">
+          {/* abstract mesh bg */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg,#1e3a5f 0%,#185FA5 55%,#0ea5e9 100%)",
+            }}
+          />
+          {/* subtle pattern */}
+          <svg
+            className="absolute inset-0 w-full h-full opacity-[0.06]"
+            xmlns="http://www.w3.org/2000/svg"
           >
-            <motion.div
-              variants={sidebarItem}
-              className="relative flex flex-col justify-center items-center 
-          gap-[15px] p-[16px] rounded-[10px] bg-[#F5F6F7] shadow-md"
+            <defs>
+              <pattern
+                id="dots"
+                width="28"
+                height="28"
+                patternUnits="userSpaceOnUse"
+              >
+                <circle cx="2" cy="2" r="1.5" fill="white" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dots)" />
+          </svg>
+
+          {/* report / complaint btn */}
+          {accessToken && !isOwnProfile && (
+            <Link
+              to="/complaints/submit"
+              state={{ against: role === "Doctor" ? "Doctor" : "Patient" }}
+              className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5
+                         rounded-full bg-white/15 backdrop-blur-sm border border-white/25
+                         text-white text-[12px] font-medium hover:bg-white/25 transition-colors"
             >
-              {accessToken && !isOwnProfile && (
-                <Link
-                  to="/complaints/submit"
-                  state={{
-                    against: role === "Doctor" ? "Doctor" : "Patient",
-                  }}
-                  className="absolute size-[30px] rounded-full bg-white top-[10px] right-[10px] z-[60] flex justify-center items-center shadow border border-amber-200/90 text-amber-600 hover:text-amber-700 hover:border-amber-300"
-                  title="Report or Complaints"
-                  aria-label="Report or Complaints"
-                >
-                  <motion.span
-                    className="flex items-center justify-center"
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{
-                      duration: 1.8,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    <IoWarning className="size-[20px]" />
-                  </motion.span>
-                </Link>
-              )}
+              <IoWarning className="size-[14px]" />
+              Report
+            </Link>
+          )}
+        </div>
+
+        {/* ── Content ─────────────────────────────────────────────────────── */}
+        <div className="px-4 md:px-8 lg:px-12 pb-16 max-w-[1200px] mx-auto">
+          {/* ── Profile card (overlaps hero) ──────────────────────────────── */}
+          <motion.div variants={fadeUp(0)} initial="hidden" animate="show">
+            <Card
+              className="relative -mt-[72px] p-5 md:p-6 flex flex-col sm:flex-row
+                             items-center sm:items-end gap-5"
+            >
+              {/* avatar */}
               <motion.div
-                className="w-[150px] h-[150px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] 
-            rounded-full overflow-hidden relative flex justify-center items-center bg-gray-200"
+                className="size-[120px] md:size-[140px] rounded-2xl overflow-hidden
+                           bg-gray-100 flex-shrink-0 border-4 border-white shadow-lg"
                 whileHover={{ scale: 1.03 }}
                 transition={{ type: "spring", stiffness: 260 }}
               >
-                <IoPersonSharp
-                  className="text-[130px] md:text-[160px] lg:text-[180px] text-white 
-              absolute bottom-[-20px] left-1/2 translate-x-[-50%]"
-                />
-              </motion.div>
-
-              <motion.div
-                // variants={sidebarItem}
-                className="flex flex-col gap-[5px] items-center"
-              >
-                <p className="text-2xl md:text-3xl font-bold">
-                  {user && user?.firstName + " " + user?.lastName}
-                </p>
-                <p className="text-[#404448]">{role}</p>
-              </motion.div>
-
-              <hr className="w-full text-[rgb(193,193,193)]" />
-
-              <motion.div
-                // variants={sidebarItem}
-                className="flex flex-col w-full gap-[15px] text-[#404448]"
-              >
-                <motion.div
-                  // variants={sidebarItem}
-                  className="flex items-center gap-[10px]"
-                >
-                  <FaPhone /> {user?.phoneNumber}
-                </motion.div>
-                <motion.div
-                  // variants={sidebarItem}
-                  className="flex items-center gap-[10px]"
-                >
-                  <FaEnvelope /> {user?.email}
-                </motion.div>
-                <motion.div
-                  // variants={sidebarItem}
-                  className="flex items-center gap-[10px]"
-                >
-                  <FaMapMarkerAlt />{" "}
-                  {user?.address ? user?.address : "Not Specified"}
-                </motion.div>
-              </motion.div>
-            </motion.div>
-            {role === "Patient" && (
-              <motion.div
-                variants={sidebarItem}
-                className=" relative  flex flex-col  
-          gap-[20px] p-[16px] rounded-[10px] bg-white shadow-md"
-              >
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl ">Medical Reports Archieve </h3>
-                </div>
-                <div className="flex flex-col gap-[15px]">
-                  {[
-                    "Complete Blood Count Report",
-                    "Liver Function Report",
-                    "Kidney Function Report",
-                    "Blood Sugar Report",
-                  ].length !== 0 ? (
-                    [
-                      "Complete Blood Count Report",
-                      "Liver Function Report",
-                      "Kidney Function Report",
-                      "Blood Sugar Report",
-                    ].map((report, ind) => (
-                      <div className="flex justify-between items-center">
-                        <div id={ind} className="flex gap-2 items-center">
-                          <FaFileMedicalAlt className="size-[25px] text-blue-600" />{" "}
-                          {report}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex gap-2">
-                      <IoWarningOutline className="text-blue-600 size-[30px] shrink-0" />
-                      <div className="flex flex-col gap-1 max-w-[250px]">
-                        <p className="font-bold">No medical reports yet</p>
-                        <p className="text-[12px]">
-                          This Patient has not shared Medical reports yet
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-          {/* right */}
-          <motion.div
-            className="flex-1 w-full max-w-[1000px] flex flex-col items-center gap-[20px]"
-            variants={rightContainer}
-            initial="hidden"
-            animate="show"
-          >
-            <motion.div
-              variants={rightItem}
-              className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
-            >
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-5">
-                {(role === "Patient"
-                  ? [
-                      { label: "Gender", value: genderData[user?.gender] },
-                      { label: "Age", value: user?.age },
-                      { label: "Blood", value: bloodTypeData[user?.bloodType] },
-                      { label: "Height", value: user?.height },
-                      { label: "Weight", value: user?.weight },
-                      {
-                        label: "Smoking",
-                        value: SmokingData[user?.smokingStatus],
-                      },
-                      {
-                        label: "Marital Status",
-                        value: martialData[user?.maritalStatus],
-                      },
-                    ]
-                  : [
-                      { label: "Gender", value: genderData[user?.gender] },
-                      { label: "Age", value: user?.age },
-                      {
-                        label: "Specialization",
-                        value: user?.specializationName,
-                      },
-                      { label: "EXP.Years", value: user?.yearsOfExperience },
-                      { label: "Rating", value: user?.averageRating },
-                    ]
-                ).map((item, i) => (
-                  <div key={i} className="flex flex-col">
-                    <p className="text-[#6D7379] text-[14px] md:text-[15px]">
-                      {item.label}
-                    </p>
-                    <p className="text-[18px] md:text-[20px] font-semibold">
-                      {item.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {role === "Doctor" && (
-              <>
-                <motion.div
-                  variants={rightItem}
-                  className="w-full bg-white shadow-md flex  gap-[20px] rounded-xl p-4 md:p-5"
-                >
-                  <p className="text-[20px] font-bold">About:</p>
-                  <p className="pt-[5px]">
-                    {user?.about !== ""
-                      ? user?.about
-                      : "The doctor has not shared an about section yet"}
-                  </p>
-                </motion.div>
-
-                <motion.div variants={rightItem} className="w-full">
-                  <DoctorSection
-                    title={"Qualifications"}
-                    info={user && user.qualifications}
-                    editFlag={false}
+                {user?.imageUrl || user?.profileImageUrl ? (
+                  <div
+                    className="size-[120px] md:size-[140px] rounded-2xl overflow-hidden border-4 border-white shadow-lg"
+                    style={{
+                      backgroundImage: `url(${user.imageUrl || user.profileImageUrl})`,
+                      backgroundSize: "cover",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "top",
+                    }}
                   />
-                </motion.div>
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-end justify-center overflow-hidden">
+                    <IoPersonSharp className="text-[100px] text-gray-400 translate-y-3" />
+                  </div>
+                )}
+              </motion.div>
 
-                <motion.div variants={rightItem} className="w-full">
-                  <DoctorSection title={"Experience"} editFlag={false} />
-                </motion.div>
-                <motion.div
-                  variants={rightItem}
-                  className="w-full bg-white shadow-md rounded-xl p-4 md:p-5"
-                >
-                  {inPersonSlotsToBook && onlineSlotsToBook && (
-                    <Schedule
-                      title={"Appointment booking"}
-                      subtitle={"Select appointment"}
-                      role={"NOt a doctor"}
-                      timeSlots={{
-                        inPerson: inPersonSlotsToBook,
-                        online: onlineSlotsToBook,
+              {/* name + contact */}
+              <div
+                className="flex-1 flex flex-col sm:flex-row sm:items-end
+                              justify-between gap-4 w-full"
+              >
+                <div>
+                  <p className="text-[22px] md:text-[26px] font-bold text-gray-900 leading-tight">
+                    {user ? `${user.firstName} ${user.lastName}` : "—"}
+                  </p>
+                  <p className="text-[13px] text-gray-400 mt-0.5">{role}</p>
+
+                  <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3">
+                    {[
+                      { Icon: FaPhone, val: user?.phoneNumber },
+                      { Icon: FaEnvelope, val: user?.email },
+                      {
+                        Icon: FaMapMarkerAlt,
+                        val: user?.address || "Not specified",
+                      },
+                    ].map(({ Icon, val }) => (
+                      <span
+                        key={val}
+                        className="flex items-center gap-1.5 text-[13px] text-gray-500"
+                      >
+                        <Icon className="text-gray-400 size-[13px]" />
+                        {val}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* referral button */}
+                {canRefer && (
+                  <motion.button
+                    onClick={() => setShowReferral(true)}
+                    whileHover={{
+                      y: -2,
+                      boxShadow: "0 8px 24px rgba(24,95,165,.25)",
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 18 }}
+                    className="self-start sm:self-auto flex items-center gap-2 px-5 py-2.5
+                               rounded-xl bg-blue-600 text-white text-[13px] font-semibold
+                               hover:bg-blue-700 transition-colors shadow-md shadow-blue-200/60"
+                  >
+                    <motion.span
+                      animate={{ rotate: [0, 12, -12, 0] }}
+                      transition={{
+                        duration: 2.8,
+                        repeat: Infinity,
+                        ease: "easeInOut",
                       }}
-                      id={id}
-                    />
-                  )}
-                </motion.div>
+                    >
+                      <HiOutlineBeaker size={17} />
+                    </motion.span>
+                    Send lab referral
+                  </motion.button>
+                )}
+              </div>
+            </Card>
+          </motion.div>
 
-                <motion.div variants={rightItem} className="w-full">
-                  <BarComp title="Appointment" data={appointmentData} />
-                </motion.div>
-              </>
-            )}
+          {/* ── Two-column grid ───────────────────────────────────────────── */}
+          <div className="mt-5 flex flex-col lg:flex-row gap-5 items-start">
+            {/* ── Left sidebar ──────────────────────────────────────────── */}
+            <motion.div
+              className="w-full lg:w-[300px] flex flex-col gap-4 flex-shrink-0"
+              variants={stagger}
+              initial="hidden"
+              animate="show"
+            >
+              {/* Stats */}
+              <motion.div variants={itemFade}>
+                <Card className="p-5">
+                  <p
+                    className="text-[11px] font-semibold text-gray-400 uppercase
+                                 tracking-wider mb-4"
+                  >
+                    {role === "Doctor" ? "Doctor info" : "Patient info"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+                    {(role === "Doctor" ? doctorStats : patientStats).map(
+                      (s) => (
+                        <StatPill
+                          key={s.label}
+                          label={s.label}
+                          value={s.value}
+                        />
+                      ),
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
 
-            {role === "Patient" && (
-              <>
-                <motion.div variants={rightItem} className="w-full">
-                  <div className="w-full md:flex-row flex-col flex justify-center items-start gap-[20px]">
+              {/* Medical reports (patient only) */}
+              {role === "Patient" && (
+                <motion.div variants={itemFade}>
+                  <Card className="p-5">
+                    <p
+                      className="text-[11px] font-semibold text-gray-400 uppercase
+                                   tracking-wider mb-4"
+                    >
+                      Medical reports
+                    </p>
+                    <div className="flex flex-col gap-2.5">
+                      {[
+                        "Complete Blood Count",
+                        "Liver Function",
+                        "Kidney Function",
+                        "Blood Sugar",
+                      ].map((r, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ x: 4 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 20,
+                          }}
+                          className="flex items-center gap-2.5 p-2.5 rounded-xl
+                                     hover:bg-blue-50 transition-colors cursor-pointer group"
+                        >
+                          <div
+                            className="size-8 rounded-lg bg-blue-50 group-hover:bg-blue-100
+                                          flex items-center justify-center transition-colors flex-shrink-0"
+                          >
+                            <FaFileMedicalAlt className="text-blue-500 size-[14px]" />
+                          </div>
+                          <span className="text-[13px] text-gray-700 font-medium">
+                            {r} Report
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Allergies + Chronics (patient only, sidebar on desktop) */}
+              {role === "Patient" && (
+                <>
+                  <motion.div variants={itemFade}>
                     <PatientSection
                       Icon={PiWarningCircle}
                       title="Allergies"
-                      data={user && user.allergies}
+                      data={user?.allergies}
                       editFlag={false}
                     />
-
+                  </motion.div>
+                  <motion.div variants={itemFade}>
                     <PatientSection
                       Icon={GiMedicines}
-                      title={"Chronic Diseases"}
-                      data={user && user.chronicDiseases}
+                      title="Chronic diseases"
+                      data={user?.chronicDiseases}
                       editFlag={false}
                     />
-                  </div>
-                </motion.div>
-                <motion.div
-                  variants={rightItem}
-                  className="w-full"
-                  whileHover={{ y: -6 }}
-                  transition={{ type: "spring", stiffness: 260 }}
-                >
-                  <ChartComp
-                    title="Blood Pressure"
-                    data={grouped[1] ? grouped[1] : []}
-                    domain={[40, 200]}
-                    editFlag={false}
-                    fields={[
-                      {
-                        key: "systolic",
-                        label: "Systolic",
-                        min: 40,
-                        max: 200,
-                        color: "#ff4d4f",
-                      },
-                      {
-                        key: "diastolic",
-                        label: "Diastolic",
-                        min: 40,
-                        max: 130,
-                        color: "#36cfc9",
-                      },
-                    ]}
-                  />
-                </motion.div>
-
-                <motion.div
-                  variants={rightItem}
-                  className="w-full"
-                  whileHover={{ y: -6 }}
-                  transition={{ type: "spring", stiffness: 260 }}
-                >
-                  <ChartComp
-                    title="Heart Rate"
-                    data={grouped[2] ? grouped[2] : []}
-                    domain={[40, 180]}
-                    fields={[
-                      {
-                        key: "heartRate",
-                        label: "Heart Rate (BPM)",
-                        min: 40,
-                        max: 180,
-                        color: "#ff7a45",
-                      },
-                    ]}
-                    editFlag={false}
-                  />
-                </motion.div>
-
-                <motion.div
-                  variants={rightItem}
-                  className="w-full"
-                  whileHover={{ y: -6 }}
-                  transition={{ type: "spring", stiffness: 260 }}
-                >
-                  <ChartComp
-                    title="Glucose"
-                    data={grouped[3] ? grouped[3] : []}
-                    domain={[40, 180]}
-                    editFlag={false}
-                    fields={[
-                      {
-                        key: "glucose",
-                        label: "Glucose (mg/dL)",
-                        min: 70,
-                        max: 180,
-                        color: "#ffc107",
-                      },
-                    ]}
-                  />
-                </motion.div>
-              </>
-            )}
-          </motion.div>
-        </div>
-
-        {role === "Doctor" && (
-          <>
-            <div className="w-[80%] flex flex-col gap-10 m-auto ">
-              {user?.ratings && (
-                <>
-                  {/* <motion.div
-                    variants={rightItem}
-                    initial={{ opacity: 0, x: 80 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className=""
-                  >
-                    {/* <ReviewsDetailsSection
-                      NumOfReviews={ratings && ratings.totalRatings}
-                      avgRating={ratings && ratings.averageRating}
-                      addFlag={false}
-                      data={
-                        ratings
-                          ? ratings.scoreCounts
-                          : [
-                              { num: 1, percent: 0 },
-                              { num: 2, percent: 0 },
-                              { num: 3, percent: 0 },
-                              { num: 4, percent: 0 },
-                              { num: 5, percent: 0 },
-                            ]
-                      }
-                    />
-                  </motion.div> */}
-
-                  {user.ratings?.length > 0 && (
-                    <motion.div
-                      variants={rightItem}
-                      initial={{ opacity: 0, x: 80 }}
-                      animate={{ opacity: 1, x: 0 }}
-                    >
-                      <SwiperComponent
-                        Card={CommentCard}
-                        data={ratings ? ratings.ratings : []}
-                        mapProps={(item) => ({
-                          name: item.PatientName,
-                          photo: profilePhoto,
-                          starsNo: item.Score,
-                          heading: item.Heading,
-                          body: item.Comment,
-                        })}
-                      />
-                    </motion.div>
-                  )}
+                  </motion.div>
                 </>
               )}
-            </div>
-          </>
-        )}
+            </motion.div>
+
+            {/* ── Right main ────────────────────────────────────────────── */}
+            <motion.div
+              className=" w-full md:flex-1 min-w-0 flex flex-col gap-4"
+              variants={stagger}
+              initial="hidden"
+              animate="show"
+            >
+              {/* Doctor sections */}
+              {role === "Doctor" && (
+                <>
+                  {/* About */}
+                  <motion.div variants={itemFade}>
+                    <Card className="p-5">
+                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                        About
+                      </p>
+                      <p className="text-[14px] text-gray-600 leading-relaxed">
+                        {user?.about ?? "No description available."}
+                      </p>
+                    </Card>
+                  </motion.div>
+
+                  <motion.div variants={itemFade}>
+                    <DoctorSection
+                      title="Qualifications"
+                      info={user?.qualifications}
+                      editFlag={false}
+                    />
+                  </motion.div>
+
+                  <motion.div variants={itemFade}>
+                    <DoctorSection title="Experience" editFlag={false} />
+                  </motion.div>
+
+                  <motion.div variants={itemFade}>
+                    <Card className="p-5">
+                      <Schedule
+                        title="Appointment booking"
+                        subtitle="Select appointment"
+                        role="NOt a doctor"
+                        timeSlots={{
+                          inPerson: inPersonSlotsToBook ?? [],
+                          online: onlineSlotsToBook ?? [],
+                        }}
+                        id={id}
+                      />
+                    </Card>
+                  </motion.div>
+                  <motion.div variants={itemFade}>
+                    <BarComp title="Appointments" data={appointmentData} />
+                  </motion.div>
+                </>
+              )}
+
+              {/* Patient charts */}
+              {role === "Patient" &&
+                charts.map(({ title, data, domain, fields }) => (
+                  <motion.div
+                    key={title}
+                    variants={itemFade}
+                    whileHover={{ y: -4 }}
+                    transition={{ type: "spring", stiffness: 240, damping: 22 }}
+                  >
+                    <ChartComp
+                      title={title}
+                      data={data}
+                      domain={domain}
+                      fields={fields}
+                      editFlag={false}
+                    />
+                  </motion.div>
+                ))}
+            </motion.div>
+          </div>
+
+          {/* ── Doctor ratings ─────────────────────────────────────────────── */}
+          {role === "Doctor" && user?.ratings?.length > 0 && (
+            <motion.div
+              className="mt-5"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.48, ease: "easeOut", delay: 0.2 }}
+            >
+              <Card className="p-5 md:p-6">
+                <p
+                  className="text-[11px] font-semibold text-gray-400 uppercase
+                               tracking-wider mb-5"
+                >
+                  Patient reviews
+                </p>
+                <SwiperComponent
+                  Card={CommentCard}
+                  data={user.ratings}
+                  mapProps={(item) => ({
+                    name: item.patientName,
+                    photo: profilePhoto,
+                    starsNo: item.score,
+                    heading: item.heading,
+                    body: item.comment,
+                  })}
+                />
+              </Card>
+            </motion.div>
+          )}
+        </div>
       </div>
+
+      {/* ── Referral modal ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showReferral && (
+          <ReferralModal
+            patientId={id}
+            onClose={() => setShowReferral(false)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -14,7 +14,9 @@ export const LoginAPI = async (Data) => {
 };
 
 export const RegisterAPI = async (Data) => {
-  const res = await axios.post(`${baseURL}account/Register`, Data);
+  const res = await axios.post(`${baseURL}account/Register`, Data, {
+    withCredentials: true,
+  });
   return res;
 };
 
@@ -37,7 +39,9 @@ export const VerifyOTP_ForgetPassword = async (Data) => {
 };
 
 export const VerifyOTP = async (Data) => {
-  const res = await axios.post(`${baseURL}account/verifyOTP`, Data);
+  const res = await axios.post(`${baseURL}account/verifyOTP`, Data, {
+    withCredentials: true,
+  });
   return res;
 };
 
@@ -47,19 +51,57 @@ export const ResetPassword = async (Data) => {
 };
 
 export const CompletePatientRegisterAPI = async (Data) => {
-  const res = await axios.post(`${baseURL}Patient/CompleteRegister`, Data);
+  const res = await axios.post(`${baseURL}Patient/CompleteRegister`, Data, {
+    withCredentials: true,
+  });
   return res;
 };
 
 export const CompleteDoctorRegisterAPI = async (Data) => {
-  const res = await axios.post(`${baseURL}Doctor/CompleteRegister`, Data);
+  const res = await axios.post(`${baseURL}Doctor/CompleteRegister`, Data, {
+    withCredentials: true,
+  });
   return res;
 };
 
+/**
+ * Must align with account/Register role: "Scan" | "Lap" (see Signup capitalizeFirstLetter).
+ * Provider entity type: 0 = Lab, 1 = Scan (matches useMedicalProviderMe list filter).
+ */
 export const CompleteMedicalProviderRegisterAPI = async (Data) => {
+  const roleLower = String(Data?.role ?? "").toLowerCase();
+  const roleStr = roleLower === "scan" ? "Scan" : "Lap";
+  const typeNum = roleStr === "Scan" ? 1 : 0;
+
+  const wh = Array.isArray(Data?.workingHours)
+    ? Data.workingHours
+    : Array.isArray(Data?.workinghours)
+      ? Data.workinghours
+      : [];
+
+  const workingHours = wh.map((w) => {
+    const day = Number(w.day ?? w.Day);
+    const from = String(w.from ?? w.From ?? "");
+    const to = String(w.to ?? w.To ?? "");
+    return { day, from, to };
+  });
+
+  // Single camelCase payload avoids duplicate JSON keys confusing ASP.NET model binding.
+  const body = {
+    email: Data.email,
+    role: roleStr,
+    name: Data.name,
+    licenceNo: Data.licenceNo,
+    address: Data.address,
+    about: Data.about ?? "",
+    type: typeNum,
+    workingHours,
+  };
+
   const res = await axios.post(
     `${baseURL}MedicalTestsProvider/CompleteRegister`,
-    Data
+    body,
+    { withCredentials: true },
   );
   return res;
 };
