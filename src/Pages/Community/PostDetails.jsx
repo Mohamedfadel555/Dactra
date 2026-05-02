@@ -366,7 +366,7 @@ export default function PostDetailPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
-                    {role === "Patient" && (
+                    {role === "Patient" ? (
                       <ActionBtn
                         iconActive={FaAngleDoubleUp}
                         iconInactive={FaAngleUp}
@@ -377,6 +377,11 @@ export default function PostDetailPage() {
                         onClick={handleInterest}
                         count={likes}
                       />
+                    ) : (
+                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-slate-500 bg-slate-50 select-none">
+                        <FaAngleDoubleUp size={14} />
+                        <span>{likes}</span>
+                      </div>
                     )}
                     <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-blue-600 bg-blue-50 select-none">
                       <FiMessageCircle size={15} />
