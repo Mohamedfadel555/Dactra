@@ -20,6 +20,7 @@ import {
   FiVideo,
   FiCalendar,
   FiExternalLink,
+  FiLock,
 } from "react-icons/fi";
 
 import { useAuth } from "../../Context/AuthContext";
@@ -28,6 +29,7 @@ import { useGetAppointmentsStat } from "../../hooks/useGetAppointmentsStat";
 import { useCancelAppointment } from "../../hooks/useCancelAppointment";
 import { useResumePay } from "./../../hooks/useResumePay";
 import AvatarIcon from "./../../Components/Common/AvatarIcon1";
+import { useAppointmentHub } from "../../hooks/useAppointmentHub";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -252,15 +254,6 @@ function JoinSessionButton({ appt, onJoin }) {
         </div>
       )}
 
-      {!isLive && (
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />
-          <span className="text-[11px] font-black text-slate-500">
-            بيفتح بعد {mm}:{ss}
-          </span>
-        </div>
-      )}
-
       <motion.button
         whileTap={isLive ? { scale: 0.96 } : {}}
         whileHover={
@@ -297,8 +290,6 @@ function JoinSessionButton({ appt, onJoin }) {
 function CancelModal({ appt, role, onClose, onConfirm, isLoading }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState(false);
-
-  console.log(appt);
 
   const name = role === "Patient" ? appt.doctor : appt.patient;
   const sub = role === "Patient" ? appt.specialty : `Age ${appt.age}`;
@@ -453,8 +444,6 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
   const SubIcon = role === "Patient" ? TbStethoscope : FiUser;
 
   const { mutate } = useResumePay();
-
-  console.log(appt);
 
   return (
     <motion.div
@@ -767,6 +756,7 @@ export default function MyAppointments() {
   const { role } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  useAppointmentHub();
 
   const tabs = role === "Patient" ? PATIENT_TABS : DOCTOR_TABS;
   const validTab = tabs.includes(activeTab) ? activeTab : tabs[0];
@@ -805,9 +795,8 @@ export default function MyAppointments() {
         { appointmentid: id, CancelledReason: reason },
         {
           onSuccess: () => {
-            // Optimistic update
             queryClient.setQueryData(
-              ["my-appointments", TAB_TO_CODE[validTab], page],
+              ["appointments", TAB_TO_CODE[validTab], page], // ← التغيير هنا
               (old) => {
                 if (!old) return old;
                 const patch = (arr) =>

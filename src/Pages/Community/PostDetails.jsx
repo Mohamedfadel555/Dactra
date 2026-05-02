@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FiMessageCircle,
@@ -66,9 +66,14 @@ export default function PostDetailPage() {
   console.log(post);
   const { role, accessToken } = useAuth();
 
-  const userEmail = accessToken
-    ? JSON.parse(atob(accessToken.split(".")[1])).email
-    : null;
+  const userEmail = useMemo(() => {
+    if (!accessToken) return null;
+    try {
+      return JSON.parse(atob(accessToken.split(".")[1])).email;
+    } catch {
+      return null;
+    }
+  }, [accessToken]); // بيتحسب بس لما accessToken يتغير
 
   const isOwner = post?.email === userEmail;
 
@@ -108,9 +113,9 @@ export default function PostDetailPage() {
     hasNextPage,
     isFetchingNextPage,
     isLoading: commentsLoading,
-  } = useGetQuestionsAnswersInfinite(post?.id);
+  } = useGetQuestionsAnswersInfinite(param.id);
 
-  useQuestionHub(post?.id);
+  useQuestionHub(param.id);
 
   const allComments = commentsData
     ? [

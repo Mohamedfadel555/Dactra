@@ -9,31 +9,35 @@ export const useQuestionHub = (questionId) => {
   const connectionRef = useRef(null);
   const { accessToken } = useAuth();
 
+  questionId = Number(questionId);
+  console.log(questionId);
+
   useEffect(() => {
     if (!questionId || !accessToken) return;
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("https://dactra.runasp.net/hubs/questions", {
         accessTokenFactory: () => accessToken,
-        // خلي SignalR يبدأ بـ LongPolling مباشرة لأن runasp.net مش بيدعم WebSockets
         transport: signalR.HttpTransportType.LongPolling,
       })
       .withAutomaticReconnect()
       .build();
 
-    // helper لتعديل الـ cache
-    const updateCache = (updater) => {
+    // ✅ helper محسّن - بيعمل deep spread صح
+    const updateAnswerInCache = (updater) => {
       queryClient.setQueryData(["comments-infinite", questionId], (old) => {
         if (!old) return old;
         return {
           ...old,
-          pages: old.pages.map((page) => updater(page)),
+          pages: old.pages.map((page) => ({
+            ...page,
+            items: page.items.map(updater),
+          })),
         };
       });
     };
 
     connection.on("AnswerAdded", (newAnswer) => {
-      // أضف الكومنت في أول page لو مش reply
       if (!newAnswer.parentAnswerId) {
         queryClient.setQueryData(["comments-infinite", questionId], (old) => {
           if (!old) return old;
@@ -51,53 +55,52 @@ export const useQuestionHub = (questionId) => {
           };
         });
       } else {
-        // لو reply → زود الـ repliesCount على الـ parent
-        updateCache((page) => ({
-          ...page,
-          items: page.items.map((item) =>
-            item.id === newAnswer.parentAnswerId
-              ? { ...item, repliesCount: (item.repliesCount || 0) + 1 }
-              : item,
-          ),
-        }));
+        updateAnswerInCache((item) =>
+          item.id === newAnswer.parentAnswerId
+            ? { ...item, repliesCount: (item.repliesCount || 0) + 1 }
+            : item,
+        );
       }
+    });
+
+    // حط ده جوه الـ handler
+    connection.on("AnswerLikeUpdated", (data) => {
+      const answerId = data.answerId ?? data.AnswerId;
+      const likesCount = data.likesCount ?? data.LikesCount;
+      const isLikedByCurrentUser =
+        data.isLikedByCurrentUser ?? data.IsLikedByCurrentUser;
+
+      updateAnswerInCache((item) =>
+        item.id === answerId
+          ? { ...item, likesCount, isLikedByCurrentUser }
+          : item,
+      );
     });
 
     connection.on("InterestUpdated", () => {
       queryClient.invalidateQueries({ queryKey: ["question", questionId] });
-      queryClient.refetchQueries({ queryKey: ["question", questionId] });
     });
 
+    // ✅ AnswerUpdated محسّن
     connection.on("AnswerUpdated", (updatedAnswer) => {
-      updateCache((page) => ({
-        ...page,
-        items: page.items.map((item) =>
-          item.id === updatedAnswer.id ? { ...item, ...updatedAnswer } : item,
-        ),
-      }));
+      updateAnswerInCache((item) =>
+        item.id === updatedAnswer.id ? { ...item, ...updatedAnswer } : item,
+      );
     });
 
     connection.on("AnswerDeleted", ({ answerId }) => {
-      updateCache((page) => ({
-        ...page,
-        items: page.items.filter((item) => item.id !== answerId),
-        totalCount: page.totalCount - 1,
-      }));
+      queryClient.setQueryData(["comments-infinite", questionId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            items: page.items.filter((item) => item.id !== answerId),
+            totalCount: page.totalCount - 1,
+          })),
+        };
+      });
     });
-
-    connection.on(
-      "AnswerLikeUpdated",
-      ({ answerId, likesCount, isLikedByCurrentUser }) => {
-        updateCache((page) => ({
-          ...page,
-          items: page.items.map((item) =>
-            item.id === answerId
-              ? { ...item, likesCount, isLikedByCurrentUser }
-              : item,
-          ),
-        }));
-      },
-    );
 
     connection
       .start()
@@ -110,5 +113,5 @@ export const useQuestionHub = (questionId) => {
       connection.invoke("LeaveQuestionGroup", questionId).catch(() => {});
       connection.stop();
     };
-  }, [questionId, queryClient]);
+  }, [questionId, accessToken, queryClient]); // ✅ أضف accessToken للـ deps
 };
