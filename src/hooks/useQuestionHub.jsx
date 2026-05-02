@@ -63,6 +63,10 @@ export const useQuestionHub = (questionId) => {
       }
     });
 
+    connection.on("InterestUpdated", () => {
+      queryClient.invalidateQueries({ queryKey: ["question", questionId] });
+    });
+
     connection.on("AnswerUpdated", (updatedAnswer) => {
       updateCache((page) => ({
         ...page,
