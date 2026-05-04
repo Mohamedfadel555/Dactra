@@ -14,7 +14,7 @@ import SwiperComponent from "../../Components/Common/SwiperComponent";
 import PatientSection from "../../Components/Profile/PatientSection";
 import { IoWarningOutline, IoWarning } from "react-icons/io5";
 import { useGetDoctorProfile } from "../../hooks/useGetDoctorProfile";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 import Schedule from "../../Components/Profile/Schedule";
 import { Link } from "react-router-dom";
@@ -113,13 +113,20 @@ export default function Profile({ role }) {
   const { email: viewerEmail } = viewerIdentityFromToken(accessToken);
   const { data: me } = useGetUser();
 
-  const { data: inPersonSlotsToBook } = useGetSlotsById("inPerson", id);
-  const { data: onlineSlotsToBook } = useGetSlotsById("online", id);
-
-  const { data: user } =
+  const { data: inPersonSlotsToBook } = useGetSlotsById("inPerson", id, role);
+  const { data: onlineSlotsToBook } = useGetSlotsById("online", id, role);
+  const { data: user, error: userError } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
 
-  console.log(user);
+  console.log(userError);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (userError?.response?.status === 403) {
+      navigate("/403", { replace: true });
+    }
+  }, [userError, navigate]);
 
   const myId = me?.id ?? me?.Id ?? me?.userId ?? me?.UserId;
   const emailMatch =

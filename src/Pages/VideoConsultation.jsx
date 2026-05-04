@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as signalR from "@microsoft/signalr";
 import { useAxios } from "../hooks/useAxios";
 import { useAuth } from "../Context/AuthContext";
 import BrandLogo from "../Components/Common/BrandLogo";
@@ -30,7 +31,6 @@ const createVideoCallApi = (axios) => ({
     return data;
   },
   savePrescription: async (appointmentId, payload) => {
-    // TODO: replace with your actual endpoint
     const { data } = await axios.post(`Prescription/${appointmentId}`, payload);
     return data;
   },
@@ -262,7 +262,6 @@ function MedicineSchedule({ medicine, index, onChange }) {
     });
   };
 
-  // notify parent on mount
   useEffect(() => {
     notifyParent(freq, mealRelation, times);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -290,7 +289,6 @@ function MedicineSchedule({ medicine, index, onChange }) {
         {medicine.dose ? ` — ${medicine.dose}` : ""}
       </p>
 
-      {/* Frequency */}
       <div className="mb-3">
         <p className="text-xs text-gray-500 mb-2 font-medium">Times per day</p>
         <div className="flex gap-1.5 flex-wrap">
@@ -311,7 +309,6 @@ function MedicineSchedule({ medicine, index, onChange }) {
         </div>
       </div>
 
-      {/* Meal relation */}
       <div className="mb-3">
         <p className="text-xs text-gray-500 mb-2 font-medium">When to take</p>
         <div className="flex gap-1.5 flex-wrap">
@@ -332,10 +329,7 @@ function MedicineSchedule({ medicine, index, onChange }) {
         </div>
       </div>
 
-      {/* Time pickers — only show active slots */}
-      <div
-        className={`grid gap-2 mb-3 ${activeSlots.length > 2 ? "grid-cols-2" : "grid-cols-2"}`}
-      >
+      <div className="grid gap-2 mb-3 grid-cols-2">
         {TIMES_OF_DAY.filter((t) => activeSlots.includes(t.key)).map((slot) => (
           <div key={slot.key}>
             <p className="text-xs text-gray-400 mb-1">{slot.label}</p>
@@ -349,7 +343,6 @@ function MedicineSchedule({ medicine, index, onChange }) {
         ))}
       </div>
 
-      {/* Notification preview */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5">
         <svg
           className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0"
@@ -428,7 +421,6 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-base font-bold text-gray-800">
@@ -453,7 +445,6 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-gray-100 px-5 pt-3">
           {[
             { key: "rx", label: "Prescription" },
@@ -475,7 +466,6 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
-          {/* ── PRESCRIPTION TAB ── */}
           {activeTab === "rx" && (
             <div className="flex flex-col gap-5">
               <div>
@@ -579,7 +569,6 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
             </div>
           )}
 
-          {/* ── TREATMENT PLAN TAB ── */}
           {activeTab === "plan" && (
             <div>
               <p className="text-xs text-gray-400 mb-4 leading-relaxed">
@@ -610,7 +599,6 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="p-5 border-t border-gray-100">
           <button
             type="button"
@@ -686,17 +674,17 @@ export default function VideoConsultation() {
   const { appointmentId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const isDoctor = (searchParams.get("role") || "patient") === "doctor";
+  const { accessToken, role } = useAuth();
+  const isDoctor = role === "Doctor";
   const queryClient = useQueryClient();
-  const { accessToken } = useAuth();
   const axios = useAxios();
 
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
   const sessionDataRef = useRef(null);
-  // FIX 1: use a ref for sessionEnded so Jitsi event listeners always see the
-  //         current value instead of the stale closure value at registration time.
   const sessionEndedRef = useRef(false);
+  // ── NEW: SignalR connection ref ──────────────────────────────────
+  const hubConnectionRef = useRef(null);
 
   const [callStatus, setCallStatus] = useState("loading");
   const [sessionEnded, setSessionEnded] = useState(false);
@@ -752,7 +740,6 @@ export default function VideoConsultation() {
       setSidebarOpen(false);
     },
     onError: (err) => {
-      // TODO: show a toast / error message to the doctor
       console.error("Failed to save prescription:", err);
     },
   });
@@ -760,10 +747,17 @@ export default function VideoConsultation() {
   // ── Init Jitsi ───────────────────────────────────────────────────
   const initJitsi = useCallback(async (data) => {
     if (!jitsiContainerRef.current) return;
+
     if (jitsiApiRef.current) {
-      jitsiApiRef.current.dispose();
+      try {
+        jitsiApiRef.current.dispose();
+      } catch (_) {}
       jitsiApiRef.current = null;
     }
+
+    jitsiContainerRef.current.innerHTML = "";
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (!jitsiContainerRef.current) return;
 
     const jitsiDomain = sanitizeDomain(data.jitsiDomain || "8x8.vc");
     const { roomName, jitsiToken, displayName = "User", role } = data;
@@ -817,7 +811,6 @@ export default function VideoConsultation() {
     const jitsi = new window.JitsiMeetExternalAPI(jitsiDomain, jitsiOptions);
     jitsiApiRef.current = jitsi;
 
-    // FIX 2: fallback timer in case videoConferenceJoined never fires
     const fallbackTimer = setTimeout(() => {
       if (jitsiApiRef.current) setCallStatus("connected");
     }, 8000);
@@ -829,22 +822,22 @@ export default function VideoConsultation() {
       },
       videoConferenceLeft: () => {
         jitsiApiRef.current = null;
-        // FIX 3: read from ref, not stale closure state
         if (!sessionEndedRef.current) setCallStatus("left");
       },
       readyToClose: () => {
         if (jitsiApiRef.current) {
-          jitsiApiRef.current.dispose();
+          try {
+            jitsiApiRef.current.dispose();
+          } catch (_) {}
           jitsiApiRef.current = null;
         }
-        // FIX 3: same — use ref
         if (!sessionEndedRef.current) setCallStatus("left");
       },
       errorOccurred: (err) => {
         if (err?.error?.isFatal) setCallStatus("error");
       },
     });
-  }, []); // FIX 4: no deps needed — reads sessionEndedRef at call time
+  }, []);
 
   // ── Rejoin ───────────────────────────────────────────────────────
   const handleRejoin = useCallback(async () => {
@@ -894,7 +887,6 @@ export default function VideoConsultation() {
   }, [appointmentId, accessToken]);
 
   // ── Patient: join when doctor comes online ───────────────────────
-  // FIX 5: added all missing dependencies
   useEffect(() => {
     if (isDoctor) return;
     if (!statusData?.isDoctorOnline) return;
@@ -917,6 +909,49 @@ export default function VideoConsultation() {
     appointmentId,
     initJitsi,
   ]);
+
+  // ── NEW: SignalR — listen for CallEnded ──────────────────────────
+  useEffect(() => {
+    if (!appointmentId || !accessToken) return;
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("https://dactra.runasp.net/hubs/videocall", {
+        accessTokenFactory: () => accessToken,
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    hubConnectionRef.current = connection;
+
+    connection.on("CallEnded", () => {
+      // Dispose Jitsi immediately
+      if (jitsiApiRef.current) {
+        try {
+          jitsiApiRef.current.dispose();
+        } catch (_) {}
+        jitsiApiRef.current = null;
+      }
+      sessionEndedRef.current = true;
+      setSessionEnded(true);
+      setCallStatus("ended");
+      queryClient.invalidateQueries(["videoCall", "status", appointmentId]);
+    });
+
+    connection
+      .start()
+      .then(() =>
+        connection.invoke("JoinAppointmentGroup", Number(appointmentId)),
+      )
+
+      .catch((err) => console.error("SignalR connection failed:", err));
+
+    return () => {
+      connection
+        .invoke("LeaveAppointmentGroup", Number(appointmentId))
+        .catch(() => {})
+        .finally(() => connection.stop());
+    };
+  }, [appointmentId, accessToken, queryClient]);
 
   // ── End session with prescription check (doctor only) ───────────
   const handleEndClick = useCallback(() => {
@@ -963,10 +998,8 @@ export default function VideoConsultation() {
 
       {/* ══ HEADER ══ */}
       <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 z-30">
-        {/* Brand */}
         <BrandLogo />
 
-        {/* Status badge */}
         <div className="flex items-center gap-2">
           {callStatus === "connected" ? (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-600 px-4 py-1.5 rounded-full text-sm font-semibold">
@@ -993,7 +1026,6 @@ export default function VideoConsultation() {
           )}
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2">
           {isDoctor && !sessionEnded && (
             <button
@@ -1051,10 +1083,10 @@ export default function VideoConsultation() {
         {(callStatus === "ended" || callStatus === "error") && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/")}
               className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-600 font-semibold text-sm hover:bg-gray-50 transition shadow-md"
             >
-              Back to dashboard
+              Back to Home
             </button>
           </div>
         )}

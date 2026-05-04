@@ -3,12 +3,9 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Loader from "./Components/Common/loader";
 import HomePage from "./Pages/HomePage";
 import ProtectedAuth from "./Components/Auth/ProtectedAuth";
-
 import ProtectedRoutes from "./Components/Common/ProtectedRoutes";
-
 import ProtectedAdmin from "./Components/Admin/ProtectedAdmin";
 import DoctorsListPage from "./Pages/DoctorsListPage";
-
 import MyProfile from "./Pages/Profile/MyProfile";
 import Profile from "./Pages/Profile/Profile";
 import CommunityContainer from "./Pages/Community/CommunityContainer";
@@ -23,11 +20,13 @@ import ReferredPatients from "./Pages/Provider/ReferredPatients";
 import VideoConsultation from "./Pages/VideoConsultation";
 import MyAppointments from "./Pages/Appointment/MyAppointments";
 
+// Doctor Dashboard
+import DealsPage from "./Pages/DoctorDashboard/DealsPage";
+import PatientsPage from "./Pages/DoctorDashboard/PatientsPage";
+
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
-
 const CallBack = lazy(() => import("./Pages/Auth/CallBack"));
-
 const LoginPage = lazy(() => import("./Pages/Auth/LoginPage"));
 const SignupPage = lazy(() => import("./Pages/Auth/SignupPage"));
 const ForgotPasswordPage = lazy(
@@ -40,11 +39,9 @@ const CompleteSignupPage = lazy(
 const UpdatePasswordPage = lazy(
   () => import("./Pages/Auth/UpdatePasswordPage"),
 );
-
 const ERR404 = lazy(() => import("./Pages/Error/Error404"));
 const ERR403 = lazy(() => import("./Pages/Error/Error403"));
 
-// Admin Layout and Pages
 const AdminLayout = lazy(() => import("./Layout/AdminLayout"));
 const DashboardPage = lazy(() => import("./Pages/Admin/DashboardPage"));
 const DoctorsManagementPage = lazy(
@@ -72,7 +69,6 @@ const MajorsManagementPage = lazy(
   () => import("./Pages/Admin/MajorsManagementPage"),
 );
 
-// Lab / Scan (Provider) Layout and Pages
 const ProviderLayout = lazy(() => import("./Layout/ProviderLayout"));
 const ProviderProfilePage = lazy(
   () => import("./Pages/Provider/ProviderProfilePage"),
@@ -83,8 +79,6 @@ const ProviderServicesPage = lazy(
 const ProtectedProvider = lazy(
   () => import("./Components/Provider/ProtectedProvider"),
 );
-
-// Patient: Service Providers (Labs & Scans) list and detail
 const ServiceProvidersPage = lazy(
   () => import("./Pages/ServiceProviders/ServiceProvidersPage"),
 );
@@ -99,10 +93,26 @@ const AboutUsPage = lazy(() => import("./Pages/About/AboutUsPage"));
 const NotificationsPage = lazy(
   () => import("./Pages/Notifications/NotificationsPage"),
 );
+import DoctorDashboardLayout from "./Layout/DoctorDashboardLayout";
+import SponsorsPage from "./Pages/DoctorDashboard/SponsorPage";
 
 export const route = createBrowserRouter([
   { path: "/Dactra/Chat", element: <MedicalChat /> },
   { path: "/consultation/:appointmentId", element: <VideoConsultation /> },
+
+  /* ── Doctor Dashboard ────────────────────────────────────── */
+  {
+    path: "/dd",
+    element: <DoctorDashboardLayout />,
+    children: [
+      { index: true, element: <Navigate to="deals" replace /> },
+      { path: "deals", element: <DealsPage /> },
+      { path: "sponsors", element: <SponsorsPage /> },
+      { path: "patients", element: <PatientsPage /> },
+    ],
+  },
+
+  /* ── Main app ─────────────────────────────────────────────── */
   {
     path: "/",
     element: (
@@ -119,10 +129,7 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
-      {
-        path: "myappointments",
-        element: <MyAppointments />,
-      },
+      { path: "myappointments", element: <MyAppointments /> },
       {
         path: "Community/Question/tag/:tagId/:tagName",
         element: <TagPostsPage type="Question" />,
@@ -155,10 +162,7 @@ export const route = createBrowserRouter([
           </ProtectedRoutes>
         ),
       },
-      {
-        path: "payment/callback",
-        element: <PaymentCallback />,
-      },
+      { path: "payment/callback", element: <PaymentCallback /> },
       {
         path: "doctors",
         element: (
@@ -259,6 +263,8 @@ export const route = createBrowserRouter([
       },
     ],
   },
+
+  /* ── Auth ─────────────────────────────────────────────────── */
   {
     path: "/auth",
     element: <ProtectedAuth />,
@@ -325,6 +331,7 @@ export const route = createBrowserRouter([
     ],
   },
 
+  /* ── Admin ────────────────────────────────────────────────── */
   {
     path: "/admin",
     element: (
@@ -334,12 +341,8 @@ export const route = createBrowserRouter([
         </ProtectedAdmin>
       </Suspense>
     ),
-    // Only Admin can access; Lab/Scan get 403
     children: [
-      {
-        index: true,
-        element: <Navigate to="dashboard" replace />,
-      },
+      { index: true, element: <Navigate to="dashboard" replace /> },
       {
         path: "dashboard",
         element: (
@@ -438,6 +441,8 @@ export const route = createBrowserRouter([
       },
     ],
   },
+
+  /* ── Lab Provider ─────────────────────────────────────────── */
   {
     path: "/lab",
     element: (
@@ -465,15 +470,14 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
-      {
-        path: "searchdoctors",
-        element: <Doctors />,
-      },
+      { path: "searchdoctors", element: <Doctors /> },
       { path: "ourdeals", element: <OurDeals /> },
       { path: "sponsoreddoctors", element: <SponsoredDoctors /> },
       { path: "referredpatients", element: <ReferredPatients /> },
     ],
   },
+
+  /* ── Scan Provider ────────────────────────────────────────── */
   {
     path: "/scan",
     element: (
@@ -501,12 +505,11 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
-      {
-        path: "searchdoctors",
-        element: <Doctors />,
-      },
+      { path: "searchdoctors", element: <Doctors /> },
     ],
   },
+
+  /* ── Errors ───────────────────────────────────────────────── */
   {
     path: "/403",
     element: (

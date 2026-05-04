@@ -11,6 +11,7 @@ import { FaChevronRight } from "react-icons/fa";
 import { IoIosHeartEmpty } from "react-icons/io";
 import AvatarIcon from "./AvatarIcon1";
 import NotificationBell from "./NotificationBell";
+import { PiCalendarDots } from "react-icons/pi";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -339,6 +340,11 @@ export default function Navbar() {
                           label: "Profile",
                         },
                         {
+                          to: "/myappointments",
+                          icon: <PiCalendarDots />,
+                          label: "My Appointments",
+                        },
+                        {
                           to: "/favourites",
                           icon: <IoIosHeartEmpty className="w-4 h-4" />,
                           label: "Favourites",
@@ -432,10 +438,6 @@ export default function Navbar() {
           </button>
         </div>
       </nav>
-
-      {/* ══════════════════════════════════════
-          MOBILE SIDENAV
-      ══════════════════════════════════════ */}
 
       {/* Backdrop */}
       <AnimatePresence>

@@ -10,121 +10,19 @@ import {
   MdInfo,
   MdCheckCircle,
   MdPerson,
+  MdEmail,
 } from "react-icons/md";
 import { FaUserDoctor } from "react-icons/fa6";
 import { PiFlask } from "react-icons/pi";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
+import {
+  useReferredPatients,
+  useReceiveReferral,
+} from "../../hooks/useReferredPatients";
 
 const BLUE = "#316BE8";
 
-// tests now have individual prices (EGP before discount)
-const MOCK_PATIENTS = [
-  {
-    _id: "p1",
-    name: "Youssef Mahmoud",
-    phone: "+20 100 111 2233",
-    age: 45,
-    status: "pending",
-    tests: [
-      { name: "CBC", price: 120 },
-      { name: "Lipid Panel", price: 220 },
-      { name: "HbA1c", price: 140 },
-    ],
-    doctor: { name: "Dr. Ahmed Saber", specialization: "Cardiologist" },
-    discount: 25,
-    appointmentDate: "2025-06-12",
-    notes: "Fasting required for lipid panel.",
-    referredAt: "2025-06-01",
-  },
-  {
-    _id: "p2",
-    name: "Hana Ali",
-    phone: "+20 101 444 5566",
-    age: 32,
-    status: "received",
-    tests: [
-      { name: "TSH", price: 100 },
-      { name: "Free T4", price: 110 },
-      { name: "Fasting Glucose", price: 110 },
-    ],
-    doctor: { name: "Dr. Mona Khalil", specialization: "Endocrinologist" },
-    discount: 15,
-    appointmentDate: "2025-06-09",
-    notes: null,
-    referredAt: "2025-05-28",
-  },
-  {
-    _id: "p3",
-    name: "Khaled Farouk",
-    phone: "+20 102 777 8899",
-    age: 58,
-    status: "pending",
-    tests: [
-      { name: "Creatinine", price: 90 },
-      { name: "BUN", price: 90 },
-      { name: "Uric Acid", price: 120 },
-      { name: "eGFR", price: 250 },
-    ],
-    doctor: { name: "Dr. Omar Nasser", specialization: "Nephrologist" },
-    discount: 20,
-    appointmentDate: null,
-    notes: "Patient has CKD stage 2.",
-    referredAt: "2025-06-03",
-  },
-  {
-    _id: "p4",
-    name: "Nour El-Din",
-    phone: "+20 103 222 3344",
-    age: 27,
-    status: "received",
-    tests: [
-      { name: "CBC", price: 120 },
-      { name: "Coagulation Profile", price: 280 },
-      { name: "Iron Studies", price: 220 },
-    ],
-    doctor: { name: "Dr. Sara Mostafa", specialization: "Hematologist" },
-    discount: 30,
-    appointmentDate: "2025-06-07",
-    notes: null,
-    referredAt: "2025-05-30",
-  },
-  {
-    _id: "p5",
-    name: "Amira Gamal",
-    phone: "+20 104 888 9900",
-    age: 39,
-    status: "pending",
-    tests: [
-      { name: "ABG", price: 300 },
-      { name: "Spirometry Panel", price: 350 },
-      { name: "Chest X-Ray Markers", price: 250 },
-    ],
-    doctor: { name: "Dr. Karim Adel", specialization: "Pulmonologist" },
-    discount: 20,
-    appointmentDate: "2025-06-15",
-    notes: "Urgent — shortness of breath.",
-    referredAt: "2025-06-04",
-  },
-  {
-    _id: "p6",
-    name: "Tarek Samir",
-    phone: "+20 105 333 6677",
-    age: 51,
-    status: "received",
-    tests: [
-      { name: "ANA", price: 200 },
-      { name: "Anti-dsDNA", price: 220 },
-      { name: "CRP", price: 160 },
-      { name: "ESR", price: 160 },
-    ],
-    doctor: { name: "Dr. Laila Hassan", specialization: "Rheumatologist" },
-    discount: 18,
-    appointmentDate: "2025-06-10",
-    notes: null,
-    referredAt: "2025-06-02",
-  },
-];
-
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (d) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
@@ -133,41 +31,77 @@ const fmt = (d) =>
         year: "numeric",
       })
     : null;
-const totalBefore = (tests) => tests.reduce((s, t) => s + t.price, 0);
-const afterPct = (price, pct) => Math.round(price * (1 - pct / 100));
+
+// status: 0 = pending, 1 = received
 const TABS = [
-  { key: "all", label: "All" },
-  { key: "pending", label: "Pending" },
-  { key: "received", label: "Received" },
+  { key: 0, label: "Pending" },
+  { key: 1, label: "Received" },
 ];
 
-function Spinner() {
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+function Spinner({ color = "white" }) {
   return (
     <motion.span
       animate={{ rotate: 360 }}
       transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }}
-      className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full inline-block shrink-0"
+      className="w-4 h-4 border-2 rounded-full inline-block shrink-0"
+      style={{
+        borderColor: `${color}30`,
+        borderTopColor: color,
+      }}
     />
   );
 }
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 flex flex-col gap-3 animate-pulse">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-gray-100" />
+        <div className="flex flex-col gap-1.5 flex-1">
+          <div className="h-3.5 bg-gray-100 rounded w-32" />
+          <div className="h-2.5 bg-gray-100 rounded w-20" />
+        </div>
+        <div className="h-5 w-16 bg-gray-100 rounded-full" />
+      </div>
+      <div className="h-2.5 bg-gray-100 rounded w-40" />
+      <div className="rounded-xl overflow-hidden border border-gray-100">
+        <div className="h-7 bg-gray-100" />
+        {[1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex justify-between px-3 py-2.5 border-t border-gray-100"
+          >
+            <div className="h-2.5 bg-gray-100 rounded w-20" />
+            <div className="h-2.5 bg-gray-100 rounded w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="h-8 bg-gray-100 rounded-xl" />
+      <div className="h-9 bg-gray-100 rounded-xl" />
+    </div>
+  );
+}
+
 // ─── ConfirmModal ─────────────────────────────────────────────────────────────
-function ConfirmModal({ patient, onClose }) {
+function ConfirmModal({ referral, onClose }) {
+  const { mutateAsync: receive } = useReceiveReferral();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const base = totalBefore(patient.tests);
-  const after = afterPct(base, patient.discount);
 
   const handleConfirm = async () => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    setDone(true);
-    setTimeout(() => onClose("confirmed"), 1600);
+    try {
+      await receive(referral.id);
+      setDone(true);
+      setTimeout(() => onClose("confirmed"), 1600);
+    } catch {
+      setLoading(false);
+    }
   };
 
-  // split name into firstName / lastName for AvatarIcon
-  const [firstName, ...rest] = patient.name.split(" ");
+  const [firstName, ...rest] = referral.patientName.split(" ");
   const lastName = rest.join(" ");
 
   return (
@@ -217,11 +151,11 @@ function ConfirmModal({ patient, onClose }) {
             </motion.div>
             <p className="text-lg font-bold text-gray-900">Patient Received!</p>
             <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
-              <strong>{patient.name}</strong>'s arrival confirmed.
+              <strong>{referral.patientName}</strong>'s arrival confirmed.
               <br />
-              Discount applied:{" "}
+              Saved:{" "}
               <strong className="text-green-600">
-                {base} → {after} EGP
+                {referral.totalSaved} EGP
               </strong>
             </p>
           </motion.div>
@@ -261,14 +195,15 @@ function ConfirmModal({ patient, onClose }) {
                 </div>
                 <div className="bg-white px-4 py-3 flex flex-col gap-2.5">
                   {[
-                    { icon: MdPhone, val: patient.phone },
-                    {
-                      icon: MdCalendarToday,
-                      val: `Appointment: ${fmt(patient.appointmentDate) || "Not set"}`,
-                    },
+                    { icon: MdPhone, val: referral.patientPhone },
+                    { icon: MdEmail, val: referral.patientEmail },
                     {
                       icon: FaUserDoctor,
-                      val: `${patient.doctor.name} · ${patient.doctor.specialization}`,
+                      val: referral.doctorName,
+                    },
+                    {
+                      icon: MdCalendarToday,
+                      val: `Referred: ${fmt(referral.referredAtUtc)}`,
                     },
                   ].map(({ icon: Icon, val }) => (
                     <div key={val} className="flex items-center gap-2">
@@ -281,7 +216,7 @@ function ConfirmModal({ patient, onClose }) {
                 </div>
               </div>
 
-              {/* tests with individual prices */}
+              {/* services */}
               <div
                 className="rounded-xl overflow-hidden border"
                 style={{ borderColor: "#C7D8F9" }}
@@ -292,16 +227,16 @@ function ConfirmModal({ patient, onClose }) {
                 >
                   <MdScience size={14} className="text-white/80 shrink-0" />
                   <p className="text-[11px] text-white uppercase tracking-wider font-medium">
-                    Required Tests
+                    Required Services
                   </p>
                   <span className="ml-auto bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {patient.tests.length}
+                    {referral.services.length}
                   </span>
                 </div>
                 <div className="bg-white divide-y divide-gray-100">
-                  {patient.tests.map((t, i) => (
+                  {referral.services.map((s, i) => (
                     <div
-                      key={t.name}
+                      key={s.providerOfferingId}
                       className="flex items-center justify-between px-4 py-2.5 gap-3"
                     >
                       <div className="flex items-center gap-2.5">
@@ -312,15 +247,15 @@ function ConfirmModal({ patient, onClose }) {
                           {i + 1}
                         </span>
                         <span className="text-sm font-semibold text-gray-800">
-                          {t.name}
+                          {s.serviceName}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs text-gray-400 line-through">
-                          {t.price}
+                          {s.priceBeforeDiscount}
                         </span>
                         <span className="text-sm font-bold text-green-700">
-                          {afterPct(t.price, patient.discount)} EGP
+                          {s.priceAfterDiscount} EGP
                         </span>
                       </div>
                     </div>
@@ -328,60 +263,68 @@ function ConfirmModal({ patient, onClose }) {
                 </div>
               </div>
 
-              {/* total pricing */}
+              {/* total */}
               <div className="rounded-xl border border-green-200 overflow-hidden">
                 <div className="px-4 py-2.5 bg-green-600 flex items-center">
                   <p className="text-[11px] text-white uppercase tracking-wider font-medium">
                     Total
                   </p>
                   <span className="ml-auto bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {patient.discount}% off
+                    {referral.discountPercentage}% off
                   </span>
                 </div>
                 <div className="bg-white px-4 py-3 flex items-center justify-between gap-2">
-                  <div className="flex flex-col items-center flex-1">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">
-                      Before
-                    </span>
-                    <span className="text-lg font-black text-gray-400 line-through">
-                      {base} EGP
-                    </span>
-                  </div>
-                  <div className="w-px h-10 bg-gray-100" />
-                  <div className="flex flex-col items-center flex-1">
-                    <span className="text-[10px] text-green-500 uppercase tracking-wider mb-1">
-                      After
-                    </span>
-                    <span className="text-2xl font-black text-green-700">
-                      {after} EGP
-                    </span>
-                  </div>
-                  <div className="w-px h-10 bg-gray-100" />
-                  <div className="flex flex-col items-center flex-1">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">
-                      Saving
-                    </span>
-                    <span
-                      className="text-lg font-black"
-                      style={{ color: BLUE }}
-                    >
-                      {base - after} EGP
-                    </span>
-                  </div>
+                  {[
+                    {
+                      label: "Before",
+                      value: referral.totalBeforeDiscount,
+                      color: "text-gray-400",
+                      strike: true,
+                    },
+                    {
+                      label: "After",
+                      value: referral.totalAfterDiscount,
+                      color: "text-green-700",
+                      labelColor: "text-green-500",
+                      big: true,
+                    },
+                    {
+                      label: "Saving",
+                      value: referral.totalSaved,
+                      color: "",
+                      labelColor: "",
+                    },
+                  ].map(
+                    (
+                      { label, value, color, labelColor, strike, big },
+                      i,
+                      arr,
+                    ) => (
+                      <>
+                        <div
+                          key={label}
+                          className="flex flex-col items-center flex-1"
+                        >
+                          <span
+                            className={`text-[10px] uppercase tracking-wider mb-1 ${labelColor || "text-gray-400"}`}
+                          >
+                            {label}
+                          </span>
+                          <span
+                            className={`font-black ${big ? "text-2xl text-green-700" : "text-lg"} ${color} ${strike ? "line-through" : ""}`}
+                            style={label === "Saving" ? { color: BLUE } : {}}
+                          >
+                            {value} EGP
+                          </span>
+                        </div>
+                        {i < arr.length - 1 && (
+                          <div className="w-px h-10 bg-gray-100" />
+                        )}
+                      </>
+                    ),
+                  )}
                 </div>
               </div>
-
-              {patient.notes && (
-                <div className="flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-                  <MdInfo
-                    size={14}
-                    className="text-amber-500 shrink-0 mt-0.5"
-                  />
-                  <p className="text-xs text-amber-800 leading-relaxed">
-                    {patient.notes}
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* footer */}
@@ -417,11 +360,9 @@ function ConfirmModal({ patient, onClose }) {
 }
 
 // ─── PatientCard ──────────────────────────────────────────────────────────────
-function PatientCard({ patient, index, onConfirm }) {
-  const isReceived = patient.status === "received";
-  const base = totalBefore(patient.tests);
-  const after = afterPct(base, patient.discount);
-  const [firstName, ...rest] = patient.name.split(" ");
+function PatientCard({ referral, index, onConfirm }) {
+  const isReceived = referral.status === 1;
+  const [firstName, ...rest] = referral.patientName.split(" ");
   const lastName = rest.join(" ");
 
   return (
@@ -434,7 +375,7 @@ function PatientCard({ patient, index, onConfirm }) {
       className={`rounded-2xl border p-3.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3 overflow-hidden transition-shadow
         ${isReceived ? "bg-green-50 border-green-200" : "bg-white border-gray-200 hover:shadow-md"}`}
     >
-      {/* top — avatar + name + status */}
+      {/* top row */}
       <div className="flex items-start justify-between gap-2">
         <AvatarIcon
           user={{ firstName, lastName }}
@@ -456,28 +397,24 @@ function PatientCard({ patient, index, onConfirm }) {
         </div>
       </div>
 
-      {/* phone + doctor */}
+      {/* contact + doctor */}
       <div className="flex flex-col gap-1">
         <div
           className="flex items-center gap-1.5 text-xs font-medium"
           style={{ color: BLUE }}
         >
           <MdPhone size={12} className="shrink-0" />
-          <span>{patient.phone}</span>
+          <span>{referral.patientPhone}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           <FaUserDoctor size={11} className="shrink-0 text-gray-400" />
           <span className="font-medium text-gray-700 truncate">
-            {patient.doctor.name}
-          </span>
-          <span className="text-gray-300 hidden sm:block">·</span>
-          <span className="text-gray-400 truncate hidden sm:block">
-            {patient.doctor.specialization}
+            {referral.doctorName}
           </span>
         </div>
       </div>
 
-      {/* tests with per-test price */}
+      {/* services */}
       <div
         className="rounded-xl overflow-hidden border"
         style={{ borderColor: "#C7D8F9" }}
@@ -488,16 +425,16 @@ function PatientCard({ patient, index, onConfirm }) {
         >
           <MdScience size={12} className="text-white/80 shrink-0" />
           <p className="text-[10px] text-white font-semibold uppercase tracking-wider">
-            Tests
+            Services
           </p>
           <span className="ml-auto bg-white/20 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-            {patient.tests.length}
+            {referral.services.length}
           </span>
         </div>
         <div className="bg-white divide-y divide-gray-100">
-          {patient.tests.map((t, i) => (
+          {referral.services.map((s, i) => (
             <div
-              key={t.name}
+              key={s.providerOfferingId}
               className="flex items-center justify-between px-3 py-2 gap-2"
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -508,15 +445,15 @@ function PatientCard({ patient, index, onConfirm }) {
                   {i + 1}
                 </span>
                 <span className="text-xs font-semibold text-gray-800 truncate">
-                  {t.name}
+                  {s.serviceName}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="text-[11px] text-gray-400 line-through">
-                  {t.price}
+                  {s.priceBeforeDiscount}
                 </span>
                 <span className="text-xs font-bold text-green-700">
-                  {afterPct(t.price, patient.discount)} EGP
+                  {s.priceAfterDiscount} EGP
                 </span>
               </div>
             </div>
@@ -524,37 +461,33 @@ function PatientCard({ patient, index, onConfirm }) {
         </div>
       </div>
 
-      {/* total pricing row */}
+      {/* total row */}
       <div className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-200 px-3 py-2">
         <span className="text-xs text-gray-400 line-through shrink-0">
-          {base} EGP
+          {referral.totalBeforeDiscount} EGP
         </span>
         <span className="text-gray-300">→</span>
         <span className="text-sm font-black text-green-700 shrink-0">
-          {after} EGP
+          {referral.totalAfterDiscount} EGP
         </span>
         <span
           className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 text-white"
           style={{ background: BLUE }}
         >
-          {patient.discount}% off
+          {referral.discountPercentage}% off
         </span>
       </div>
 
-      {/* appointment + notes */}
+      {/* dates */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
-        {patient.appointmentDate && (
-          <span className="flex items-center gap-1">
-            <MdCalendarToday size={10} />
-            {fmt(patient.appointmentDate)}
-          </span>
-        )}
-        {patient.notes && (
-          <span className="flex items-center gap-1 text-amber-600 min-w-0">
-            <MdInfo size={10} className="shrink-0" />
-            <span className="truncate max-w-[160px] sm:max-w-[220px]">
-              {patient.notes}
-            </span>
+        <span className="flex items-center gap-1">
+          <MdCalendarToday size={10} />
+          Referred: {fmt(referral.referredAtUtc)}
+        </span>
+        {referral.receivedAtUtc && (
+          <span className="flex items-center gap-1 text-green-600">
+            <MdCheckCircle size={10} />
+            Received: {fmt(referral.receivedAtUtc)}
           </span>
         )}
       </div>
@@ -564,7 +497,7 @@ function PatientCard({ patient, index, onConfirm }) {
         <motion.button
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => onConfirm(patient)}
+          onClick={() => onConfirm(referral)}
           className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-white text-xs font-semibold cursor-pointer"
           style={{ background: BLUE }}
         >
@@ -582,33 +515,39 @@ function PatientCard({ patient, index, onConfirm }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ReferredPatients() {
-  const [tab, setTab] = useState("all");
+  const [tab, setTab] = useState(0); // 0 = pending, 1 = received
   const [search, setSearch] = useState("");
-  const [patients, setPatients] = useState(MOCK_PATIENTS);
-  const [confirmPt, setConfirmPt] = useState(null);
+  const [page, setPage] = useState(1);
+  const [confirmReferral, setConfirmReferral] = useState(null);
+  const PAGE_SIZE = 12;
 
-  const counts = {
-    all: patients.length,
-    pending: patients.filter((p) => p.status === "pending").length,
-    received: patients.filter((p) => p.status === "received").length,
+  const { data, isLoading, isError } = useReferredPatients({
+    page,
+    pageSize: PAGE_SIZE,
+    status: tab,
+  });
+
+  const items = data?.items ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const hasNext = data?.hasNextPage ?? false;
+  const hasPrev = data?.hasPreviousPage ?? false;
+
+  // Client-side search filter on top of server data
+  const filtered = items.filter((r) =>
+    `${r.patientName} ${r.doctorName} ${r.services.map((s) => s.serviceName).join(" ")}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+
+  // Reset page when tab changes
+  const handleTabChange = (key) => {
+    setTab(key);
+    setPage(1);
+    setSearch("");
   };
 
-  const filtered = patients
-    .filter((p) => tab === "all" || p.status === tab)
-    .filter((p) =>
-      `${p.name} ${p.doctor.name} ${p.tests.map((t) => t.name).join(" ")}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    );
-
   const handleConfirmClose = (result) => {
-    if (result === "confirmed")
-      setPatients((prev) =>
-        prev.map((p) =>
-          p._id === confirmPt._id ? { ...p, status: "received" } : p,
-        ),
-      );
-    setConfirmPt(null);
+    setConfirmReferral(null);
   };
 
   return (
@@ -625,7 +564,9 @@ export default function ReferredPatients() {
               Referred Patients
             </h1>
             <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
-              {counts.pending} pending · {counts.received} received
+              {isLoading
+                ? "Loading…"
+                : `${totalCount} ${tab === 0 ? "pending" : "received"}`}
             </p>
           </div>
           <div
@@ -636,41 +577,11 @@ export default function ReferredPatients() {
           </div>
         </motion.div>
 
-        {/* summary pills */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.06 }}
-          className="grid grid-cols-3 gap-2 sm:gap-3"
-        >
-          {[
-            { label: "Total", value: counts.all, bg: BLUE },
-            { label: "Pending", value: counts.pending, bg: "#f59e0b" },
-            { label: "Received", value: counts.received, bg: "#16a34a" },
-          ].map(({ label, value, bg }, i) => (
-            <motion.div
-              key={label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.08 + i * 0.04 }}
-              className="rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col text-white"
-              style={{ background: bg }}
-            >
-              <span className="text-[10px] sm:text-xs opacity-75 font-medium">
-                {label}
-              </span>
-              <span className="text-lg sm:text-2xl font-black leading-tight">
-                {value}
-              </span>
-            </motion.div>
-          ))}
-        </motion.div>
-
         {/* tabs */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.06 }}
           className="flex gap-1.5 p-1 bg-gray-100 rounded-2xl"
         >
           {TABS.map(({ key, label }) => {
@@ -678,7 +589,7 @@ export default function ReferredPatients() {
             return (
               <button
                 key={key}
-                onClick={() => setTab(key)}
+                onClick={() => handleTabChange(key)}
                 className={`relative flex-1 flex items-center justify-center h-8 sm:h-9 px-2 rounded-xl text-[12px] sm:text-[13px] font-semibold transition-colors duration-200 cursor-pointer
                   ${isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
               >
@@ -689,18 +600,7 @@ export default function ReferredPatients() {
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                <span className="relative flex items-center gap-1">
-                  {label}
-                  {counts[key] > 0 && (
-                    <span
-                      className={`inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold
-                      ${isActive ? "text-white" : "bg-gray-200 text-gray-600"}`}
-                      style={isActive ? { background: BLUE } : {}}
-                    >
-                      {counts[key]}
-                    </span>
-                  )}
-                </span>
+                <span className="relative">{label}</span>
               </button>
             );
           })}
@@ -710,7 +610,7 @@ export default function ReferredPatients() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
+          transition={{ delay: 0.1 }}
           className="relative"
         >
           <MdSearch
@@ -720,7 +620,7 @@ export default function ReferredPatients() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by patient name, doctor or test…"
+            placeholder="Search by patient, doctor or service…"
             className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-gray-200 outline-none transition-all placeholder:text-gray-400"
             onFocus={(e) => (e.target.style.borderColor = BLUE)}
             onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
@@ -740,10 +640,24 @@ export default function ReferredPatients() {
           </AnimatePresence>
         </motion.div>
 
+        {/* error state */}
+        {isError && (
+          <div className="flex flex-col items-center gap-3 py-14 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
+              <MdInfo size={20} className="text-red-400" />
+            </div>
+            <p className="text-sm font-medium text-red-400">
+              Failed to load referrals
+            </p>
+          </div>
+        )}
+
         {/* grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
           <AnimatePresence mode="popLayout">
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            ) : filtered.length === 0 ? (
               <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
@@ -759,22 +673,50 @@ export default function ReferredPatients() {
                 </p>
               </motion.div>
             ) : (
-              filtered.map((pt, i) => (
+              filtered.map((r, i) => (
                 <PatientCard
-                  key={pt._id}
-                  patient={pt}
+                  key={r.id}
+                  referral={r}
                   index={i}
-                  onConfirm={setConfirmPt}
+                  onConfirm={setConfirmReferral}
                 />
               ))
             )}
           </AnimatePresence>
         </div>
+
+        {/* pagination */}
+        {!isLoading && (hasPrev || hasNext) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center justify-center gap-2 pt-2"
+          >
+            <button
+              disabled={!hasPrev}
+              onClick={() => setPage((p) => p - 1)}
+              className="px-4 py-2 text-sm rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              ← Prev
+            </button>
+            <span className="text-sm text-gray-400 px-2">Page {page}</span>
+            <button
+              disabled={!hasNext}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-4 py-2 text-sm rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              Next →
+            </button>
+          </motion.div>
+        )}
       </div>
 
       <AnimatePresence>
-        {confirmPt && (
-          <ConfirmModal patient={confirmPt} onClose={handleConfirmClose} />
+        {confirmReferral && (
+          <ConfirmModal
+            referral={confirmReferral}
+            onClose={handleConfirmClose}
+          />
         )}
       </AnimatePresence>
     </>
