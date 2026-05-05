@@ -10,7 +10,7 @@ import {
   medicalProviderMeQueryKey,
 } from "../../hooks/useMedicalProviderMe";
 import Loader from "../../Components/Common/loader";
-import { MdStar, MdLocationOn, MdBadge } from "react-icons/md";
+import { MdStar, MdLocationOn, MdBadge, MdPhone } from "react-icons/md";
 import {
   buildWorkingRowsFromApi,
   rowsToWorkingHourPayload,
@@ -29,38 +29,51 @@ export default function ProviderProfilePage({ type }) {
   const queryClient = useQueryClient();
   const portal = useProviderPortalAPI();
 
-  const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
-  const normalizedType = (type || pathType || role || "").toLowerCase();
   const { data: provider, isLoading, isError } = useMedicalProviderMe();
   const { data: userImage } = useUserImage();
   const createUserImageMutation = useCreateUserImage();
   const updateUserImageMutation = useUpdateUserImage();
   const deleteUserImageMutation = useDeleteUserImage();
   const imageInputRef = useRef(null);
-  const providerType = pick(provider, "type", "Type");
-  const isScanFromProvider =
-    providerType != null && String(providerType) === "1";
-  const isScanFromContext = normalizedType.includes("scan");
-  const isLab = !(isScanFromProvider || isScanFromContext);
-  const titlePrefix = isLab ? "Lab Center" : "Scan Center";
 
+  const providerType = pick(provider, "type", "Type");
   const providerId = provider ? pick(provider, "id", "Id") : null;
   const workingHoursApi = pick(provider, "workingHours", "WorkingHours");
 
-  const [rows, setRows] = useState(() =>
-    buildWorkingRowsFromApi([]),
-  );
+  const [rows, setRows] = useState(() => buildWorkingRowsFromApi([]));
   const [quickFrom, setQuickFrom] = useState("09:00");
   const [quickTo, setQuickTo] = useState("17:00");
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    licenceNo: "",
+    address: "",
+    about: "",
+    phoneNumber: "",
+  });
 
   useEffect(() => {
     if (provider) {
       setRows(buildWorkingRowsFromApi(workingHoursApi));
+      setEditForm({
+        name: pick(provider, "name", "Name") || "",
+        licenceNo:
+          pick(provider, "licenceNo", "LicenceNo") ??
+          pick(provider, "licenseNo", "LicenseNo") ??
+          "",
+        address: pick(provider, "address", "Address") ?? "",
+        about: pick(provider, "about", "About") ?? "",
+        phoneNumber: provider.phoneNumber ?? "",
+      });
     }
   }, [provider, workingHoursApi]);
 
   const updateMutation = useMutation({
-    mutationFn: (payload) => portal.updateMedicalProvider(payload),
+    mutationFn: (payload) => {
+      console.log(payload);
+      portal.updateMedicalProvider(payload);
+    },
     onSuccess: async (_, variables) => {
       const qKey = medicalProviderMeQueryKey(accessToken, role);
       const savedWh = variables.workingHours || [];
@@ -70,15 +83,14 @@ export default function ProviderProfilePage({ type }) {
         return { ...old, workingHours: savedWh };
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["medicalTestsProvider"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["medicalTestsProvider"],
+      });
       await queryClient.refetchQueries({ queryKey: qKey });
 
       const fresh = queryClient.getQueryData(qKey);
       const whFromServer = pick(fresh, "workingHours", "WorkingHours");
-      if (
-        (!whFromServer || whFromServer.length === 0) &&
-        savedWh.length > 0
-      ) {
+      if ((!whFromServer || whFromServer.length === 0) && savedWh.length > 0) {
         queryClient.setQueryData(qKey, (old) =>
           old ? { ...old, workingHours: savedWh } : old,
         );
@@ -115,11 +127,40 @@ export default function ProviderProfilePage({ type }) {
   const applyQuickToDaySet = (daySet) => {
     setRows((prev) =>
       prev.map((r) =>
-        daySet.has(r.day)
-          ? { ...r, from: quickFrom, to: quickTo }
-          : r,
+        daySet.has(r.day) ? { ...r, from: quickFrom, to: quickTo } : r,
       ),
     );
+  };
+
+  const handleSaveProfile = () => {
+    if (!provider) return;
+    const workingHours = rowsToWorkingHourPayload(rows);
+    const payload = {
+      name: editForm.name,
+      licenceNo: editForm.licenceNo,
+      address: editForm.address,
+      about: editForm.about,
+      phoneNumber: editForm.phoneNumber,
+      workingHours:
+        workingHours.length > 0 ? workingHours : (workingHoursApi ?? []),
+    };
+    updateMutation.mutate(payload, {
+      onSuccess: () => setIsEditing(false),
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditForm({
+      name: pick(provider, "name", "Name") || "",
+      licenceNo:
+        pick(provider, "licenceNo", "LicenceNo") ??
+        pick(provider, "licenseNo", "LicenseNo") ??
+        "",
+      address: pick(provider, "address", "Address") ?? "",
+      about: pick(provider, "about", "About") ?? "",
+      phoneNumber: provider.phoneNumber ?? "",
+    });
   };
 
   const handleSaveHours = () => {
@@ -133,12 +174,14 @@ export default function ProviderProfilePage({ type }) {
       return;
     }
     const payload = {
-      name: pick(provider, "name", "Name"),
+      name: editForm.name || pick(provider, "name", "Name"),
       licenceNo:
-        pick(provider, "licenceNo", "LicenceNo") ??
+        editForm.licenceNo ||
+        pick(provider, "licenceNo", "LicenceNo") ||
         pick(provider, "licenseNo", "LicenseNo"),
-      address: pick(provider, "address", "Address"),
-      about: pick(provider, "about", "About") ?? "",
+      address: editForm.address || pick(provider, "address", "Address"),
+      about: editForm.about ?? pick(provider, "about", "About") ?? "",
+      phoneNumber: editForm.phoneNumber || provider.phoneNumber,
       workingHours,
     };
     updateMutation.mutate(payload);
@@ -155,9 +198,7 @@ export default function ProviderProfilePage({ type }) {
   if (isError || !provider) {
     return (
       <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3">
-        <p className="text-gray-700">
-          We could not load your {titlePrefix.toLowerCase()} profile.
-        </p>
+        <p className="text-gray-700">We could not load your profile.</p>
         <p className="text-gray-500 text-sm text-center max-w-md">
           Try logging in again. If the issue continues, ensure your account is
           linked to a medical provider on the server.
@@ -204,11 +245,10 @@ export default function ProviderProfilePage({ type }) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">
-        {titlePrefix} Profile
-      </h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">Profile Details</h1>
 
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden mb-6">
+        {/* ── Header / Avatar ── */}
         <div className="p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="w-20 h-20 rounded-2xl bg-[#316BE8] overflow-hidden flex items-center justify-center text-white text-2xl font-bold">
@@ -224,10 +264,7 @@ export default function ProviderProfilePage({ type }) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">{name}</h2>
-              <p className="text-gray-500">{titlePrefix}</p>
-              {providerId != null && (
-                <p className="text-xs text-gray-400 mt-1">ID: {providerId}</p>
-              )}
+              <p className="text-gray-500">Medical Provider</p>
               {avgRating !== "—" && (
                 <div className="flex items-center gap-1 mt-1 text-amber-600">
                   <MdStar className="w-5 h-5" />
@@ -262,7 +299,7 @@ export default function ProviderProfilePage({ type }) {
                   }}
                   className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold"
                 >
-                  Delete
+                  Delete image
                 </button>
               )}
               <input
@@ -281,47 +318,173 @@ export default function ProviderProfilePage({ type }) {
         </div>
 
         <div className="p-6 sm:p-8 space-y-6">
+          {/* ── Basic Info / Edit Profile ── */}
           <section>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              Basic Info
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <MdBadge className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase">
-                    License No.
-                  </p>
-                  <p className="text-gray-900 font-medium">{licenceNo}</p>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Basic Info
+              </h3>
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="px-3 py-1.5 rounded-lg border border-[#316BE8] text-[#316BE8] text-xs font-semibold hover:bg-blue-50 transition"
+                >
+                  Edit Profile
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    disabled={updateMutation.isPending}
+                    className="px-3 py-1.5 rounded-lg bg-[#316BE8] text-white text-xs font-semibold hover:bg-[#2552c1] transition disabled:opacity-60"
+                  >
+                    {updateMutation.isPending ? "Saving…" : "Save Profile"}
+                  </button>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <MdLocationOn className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase">
-                    Address
-                  </p>
-                  <p className="text-gray-900 font-medium">{address}</p>
-                </div>
-              </div>
+              )}
             </div>
-            {about && (
-              <div className="mt-4">
-                <p className="text-xs font-medium text-gray-500 uppercase mb-1">
-                  About
-                </p>
-                <p className="text-gray-700">{about}</p>
+
+            {isEditing ? (
+              /* ── Edit Mode ── */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500 uppercase">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#316BE8] focus:border-transparent"
+                    placeholder="Provider name"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500 uppercase">
+                    License No.
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.licenceNo}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, licenceNo: e.target.value }))
+                    }
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#316BE8] focus:border-transparent"
+                    placeholder="License number"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500 uppercase">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={editForm.phoneNumber}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        phoneNumber: e.target.value,
+                      }))
+                    }
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#316BE8] focus:border-transparent"
+                    placeholder="+20 xxx xxx xxxx"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500 uppercase">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.address}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, address: e.target.value }))
+                    }
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#316BE8] focus:border-transparent"
+                    placeholder="Address"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1 md:col-span-2">
+                  <label className="text-xs font-medium text-gray-500 uppercase">
+                    About
+                  </label>
+                  <textarea
+                    value={editForm.about}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, about: e.target.value }))
+                    }
+                    rows={3}
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#316BE8] focus:border-transparent resize-none"
+                    placeholder="Brief description about the provider…"
+                  />
+                </div>
+              </div>
+            ) : (
+              /* ── View Mode ── */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <MdBadge className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">
+                      License No.
+                    </p>
+                    <p className="text-gray-900 font-medium">{licenceNo}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MdPhone className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">
+                      Phone
+                    </p>
+                    <p className="text-gray-900 font-medium">
+                      {provider.phoneNumber ?? "—"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MdLocationOn className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">
+                      Address
+                    </p>
+                    <p className="text-gray-900 font-medium">{address}</p>
+                  </div>
+                </div>
+                {about && (
+                  <div className="md:col-span-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      About
+                    </p>
+                    <p className="text-gray-700">{about}</p>
+                  </div>
+                )}
               </div>
             )}
           </section>
 
+          {/* ── Working Hours ── */}
           <section>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">
                   Working hours
                 </h3>
-               
               </div>
               <button
                 type="button"
@@ -334,9 +497,7 @@ export default function ProviderProfilePage({ type }) {
             </div>
 
             <div className="mb-4 p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
-              <p className="text-xs font-semibold text-gray-700">
-                Quick setup
-              </p>
+              <p className="text-xs font-semibold text-gray-700">Quick setup</p>
               <div className="flex flex-wrap items-end gap-3">
                 <div>
                   <label className="block text-[10px] text-gray-500 uppercase mb-0.5">
@@ -373,21 +534,17 @@ export default function ProviderProfilePage({ type }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    applyQuickToDaySet(new Set([0, 1, 2, 3, 4]))
-                  }
+                  onClick={() => applyQuickToDaySet(new Set([0, 1, 2, 3, 4]))}
                   className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  Sun–Thu 
+                  Sun–Thu
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    applyQuickToDaySet(new Set([1, 2, 3, 4, 5]))
-                  }
+                  onClick={() => applyQuickToDaySet(new Set([1, 2, 3, 4, 5]))}
                   className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  Mon–Fri 
+                  Mon–Fri
                 </button>
                 <button
                   type="button"
@@ -422,13 +579,10 @@ export default function ProviderProfilePage({ type }) {
                   {rows.map((row, index) => (
                     <tr
                       key={row.day}
-                      className={
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50/60"
-                      }
+                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50/60"}
                     >
                       <td className="px-3 py-2 font-medium text-gray-800">
                         <span className="block">{row.label}</span>
-                        
                       </td>
                       <td className="px-3 py-2">
                         <input

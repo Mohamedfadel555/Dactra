@@ -66,6 +66,7 @@ export default function ReferralModal({ patientId, onClose }) {
 
   const { data: sponsors = [], isLoading: sponsorsLoading } =
     useGetMySponsors();
+  console.log(sponsors);
   const { data: services = [], isLoading: servicesLoading } = useGetLabServices(
     sponsors.find((s) => s.sponsorshipId === selectedLabId)?.labId,
   );

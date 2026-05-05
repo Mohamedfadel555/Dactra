@@ -38,6 +38,11 @@ export const useSponsorshipAPI = () => {
     return res;
   };
 
+  const mySponsorship = async () => {
+    const res = await axiosInstance.get("Sponsorship/doctor/my");
+    return res.data;
+  };
+
   /** PUT /api/Sponsorship/doctor/counter/{id} */
   const counterDeal = async (sponsorshipId, data) => {
     const res = await axiosInstance.put(
@@ -191,5 +196,6 @@ export const useSponsorshipAPI = () => {
     providerCancelDeal,
     providerCancelOffer,
     getLabServices,
+    mySponsorship,
   };
 };

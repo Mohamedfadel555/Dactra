@@ -10,8 +10,9 @@ export const useRefresh = () => {
     mutationFn: refreshApi,
     onSuccess: (data) => {
       const newAccessToken = data.data.accessToken;
+      const tokenPayload = JSON.parse(atob(newAccessToken.split(".")[1]));
       console.log(newAccessToken);
-      login(newAccessToken, mapAppRoleFromToken(newAccessToken));
+      login(newAccessToken, tokenPayload.role);
     },
     onError: () => {
       logout();

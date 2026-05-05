@@ -10,20 +10,16 @@ export default function ProtectedAuth() {
     return <Loader />;
   }
   // Don't redirect admin - let useLogin handle the redirect
-  console.log(accessToken);
   if (accessToken) {
     const normalizedRole = role?.toLowerCase();
+    console.log(normalizedRole);
 
     if (normalizedRole === "admin" || normalizedRole === "administrator") {
       return <Navigate to="/admin/dashboard" replace />;
     }
 
-    if (normalizedRole === "lab" || normalizedRole === "lap") {
-      return <Navigate to="/lab" replace />;
-    }
-
-    if (normalizedRole === "scan") {
-      return <Navigate to="/scan" replace />;
+    if (normalizedRole === "medicaltestprovider") {
+      return <Navigate to="/medicalprovider/profile" replace />;
     }
 
     // Default: send any other logged-in user to home

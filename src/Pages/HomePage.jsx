@@ -235,7 +235,9 @@ export default function HomePage() {
   const scans = (providers || []).filter((p) => p.type === 1);
 
   const effectiveReviews =
-    Array.isArray(siteReviews) && siteReviews.length > 0 ? siteReviews : comments;
+    Array.isArray(siteReviews) && siteReviews.length > 0
+      ? siteReviews
+      : comments;
   const mappedSiteReviews = effectiveReviews.map((item, index) => ({
     name:
       item.name ||
@@ -251,8 +253,10 @@ export default function HomePage() {
   const fallbackReviewsAvg =
     fallbackReviewsCount > 0
       ? (
-          mappedSiteReviews.reduce((sum, r) => sum + (Number(r.starsNo) || 0), 0) /
-          fallbackReviewsCount
+          mappedSiteReviews.reduce(
+            (sum, r) => sum + (Number(r.starsNo) || 0),
+            0,
+          ) / fallbackReviewsCount
         ).toFixed(1)
       : "0.0";
   const reviewsCount =
@@ -274,13 +278,17 @@ export default function HomePage() {
       )
     : mappedSiteReviews.reduce(
         (acc, r) => {
-          const score = Math.min(5, Math.max(1, Math.round(Number(r.starsNo) || 0)));
+          const score = Math.min(
+            5,
+            Math.max(1, Math.round(Number(r.starsNo) || 0)),
+          );
           acc[score] += 1;
           return acc;
         },
         { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       );
   const doctorsToRender = topDoctors.length > 0 ? topDoctors : doctorsFallback;
+  console.log(doctorsToRender);
 
   return (
     <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
@@ -438,7 +446,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                       className="flex justify-center"
                     >
                       <DoctorCard
-                        doctorId={doc.id || doc.profileId || doc.userId || index}
+                        doctorId={doc.doctorId}
                         name={
                           doc.name ||
                           doc.doctorName ||
@@ -524,7 +532,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
 
           {/* Labs & Scan Centers for Patient */}
           {(labs.length > 0 || scans.length > 0) && (
-          <div className="flex flex-col gap-10 justify-center items-center px-4 md:px-8 lg:px-12 mt-4">
+            <div className="flex flex-col gap-10 justify-center items-center px-4 md:px-8 lg:px-12 mt-4">
               <HeaderSection
                 leftText="Labs &"
                 gradientText=" Scan Centers"
@@ -533,10 +541,17 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
               />
               <div className="w-full max-w-screen-2xl mx-auto flex flex-col gap-10">
                 {labs.length > 0 && (
-                <div className="w-full">
+                  <div className="w-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                       {labs.slice(0, 6).map((p) => (
-                        <motion.div key={p.id} className="h-full" initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                        <motion.div
+                          key={p.id}
+                          className="h-full"
+                          initial="hidden"
+                          whileInView="show"
+                          viewport={{ once: true }}
+                          variants={fadeUp}
+                        >
                           <ServiceProviderCard
                             id={p.id}
                             name={p.name}
@@ -553,10 +568,17 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                   </div>
                 )}
                 {scans.length > 0 && (
-                <div className="w-full">
+                  <div className="w-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                       {scans.slice(0, 6).map((p) => (
-                        <motion.div key={p.id} className="h-full" initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                        <motion.div
+                          key={p.id}
+                          className="h-full"
+                          initial="hidden"
+                          whileInView="show"
+                          viewport={{ once: true }}
+                          variants={fadeUp}
+                        >
                           <ServiceProviderCard
                             id={p.id}
                             name={p.name}
@@ -630,7 +652,8 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                     whileHover={{ scale: 1.05, backgroundColor: "#1D5EDB" }}
                     className="w-[200px] flex justify-center items-center gap-[5px] h-[50px] rounded-xl bg-[#316BE8] text-[20px] font-bold text-white mx-auto lg:mx-0"
                   >
-                    Book Now <HiChevronRight className="text-[24px] font-bold" />
+                    Book Now{" "}
+                    <HiChevronRight className="text-[24px] font-bold" />
                   </motion.button>
                 </Link>
               </motion.div>
@@ -825,7 +848,9 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                         disabled={createReviewMutation.isPending}
                         className="h-10 rounded-xl bg-[#316BE8] text-white text-sm font-semibold disabled:opacity-70"
                       >
-                        {createReviewMutation.isPending ? "Submitting..." : "Submit"}
+                        {createReviewMutation.isPending
+                          ? "Submitting..."
+                          : "Submit"}
                       </button>
                     </div>
                     <textarea

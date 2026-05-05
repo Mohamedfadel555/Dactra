@@ -18,27 +18,12 @@ export const useLogin = () => {
     mutationFn: LoginAPI,
     onSuccess: async (data) => {
       const tokenPayload = JSON.parse(atob(data.data.token.split(".")[1]));
-      console.log("Login success payload:", tokenPayload);
 
-      const appRole = mapAppRoleFromPayload(tokenPayload);
-      await login(data.data.token, appRole);
+      await login(data.data.token, tokenPayload.role);
       toast.success("Logged in successfully!", {
         position: "top-center",
         closeOnClick: true,
       });
-
-      const navRole = (
-        appRole && typeof appRole === "string" ? appRole : ""
-      ).toLowerCase();
-      if (navRole === "admin" || navRole === "administrator") {
-        navigate("/admin/dashboard", { replace: true });
-      } else if (navRole === "lab" || navRole === "lap") {
-        navigate("/lab", { replace: true });
-      } else if (navRole === "scan") {
-        navigate("/scan", { replace: true });
-      } else {
-        navigate("/", { replace: true });
-      }
     },
 
     onError: async (data) => {

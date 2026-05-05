@@ -291,21 +291,7 @@ function DealCard({ deal, index, onCounter, onCancel }) {
   const statusKey =
     deal.status === 0 ? "pending" : deal.status === 1 ? "rejected" : "counter";
   const meta = STATUS_META[statusKey];
-
-  // حساب تاريخ الحذف التلقائي (أسبوع من تاريخ الرفض)
-  const deletionDate =
-    deal.status === 1 && deal.requestedAtUtc
-      ? new Date(
-          new Date(deal.requestedAtUtc).getTime() + 7 * 24 * 60 * 60 * 1000,
-        )
-      : null;
-
-  const daysLeft = deletionDate
-    ? Math.max(
-        0,
-        Math.ceil((deletionDate - new Date()) / (1000 * 60 * 60 * 24)),
-      )
-    : null;
+  console.log(deal);
 
   return (
     <motion.div
@@ -415,7 +401,7 @@ function DealCard({ deal, index, onCounter, onCancel }) {
       )}
 
       {/* نوت الحذف التلقائي للـ rejected */}
-      {deal.status === 1 && daysLeft !== null && (
+      {deal.status === 1 && (
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -423,12 +409,7 @@ function DealCard({ deal, index, onCounter, onCancel }) {
         >
           <MdAccessTime size={13} className="text-rose-400 shrink-0" />
           <p className="text-[11px] text-rose-600 leading-tight">
-            {daysLeft === 0
-              ? "Will be deleted today"
-              : daysLeft === 1
-                ? "Will be deleted tomorrow"
-                : `Auto-deleted in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`}{" "}
-            · Rejected offers are removed after 7 days
+            Rejected offers are removed after 7 days
           </p>
         </motion.div>
       )}

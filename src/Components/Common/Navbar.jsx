@@ -12,6 +12,7 @@ import { IoIosHeartEmpty } from "react-icons/io";
 import AvatarIcon from "./AvatarIcon1";
 import NotificationBell from "./NotificationBell";
 import { PiCalendarDots } from "react-icons/pi";
+import NotificationButton from "./../NotificationButton";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -181,6 +182,7 @@ export default function Navbar() {
           size="w-[36px] sm:w-[42px]"
           textSize="text-[18px] sm:text-[21px]"
         />
+        <NotificationButton />
 
         {/* ── Desktop links ── */}
         <ul className="hidden md:flex items-center gap-0.5 font-english">

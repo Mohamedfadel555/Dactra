@@ -15,6 +15,7 @@ import Icon from "../assets/images/icons/dactraIcon.webp";
 import { useLogout } from "../hooks/useLogout";
 import { TbContract } from "react-icons/tb";
 import { useMedicalProviderMe, pick } from "../hooks/useMedicalProviderMe";
+import BrandLogo from "../Components/Common/BrandLogo";
 
 export default function ProviderLayout({ type }) {
   const { role, accessToken } = useAuth();
@@ -24,15 +25,6 @@ export default function ProviderLayout({ type }) {
   const { data: provider } = useMedicalProviderMe();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const pathType = location.pathname.startsWith("/scan") ? "scan" : "lab";
-  const normalizedType = (type || pathType || role || "").toLowerCase();
-  const providerType = pick(provider, "type", "Type");
-  const isScanFromProvider =
-    providerType != null && String(providerType) === "1";
-  const isScanFromContext = normalizedType.includes("scan");
-  const isLab = !(isScanFromProvider || isScanFromContext);
-  const title = isLab ? "Lab Center" : "Scan Center";
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
@@ -76,10 +68,7 @@ export default function ProviderLayout({ type }) {
         }`}
       >
         <div className="p-4 lg:p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={Icon} alt="Dactra" className="w-8 h-8" />
-            <span className="text-white text-lg font-bold">{title}</span>
-          </div>
+          <BrandLogo textSize="text-white text-[24px] " />
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-white hover:text-gray-300"
@@ -90,7 +79,7 @@ export default function ProviderLayout({ type }) {
 
         <nav className="flex-1 px-3 lg:px-4 py-4 space-y-2 overflow-y-auto scrollbar-hide">
           <NavLink
-            to={isLab ? "/lab/profile" : "/scan/profile"}
+            to={"/medicalprovider/profile"}
             onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
@@ -105,7 +94,7 @@ export default function ProviderLayout({ type }) {
           </NavLink>
 
           <NavLink
-            to={isLab ? "/lab/services" : "/scan/services"}
+            to={"/medicalprovider/services"}
             onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
@@ -119,7 +108,7 @@ export default function ProviderLayout({ type }) {
             <span className="text-sm font-medium truncate">Services</span>
           </NavLink>
           <NavLink
-            to={isLab ? "/lab/searchdoctors" : "/scan/searchdoctors"}
+            to={"/medicalprovider/searchdoctors"}
             onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
@@ -133,7 +122,7 @@ export default function ProviderLayout({ type }) {
             <span className="text-sm font-medium truncate">Doctors</span>
           </NavLink>
           <NavLink
-            to={isLab ? "/lab/ourdeals" : "/scan/ourdeals"}
+            to={"/medicalprovider/ourdeals"}
             onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
@@ -147,7 +136,7 @@ export default function ProviderLayout({ type }) {
             <span className="text-sm font-medium truncate">Deals</span>
           </NavLink>
           <NavLink
-            to={isLab ? "/lab/sponsoreddoctors" : "/scan/sponsoreddoctors"}
+            to={"/medicalprovider/sponsoreddoctors"}
             onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
@@ -161,7 +150,7 @@ export default function ProviderLayout({ type }) {
             <span className="text-sm font-medium truncate">Sponsored</span>
           </NavLink>
           <NavLink
-            to={isLab ? "/lab/referredpatients" : "/scan/referredpatients"}
+            to={"/medicalprovider/referredpatients"}
             onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 h-11 px-3 rounded-lg transition-all duration-200 ${
@@ -198,7 +187,7 @@ export default function ProviderLayout({ type }) {
               <MdMenu className="w-6 h-6" />
             </button>
             <p className="text-sm sm:text-base font-semibold text-gray-800">
-              {title} Dashboard
+              Dashboard
             </p>
           </div>
         </header>
