@@ -221,25 +221,3 @@ git push origin feature/feature-name
 ```
 
 ---
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👤 Developer
-
-**Mohamed Fadel**
-
-- 🔗 GitHub: [@Mohamedfadel555](https://github.com/Mohamedfadel555)
-
----
-
-<div align="center">
-
-Made with ❤️ to improve the healthcare journey in Egypt 🇪🇬
-
-**[⭐ Star the project](https://github.com/Mohamedfadel555/dactra)**
-
-</div>
