@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as signalR from "@microsoft/signalr";
 import { useAxios } from "../hooks/useAxios";
 import { useAuth } from "../Context/AuthContext";
 import BrandLogo from "../Components/Common/BrandLogo";
+import { useSavePrescription } from "../hooks/useSavePrescription";
 
 // ─── UTILS ────────────────────────────────────────────────────────
 function sanitizeDomain(raw = "") {
@@ -16,7 +17,7 @@ function sanitizeDomain(raw = "") {
     .trim();
 }
 
-// ─── API FACTORY ─────────────────────────────────────────────────
+// ─── API FACTORY ──────────────────────────────────────────────────
 const createVideoCallApi = (axios) => ({
   join: async (appointmentId) => {
     const { data } = await axios.post(`VideoCall/join/${appointmentId}`);
@@ -28,10 +29,6 @@ const createVideoCallApi = (axios) => ({
   },
   end: async (appointmentId) => {
     const { data } = await axios.post(`VideoCall/end/${appointmentId}`);
-    return data;
-  },
-  savePrescription: async (appointmentId, payload) => {
-    const { data } = await axios.post(`Prescription/${appointmentId}`, payload);
     return data;
   },
 });
@@ -203,81 +200,71 @@ const LeftIcon = () => (
 );
 
 // ─── TREATMENT SCHEDULE BUILDER ───────────────────────────────────
-const TIMES_OF_DAY = [
-  { label: "Morning", key: "morning", default: "08:00" },
-  { label: "Afternoon", key: "afternoon", default: "13:00" },
-  { label: "Evening", key: "evening", default: "18:00" },
-  { label: "Night", key: "night", default: "21:00" },
-];
-
 const MEAL_OPTIONS = [
-  { label: "Before meals", value: "before_meals" },
-  { label: "After meals", value: "after_meals" },
-  { label: "With food", value: "with_food" },
-  { label: "Any time", value: "any_time" },
+  { label: "Before meals", value: 1 },
+  { label: "After meals", value: 2 },
+  { label: "With food", value: 3 },
+  { label: "Any time", value: 4 },
 ];
 
 const FREQ_OPTIONS = [
-  { label: "Once daily", value: 1, slots: ["morning"] },
-  { label: "Twice daily", value: 2, slots: ["morning", "evening"] },
-  { label: "3× daily", value: 3, slots: ["morning", "afternoon", "evening"] },
-  {
-    label: "4× daily",
-    value: 4,
-    slots: ["morning", "afternoon", "evening", "night"],
-  },
+  { label: "Once daily", value: 1 },
+  { label: "Twice daily", value: 2 },
+  { label: "3× daily", value: 3 },
+  { label: "4× daily", value: 4 },
 ];
 
-function MedicineSchedule({ medicine, index, onChange }) {
-  const [freq, setFreq] = useState(FREQ_OPTIONS[1]);
-  const [mealRelation, setMealRelation] = useState(MEAL_OPTIONS[0].value);
-  const [times, setTimes] = useState({
-    morning: "08:00",
-    afternoon: "13:00",
-    evening: "18:00",
-    night: "21:00",
-  });
+function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
+  const resolveFreq = (val) =>
+    FREQ_OPTIONS.find((o) => o.value === val) ?? FREQ_OPTIONS[1];
 
-  const updateFreq = (option) => {
-    setFreq(option);
-    notifyParent(option, mealRelation, times);
-  };
+  const [freq, setFreq] = useState(() =>
+    resolveFreq(initialSchedule?.frequency),
+  );
+  const [mealRelation, setMealRelation] = useState(
+    initialSchedule?.mealRelation ?? MEAL_OPTIONS[0].value,
+  );
+  const [firstDoseTime, setFirstDoseTime] = useState(
+    initialSchedule?.firstDoseTime ?? "08:00",
+  );
 
-  const updateMeal = (value) => {
-    setMealRelation(value);
-    notifyParent(freq, value, times);
-  };
-
-  const updateTime = (key, value) => {
-    const next = { ...times, [key]: value };
-    setTimes(next);
-    notifyParent(freq, mealRelation, next);
-  };
-
-  const notifyParent = (f, m, t) => {
-    onChange(index, {
-      frequency: f.value,
-      mealRelation: m,
-      times: f.slots.map((slot) => t[slot]),
-    });
-  };
-
+  // لما الـ sidebar يتفتح بروشتة موجودة يحدّث الـ state
   useEffect(() => {
-    notifyParent(freq, mealRelation, times);
+    const f = resolveFreq(initialSchedule?.frequency);
+    const m = initialSchedule?.mealRelation ?? MEAL_OPTIONS[0].value;
+    const t = initialSchedule?.firstDoseTime ?? "08:00";
+    setFreq(f);
+    setMealRelation(m);
+    setFirstDoseTime(t);
+    onChange(index, { frequency: f.value, mealRelation: m, firstDoseTime: t });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    initialSchedule?.frequency,
+    initialSchedule?.mealRelation,
+    initialSchedule?.firstDoseTime,
+  ]);
 
-  const activeSlots = freq.slots;
+  const notify = (f, m, t) =>
+    onChange(index, { frequency: f.value, mealRelation: m, firstDoseTime: t });
+
+  const updateFreq = (opt) => {
+    setFreq(opt);
+    notify(opt, mealRelation, firstDoseTime);
+  };
+  const updateMeal = (val) => {
+    setMealRelation(val);
+    notify(freq, val, firstDoseTime);
+  };
+  const updateTime = (val) => {
+    setFirstDoseTime(val);
+    notify(freq, mealRelation, val);
+  };
 
   const formatTime = (t) => {
     const [h, m] = t.split(":");
     const hr = parseInt(h);
     return `${hr % 12 || 12}:${m} ${hr >= 12 ? "PM" : "AM"}`;
   };
-
-  const notifPreview = activeSlots
-    .map((slot) => formatTime(times[slot]))
-    .join(" & ");
 
   const mealLabel =
     MEAL_OPTIONS.find((o) => o.value === mealRelation)?.label ?? "";
@@ -289,6 +276,7 @@ function MedicineSchedule({ medicine, index, onChange }) {
         {medicine.dose ? ` — ${medicine.dose}` : ""}
       </p>
 
+      {/* Times per day */}
       <div className="mb-3">
         <p className="text-xs text-gray-500 mb-2 font-medium">Times per day</p>
         <div className="flex gap-1.5 flex-wrap">
@@ -309,6 +297,7 @@ function MedicineSchedule({ medicine, index, onChange }) {
         </div>
       </div>
 
+      {/* When to take */}
       <div className="mb-3">
         <p className="text-xs text-gray-500 mb-2 font-medium">When to take</p>
         <div className="flex gap-1.5 flex-wrap">
@@ -329,20 +318,21 @@ function MedicineSchedule({ medicine, index, onChange }) {
         </div>
       </div>
 
-      <div className="grid gap-2 mb-3 grid-cols-2">
-        {TIMES_OF_DAY.filter((t) => activeSlots.includes(t.key)).map((slot) => (
-          <div key={slot.key}>
-            <p className="text-xs text-gray-400 mb-1">{slot.label}</p>
-            <input
-              type="time"
-              value={times[slot.key]}
-              onChange={(e) => updateTime(slot.key, e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-            />
-          </div>
-        ))}
+      {/* First dose time */}
+      <div className="mb-3">
+        <p className="text-xs text-gray-400 mb-1">First dose time</p>
+        <input
+          type="time"
+          value={firstDoseTime}
+          onChange={(e) => updateTime(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+        />
+        <p className="text-xs text-gray-400 mt-1.5">
+          Remaining doses will be calculated automatically based on frequency
+        </p>
       </div>
 
+      {/* Summary */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5">
         <svg
           className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0"
@@ -356,11 +346,12 @@ function MedicineSchedule({ medicine, index, onChange }) {
         </svg>
         <div>
           <p className="text-xs font-semibold text-blue-700">
-            Reminder at: {notifPreview}
+            First reminder at: {formatTime(firstDoseTime)}
           </p>
           <p className="text-xs text-blue-500 mt-0.5">
             {medicine.name || `Medicine ${index + 1}`}
-            {medicine.dose ? ` ${medicine.dose}` : ""} — {mealLabel}
+            {medicine.dose ? ` ${medicine.dose}` : ""} — {mealLabel} ·{" "}
+            {freq.label}
           </p>
         </div>
       </div>
@@ -369,16 +360,44 @@ function MedicineSchedule({ medicine, index, onChange }) {
 }
 
 // ─── PRESCRIPTION SIDEBAR ─────────────────────────────────────────
-function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
+function PrescriptionSidebar({
+  open,
+  onClose,
+  onSave,
+  isSaving,
+  isLoading,
+  initialData,
+}) {
   const [activeTab, setActiveTab] = useState("rx");
   const [diagnosis, setDiagnosis] = useState("");
   const [medicines, setMedicines] = useState([
-    { name: "", dose: "", duration: "" },
+    { name: "", dose: "", duration: 1 },
   ]);
   const [schedules, setSchedules] = useState([{}]);
 
+  // لما الـ sidebar يتفتح: حمّل البيانات الموجودة أو صفّر الـ form
+  useEffect(() => {
+    if (!open) return;
+
+    if (initialData) {
+      setDiagnosis(initialData.diagnosis);
+      setMedicines(
+        initialData.medicines.map(({ name, dose, duration }) => ({
+          name,
+          dose: dose ?? "",
+          duration, // رقم
+        })),
+      );
+      setSchedules(initialData.medicines.map((m) => m.schedule ?? {}));
+    } else {
+      setDiagnosis("");
+      setMedicines([{ name: "", dose: "", duration: 1 }]);
+      setSchedules([{}]);
+    }
+  }, [open, initialData]);
+
   const addMedicine = () => {
-    setMedicines([...medicines, { name: "", dose: "", duration: "" }]);
+    setMedicines([...medicines, { name: "", dose: "", duration: 1 }]);
     setSchedules([...schedules, {}]);
   };
 
@@ -390,7 +409,7 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
 
   const updateMedicine = (i, field, value) => {
     const updated = [...medicines];
-    updated[i][field] = value;
+    updated[i] = { ...updated[i], [field]: value };
     setMedicines(updated);
   };
 
@@ -421,6 +440,7 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-base font-bold text-gray-800">
@@ -445,6 +465,7 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
           </button>
         </div>
 
+        {/* Tabs */}
         <div className="flex border-b border-gray-100 px-5 pt-3">
           {[
             { key: "rx", label: "Prescription" },
@@ -465,9 +486,18 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
           ))}
         </div>
 
+        {/* Body */}
         <div className="flex-1 overflow-y-auto p-5">
-          {activeTab === "rx" && (
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center h-32">
+              <div className="w-8 h-8 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin" />
+            </div>
+          )}
+
+          {!isLoading && activeTab === "rx" && (
             <div className="flex flex-col gap-5">
+              {/* Diagnosis */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   Diagnosis
@@ -481,6 +511,7 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
                 />
               </div>
 
+              {/* Medicines */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -537,31 +568,50 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
                         </button>
                       )}
                     </div>
+
+                    {/* Medicine name */}
                     <input
                       value={med.name}
                       onChange={(e) =>
                         updateMedicine(i, "name", e.target.value)
                       }
-                      placeholder="Medicine name"
+                      placeholder="Medicine name *"
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white mb-2"
                     />
+
                     <div className="grid grid-cols-2 gap-2">
-                      <input
-                        value={med.dose}
-                        onChange={(e) =>
-                          updateMedicine(i, "dose", e.target.value)
-                        }
-                        placeholder="Dose (e.g. 500mg)"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-                      />
-                      <input
-                        value={med.duration}
-                        onChange={(e) =>
-                          updateMedicine(i, "duration", e.target.value)
-                        }
-                        placeholder="Duration (e.g. 7 days)"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-                      />
+                      {/* Dose — optional */}
+                      <div className="relative">
+                        <input
+                          value={med.dose}
+                          onChange={(e) =>
+                            updateMedicine(i, "dose", e.target.value)
+                          }
+                          placeholder="Dose (optional)"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                        />
+                      </div>
+
+                      {/* Duration — number input (days) */}
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min={1}
+                          value={med.duration}
+                          onChange={(e) =>
+                            updateMedicine(
+                              i,
+                              "duration",
+                              Math.max(1, parseInt(e.target.value) || 1),
+                            )
+                          }
+                          placeholder="Days"
+                          className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                          days
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -569,7 +619,7 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
             </div>
           )}
 
-          {activeTab === "plan" && (
+          {!isLoading && activeTab === "plan" && (
             <div>
               <p className="text-xs text-gray-400 mb-4 leading-relaxed">
                 Set notification times for each medicine. The patient will
@@ -582,6 +632,7 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
                   medicine={med}
                   index={i}
                   onChange={updateSchedule}
+                  initialSchedule={schedules[i]}
                 />
               ))}
               <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mt-2">
@@ -599,6 +650,7 @@ function PrescriptionSidebar({ open, onClose, onSave, isSaving }) {
           )}
         </div>
 
+        {/* Footer */}
         <div className="p-5 border-t border-gray-100">
           <button
             type="button"
@@ -672,7 +724,6 @@ function ConfirmEndModal({ open, onConfirm, onCancel, onOpenPrescription }) {
 // ─── MAIN COMPONENT ───────────────────────────────────────────────
 export default function VideoConsultation() {
   const { appointmentId } = useParams();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { accessToken, role } = useAuth();
   const isDoctor = role === "Doctor";
@@ -683,7 +734,6 @@ export default function VideoConsultation() {
   const jitsiApiRef = useRef(null);
   const sessionDataRef = useRef(null);
   const sessionEndedRef = useRef(false);
-  // ── NEW: SignalR connection ref ──────────────────────────────────
   const hubConnectionRef = useRef(null);
 
   const [callStatus, setCallStatus] = useState("loading");
@@ -694,10 +744,25 @@ export default function VideoConsultation() {
   const [prescriptionSaved, setPrescriptionSaved] = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
 
-  // Keep ref in sync with state
+  // Keep ref in sync
   useEffect(() => {
     sessionEndedRef.current = sessionEnded;
   }, [sessionEnded]);
+
+  // ── useSavePrescription ──────────────────────────────────────────
+  const savePrescriptionMutation = useSavePrescription(appointmentId, {
+    onSuccess: () => {
+      setPrescriptionSaved(true);
+      setSidebarOpen(false);
+    },
+  });
+
+  // لو كان عنده روشتة موجودة من قبل، خلّي الزرار يبان saved من الأول
+  useEffect(() => {
+    if (savePrescriptionMutation.hasPrescription) {
+      setPrescriptionSaved(true);
+    }
+  }, [savePrescriptionMutation.hasPrescription]);
 
   // ── Poll session status ──────────────────────────────────────────
   const { data: statusData } = useQuery({
@@ -728,19 +793,6 @@ export default function VideoConsultation() {
       sessionEndedRef.current = true;
       setSessionEnded(true);
       setCallStatus("ended");
-    },
-  });
-
-  // ── Save prescription ────────────────────────────────────────────
-  const savePrescriptionMutation = useMutation({
-    mutationFn: (payload) =>
-      createVideoCallApi(axios).savePrescription(appointmentId, payload),
-    onSuccess: () => {
-      setPrescriptionSaved(true);
-      setSidebarOpen(false);
-    },
-    onError: (err) => {
-      console.error("Failed to save prescription:", err);
     },
   });
 
@@ -910,7 +962,7 @@ export default function VideoConsultation() {
     initJitsi,
   ]);
 
-  // ── NEW: SignalR — listen for CallEnded ──────────────────────────
+  // ── SignalR — listen for CallEnded ───────────────────────────────
   useEffect(() => {
     if (!appointmentId || !accessToken) return;
 
@@ -924,7 +976,6 @@ export default function VideoConsultation() {
     hubConnectionRef.current = connection;
 
     connection.on("CallEnded", () => {
-      // Dispose Jitsi immediately
       if (jitsiApiRef.current) {
         try {
           jitsiApiRef.current.dispose();
@@ -942,7 +993,6 @@ export default function VideoConsultation() {
       .then(() =>
         connection.invoke("JoinAppointmentGroup", Number(appointmentId)),
       )
-
       .catch((err) => console.error("SignalR connection failed:", err));
 
     return () => {
@@ -953,7 +1003,7 @@ export default function VideoConsultation() {
     };
   }, [appointmentId, accessToken, queryClient]);
 
-  // ── End session with prescription check (doctor only) ───────────
+  // ── End session with prescription check ─────────────────────────
   const handleEndClick = useCallback(() => {
     if (endSessionMutation.isPending) return;
     if (isDoctor && !prescriptionSaved) {
@@ -993,6 +1043,8 @@ export default function VideoConsultation() {
           onClose={() => setSidebarOpen(false)}
           onSave={handlePrescriptionSave}
           isSaving={savePrescriptionMutation.isPending}
+          isLoading={savePrescriptionMutation.isLoadingPrescription}
+          initialData={savePrescriptionMutation.existingPrescription}
         />
       )}
 

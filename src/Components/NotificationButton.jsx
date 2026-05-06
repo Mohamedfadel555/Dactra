@@ -1,66 +1,87 @@
-// src/components/NotificationButton.jsx
-// ─────────────────────────────────────────────────────────────
-// Drop anywhere: <NotificationButton />
-// After the user clicks once and approves, subsequent visits
-// silently re-activate without any prompt.
-// ─────────────────────────────────────────────────────────────
-
+import { motion, AnimatePresence } from "framer-motion";
+import { FiBell, FiBellOff, FiAlertCircle } from "react-icons/fi";
 import { useNotifications } from "../hooks/useNotifications";
-import styles from "./NotificationButton.module.css";
 
-export default function NotificationButton() {
-  const { status, token, notifications, error, enableNotifications } =
-    useNotifications();
+export default function NotificationsWidget() {
+  const { status, token, error, enableNotifications } = useNotifications();
 
   const isLoading = status === "loading";
   const isGranted = status === "granted";
   const isDenied = status === "denied";
+  const isError = status === "error";
 
-  // ── If already granted (auto-activated on mount), render nothing ──
-  // Remove this block if you still want to show the "active" badge.
-  if (isGranted && !notifications.length) return null;
+  if (isGranted && !error) return null;
 
   return (
-    <div className={styles.wrapper}>
-      {/* ── Activation button (hidden once granted) ── */}
+    <div className="flex flex-col gap-3 font-sans">
       {!isGranted && (
-        <button
-          className={styles.btn}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          whileHover={{ scale: 1.02 }}
+          type="button"
           onClick={enableNotifications}
           disabled={isLoading || isDenied}
+          className={`
+            inline-flex items-center justify-center gap-2.5
+            h-11 px-6 rounded-2xl text-[14px] font-semibold
+            transition-colors shadow-sm select-none
+            ${
+              isDenied || isError
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+            }
+            disabled:opacity-60 disabled:cursor-not-allowed
+          `}
         >
-          {isLoading && <span className={styles.spinner} />}
-          {!isLoading && "🔔 Enable Notifications"}
-        </button>
+          {isLoading ? (
+            <>
+              <motion.span
+                animate={{ rotate: 360 }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 0.75,
+                  ease: "linear",
+                }}
+                className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full inline-block"
+              />
+              <span>Enabling…</span>
+            </>
+          ) : (
+            <>
+              {isDenied ? (
+                <FiBellOff className="w-4 h-4" />
+              ) : (
+                <FiBell className="w-4 h-4" />
+              )}
+              {isDenied ? "Notifications Blocked" : "Enable Notifications"}
+            </>
+          )}
+        </motion.button>
       )}
 
-      {/* ── Permission denied message ── */}
-      {isDenied && (
-        <p className={styles.error}>
-          {error ??
-            "Notification permission was denied. Please enable it in your browser settings."}
-        </p>
-      )}
+      <AnimatePresence>
+        {(isDenied || isError) && error && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="flex items-start gap-2.5 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl px-4 py-3 text-[12.5px] font-medium"
+          >
+            <FiAlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{error}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* ── FCM Token display (optional debug info) ── */}
-      {isGranted && token && (
-        <div className={styles.tokenBox}>
-          <span className={styles.tokenLabel}>FCM Token</span>
-          <code className={styles.token}>{token.slice(0, 40)}…</code>
+      {isGranted && token && process.env.NODE_ENV === "development" && (
+        <div className="flex flex-col gap-1 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            FCM Token
+          </span>
+          <code className="text-[11.5px] text-blue-500 break-all font-mono">
+            {token.slice(0, 48)}…
+          </code>
         </div>
-      )}
-
-      {/* ── Foreground notification list ── */}
-      {notifications.length > 0 && (
-        <ul className={styles.list}>
-          {notifications.map((n) => (
-            <li key={n.id} className={styles.item}>
-              <strong>{n.title}</strong>
-              <p>{n.body}</p>
-              <small>{n.time}</small>
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   );

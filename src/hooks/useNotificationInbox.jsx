@@ -81,7 +81,27 @@ export function useNotificationInbox() {
 
   const readMutation = useMutation({
     mutationFn: (id) => markAsRead(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      // Optimistic update — mark item as read immediately in cache
+      await queryClient.cancelQueries({ queryKey: ["notifications", "my"] });
+      const previous = queryClient.getQueryData(["notifications", "my"]);
+      queryClient.setQueryData(["notifications", "my"], (old = []) =>
+        old.map((n) => {
+          const nId = n?.id ?? n?.Id;
+          if (String(nId) === String(id)) {
+            return { ...n, isRead: true, IsRead: true };
+          }
+          return n;
+        }),
+      );
+      return { previous };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(["notifications", "my"], ctx.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications", "my"] });
       queryClient.invalidateQueries({
         queryKey: ["notifications", "unread-count"],
@@ -93,6 +113,7 @@ export function useNotificationInbox() {
     listQ.error?.response?.data?.message ||
     listQ.error?.message ||
     (listQ.isError ? "Could not load notifications." : null);
+
   const countError =
     countQ.error?.response?.data?.message ||
     countQ.error?.message ||
@@ -102,13 +123,15 @@ export function useNotificationInbox() {
     items: listQ.data ?? [],
     unreadCount: countQ.data ?? 0,
     isLoading: listQ.isLoading || countQ.isLoading,
+    isFetching: listQ.isFetching || countQ.isFetching,
+    isError: listQ.isError || countQ.isError,
+    listError,
+    countError,
     refetch: () => {
       listQ.refetch();
       countQ.refetch();
     },
     markRead: readMutation.mutateAsync,
-    listError,
-    countError,
-    isError: listQ.isError || countQ.isError,
+    isMarkingRead: readMutation.isPending,
   };
 }
