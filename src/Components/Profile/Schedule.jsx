@@ -47,7 +47,12 @@ function generateSlots(startTime, endTime, stepMinutes = 30, dayKey) {
 
   const base = Date.UTC(yyyy, mm - 1, dd);
   const startMs = base + (sh * 60 + sm) * 60 * 1000;
-  const endMs = base + (eh * 60 + em) * 60 * 1000;
+  let endMs = base + (eh * 60 + em) * 60 * 1000;
+
+  // ✅ لو الـ end قبل الـ start → يبقى اليوم التاني
+  if (endMs <= startMs) {
+    endMs += 24 * 60 * 60 * 1000;
+  }
 
   const slots = [];
   let cur = startMs;
@@ -167,6 +172,7 @@ export default function Schedule({
   timeSlots = { inPerson: {}, online: {} }, // patient view slots
   id,
 }) {
+  console.log(workingDetails);
   const todayRef = useRef(new Date());
   const today = todayRef.current;
 
