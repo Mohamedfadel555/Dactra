@@ -36,8 +36,9 @@ function generateSlots(startTime, endTime, stepMinutes = 30, dayKey) {
   const [eh, em] = endTime.slice(0, 5).split(":").map(Number);
   const [dd, mm, yyyy] = dayKey.split("-").map(Number);
 
-  const startTotalMins = sh * 60 + sm;
-  let endTotalMins = eh * 60 + em;
+  const tzOffsetMins = -new Date().getTimezoneOffset(); // +180 في القاهرة
+  const startTotalMins = sh * 60 + sm + tzOffsetMins;
+  let endTotalMins = eh * 60 + em + tzOffsetMins;
   if (endTotalMins <= startTotalMins) endTotalMins += 24 * 60;
 
   const slots = [];
