@@ -4,6 +4,7 @@ import qoutes from "../../assets/images/Vector3.webp";
 import sir from "../../assets/images/magdy.webp";
 import vec from "../../assets/images/Vector1.webp";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -20,6 +21,7 @@ const fadeRight = {
 };
 
 export default function HeroSection({ Role = "Patient" }) {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col md:flex-row gap-10 justify-center relative items-center w-full px-5 md:px-[50px]">
       {/* LEFT SIDE */}
@@ -73,8 +75,13 @@ export default function HeroSection({ Role = "Patient" }) {
         </p>
 
         <button
+          onClick={() =>
+            Role === "Patient"
+              ? navigate("/doctors")
+              : navigate("/myappointments")
+          }
           type="button"
-          className="font-semibold relative z-30 w-[80%] sm:w-[60%] md:w-[60%] md:h-[50px] lg:text-xl xl:text-2xl text-white h-[46px] bg-[linear-gradient(141deg,#A7E2FF,#316BE8)] rounded-2xl flex justify-center items-center"
+          className="font-semibold cursor-pointer relative z-30 w-[80%] sm:w-[60%] md:w-[60%] md:h-[50px] lg:text-xl xl:text-2xl text-white h-[46px] bg-[linear-gradient(141deg,#A7E2FF,#316BE8)] rounded-2xl flex justify-center items-center"
         >
           {Role === "Patient" || Role === null
             ? "Book an appointment"

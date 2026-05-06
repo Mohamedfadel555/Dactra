@@ -65,6 +65,7 @@ import {
 import { toast } from "react-toastify";
 import { FaFileCirclePlus } from "react-icons/fa6";
 import { useGetWeeklyApp } from "../../hooks/useGetWeeklyApp";
+import { useLocation } from "react-router-dom";
 
 // ─── static data ─────────────────────────────────────────────────────────────
 
@@ -147,6 +148,19 @@ export default function MyProfile() {
   const [deleteAcc, setDeleteAcc] = useState(false);
   const [grouped, setGrouped] = useState([]);
   const { role } = useAuth();
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
+      const el = document.getElementById(id);
+
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [location]);
 
   const { data: user } = useGetUser();
   const { data: cities } = useCities();
@@ -738,7 +752,12 @@ export default function MyProfile() {
                   <img
                     src={profileImageUrl}
                     alt="Profile"
-                    className="w-full h-full object-cover"
+                    style={{
+                      backgroundSize: "cover",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "top",
+                    }}
+                    className="w-full h-full"
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-end justify-center overflow-hidden">
@@ -947,20 +966,22 @@ export default function MyProfile() {
                   </motion.div>
 
                   <motion.div variants={itemFade}>
-                    <Card className="p-5">
-                      <Schedule
-                        title="My Schedule"
-                        subtitle="Manage your available slots"
-                        role={role}
-                        workingDetails={workingDetails}
-                        serverSlots={{
-                          inPerson: inPersonSlots ?? [],
-                          online: onlineSlots ?? [],
-                        }}
-                        isLoadingSlots={loadingInPerson || loadingOnline}
-                        id={user?.id}
-                      />
-                    </Card>
+                    <div id="myapp">
+                      <Card className="p-5">
+                        <Schedule
+                          title="My Schedule"
+                          subtitle="Manage your available slots"
+                          role={role}
+                          workingDetails={workingDetails}
+                          serverSlots={{
+                            inPerson: inPersonSlots ?? [],
+                            online: onlineSlots ?? [],
+                          }}
+                          isLoadingSlots={loadingInPerson || loadingOnline}
+                          id={user?.id}
+                        />
+                      </Card>
+                    </div>
                   </motion.div>
 
                   <motion.div variants={itemFade}>

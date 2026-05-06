@@ -3,6 +3,8 @@ import { FaUserDoctor } from "react-icons/fa6";
 import { GiLabCoat } from "react-icons/gi";
 import { FaXRay } from "react-icons/fa";
 import HeaderSection from "./HeaderSection";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../Context/AuthContext";
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -35,6 +37,8 @@ const services = [
 ];
 
 export default function ServicesPricingSection() {
+  const { role } = useAuth();
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col gap-8 justify-center items-center relative z-40 px-4">
       <HeaderSection
@@ -76,6 +80,11 @@ export default function ServicesPricingSection() {
         </div>
 
         <motion.button
+          onClick={() =>
+            role === "Doctor"
+              ? navigate("/myprofile#myapp")
+              : navigate("/medicalprovider/services")
+          }
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="w-full bg-[#316BE8] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#2556d1] transition-colors"

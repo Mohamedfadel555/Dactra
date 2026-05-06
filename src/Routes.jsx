@@ -129,7 +129,15 @@ export const route = createBrowserRouter([
           </Suspense>
         ),
       },
-      { path: "myappointments", element: <MyAppointments /> },
+      {
+        path: "myappointments",
+        element: (
+          <ProtectedRoutes>
+            {" "}
+            <MyAppointments />
+          </ProtectedRoutes>
+        ),
+      },
       {
         path: "Community/Question/tag/:tagId/:tagName",
         element: <TagPostsPage type="Question" />,
