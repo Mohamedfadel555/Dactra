@@ -24,6 +24,7 @@ import { useGetSlotsById } from "../../hooks/useGetSlotsById";
 import ReferralModal from "../../Components/Profile/ReferralModal";
 import { MdOutlineScience } from "react-icons/md";
 import { HiOutlineBeaker } from "react-icons/hi2";
+import { useGetWeeklyAppById } from "../../hooks/useGetWeeklyAppById";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -117,6 +118,8 @@ export default function Profile({ role }) {
   const { data: onlineSlotsToBook } = useGetSlotsById("online", id, role);
   const { data: user, error: userError } =
     role === "Patient" ? useGetPatientProfile(id) : useGetDoctorProfile(id);
+
+  const { data: apptData } = useGetWeeklyAppById(id, role);
 
   console.log(userError);
 
@@ -532,7 +535,19 @@ export default function Profile({ role }) {
                     </Card>
                   </motion.div>
                   <motion.div variants={itemFade}>
-                    <BarComp title="Appointments" data={appointmentData} />
+                    <BarComp
+                      title="Appointments"
+                      data={
+                        apptData
+                          ? apptData.map((i) => {
+                              return {
+                                date: i.date.split("T")[0],
+                                count: i.appointmentCount,
+                              };
+                            })
+                          : []
+                      }
+                    />
                   </motion.div>
                 </>
               )}

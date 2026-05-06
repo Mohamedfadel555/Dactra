@@ -13,23 +13,12 @@ export const useGetSlots = (role, type, id) => {
 
   const queryKey = type === "in-person" ? "inPersonSlots" : "onlineSlots";
 
-  console.log(queryKey);
-
   const query = useQuery({
     queryKey: [queryKey],
     queryFn: type === "in-person" ? getInPersonSlots : getOnlineSlots,
     staleTime: 1000 * 60 * 5,
     enabled: role === "Doctor" && !!id,
   });
-
-  console.log(
-    "🟡 Query state:",
-    query.status,
-    "| isFetching:",
-    query.isFetching,
-    "| data:",
-    query.data,
-  );
 
   useEffect(() => {
     if (role !== "Doctor") return;
@@ -59,11 +48,7 @@ export const useGetSlots = (role, type, id) => {
 
         connection.invoke("JoinDoctorSchedule", Number(id));
 
-        console.log("✅ Joined group DoctorSchedule_" + id);
-
         connection.on("SlotsUpdated", (data) => {
-          console.log("🔄 SlotsUpdated received:", data);
-
           if (data?.WorkingHoursUpdated) {
             queryClient.invalidateQueries({ queryKey: ["inPersonSlots"] });
             queryClient.invalidateQueries({ queryKey: ["onlineSlots"] });

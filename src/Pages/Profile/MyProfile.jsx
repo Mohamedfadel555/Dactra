@@ -64,6 +64,7 @@ import {
 } from "../../hooks/useUserImage";
 import { toast } from "react-toastify";
 import { FaFileCirclePlus } from "react-icons/fa6";
+import { useGetWeeklyApp } from "../../hooks/useGetWeeklyApp";
 
 // ─── static data ─────────────────────────────────────────────────────────────
 
@@ -71,16 +72,6 @@ const genderData = ["Male", "Female"];
 const bloodTypeData = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const SmokingData = ["No", "Yes", "EX-Smoker"];
 const martialData = ["Single", "Married", "Divorced", "Widowed"];
-
-const appointmentData = [
-  { date: "2025-01-01", count: 5 },
-  { date: "2025-01-02", count: 8 },
-  { date: "2025-01-03", count: 3 },
-  { date: "2025-01-04", count: 4 },
-  { date: "2025-01-05", count: 10 },
-  { date: "2025-01-06", count: 5 },
-  { date: "2025-01-07", count: 14 },
-];
 
 // ─── shared card wrapper ──────────────────────────────────────────────────────
 
@@ -155,6 +146,7 @@ export default function MyProfile() {
   const [changePass, setchangePass] = useState(false);
   const [deleteAcc, setDeleteAcc] = useState(false);
   const [grouped, setGrouped] = useState([]);
+  const { role } = useAuth();
 
   const { data: user } = useGetUser();
   const { data: cities } = useCities();
@@ -167,12 +159,13 @@ export default function MyProfile() {
   const { data: allchronics } = useGetAllChronic();
   const { data: workingDetails } = useGetWorkingDetails();
   const { data: userImage } = useUserImage();
+  const { data: apptData } = useGetWeeklyApp(role);
+  console.log(apptData);
 
   const createUserImageMutation = useCreateUserImage();
   const updateUserImageMutation = useUpdateUserImage();
   const deleteUserImageMutation = useDeleteUserImage();
   const fileInputRef = useRef(null);
-  const { role } = useAuth();
 
   const { data: inPersonSlots, isLoading: loadingInPerson } = useGetSlots(
     role,
@@ -971,7 +964,19 @@ export default function MyProfile() {
                   </motion.div>
 
                   <motion.div variants={itemFade}>
-                    <BarComp title="Appointments" data={appointmentData} />
+                    <BarComp
+                      title="Appointments"
+                      data={
+                        apptData
+                          ? apptData.map((i) => {
+                              return {
+                                date: i.date.split("T")[0],
+                                count: i.appointmentCount,
+                              };
+                            })
+                          : []
+                      }
+                    />
                   </motion.div>
                 </>
               )}

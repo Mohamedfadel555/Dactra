@@ -197,6 +197,19 @@ export const useUserAPI = () => {
     return res?.data;
   };
 
+  const getWeeklyApp = async () => {
+    const res = await axiosInstance.get(
+      "AppointmentStatistics/my-weekly-appointments",
+    );
+    return res.data.dailyCounts;
+  };
+  const getWeeklyAppById = async (id) => {
+    const res = await axiosInstance.get(
+      `AppointmentStatistics/doctor/${id}/weekly-appointments`,
+    );
+    return res.data.dailyCounts;
+  };
+
   return {
     getMePatient,
     getMeDoctor,
@@ -229,5 +242,7 @@ export const useUserAPI = () => {
     createUserImage,
     updateUserImage,
     deleteUserImage,
+    getWeeklyApp,
+    getWeeklyAppById,
   };
 };
