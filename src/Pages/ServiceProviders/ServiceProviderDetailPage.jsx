@@ -8,6 +8,7 @@ import {
   usePatientProviderRatings,
   useRateProvider,
   useUpdateProviderRating,
+  useGetProviderRatings,
 } from "../../hooks/useProviderRatings";
 import { useAuth } from "../../Context/AuthContext";
 import { useEffect, useState, useRef } from "react";
@@ -163,6 +164,14 @@ export default function ServiceProviderDetailPage() {
     enabled: Number.isFinite(numericId),
   });
 
+  // ✅ FIX: use numericId here — providerId is defined later after provider loads
+  const { data: providerRatingsData, isLoading: loadingRatings } =
+    useGetProviderRatings(numericId);
+  const allReviews = providerRatingsData?.ratings ?? [];
+  const scoreCounts = providerRatingsData?.scoreCounts ?? {};
+  const totalRatings = providerRatingsData?.totalRatings ?? 0;
+  const averageRating = providerRatingsData?.averageRating ?? null;
+
   const { data: myRatings = [], isPending: ratingsLoading } =
     usePatientProviderRatings();
   const rateMutation = useRateProvider();
@@ -242,6 +251,39 @@ export default function ServiceProviderDetailPage() {
   const gradientBar = isLab
     ? "from-[#316BE8] to-[#6A9FFF]"
     : "from-[#0EA5E9] to-[#38BDF8]";
+
+  // ─── Rating submit handler ────────────────────────────────────────────────
+  const handleRatingSubmit = async () => {
+    const userHeading = String(rateForm.heading || "").trim();
+    if (!userHeading) return;
+
+    const body = {
+      heading: userHeading,
+      score: Number(rateForm.score),
+      comment: rateForm.comment || "",
+    };
+
+    // Double-check if a rating already exists (guards against stale cache)
+    let useUpdate = !!existingRate;
+    if (!useUpdate) {
+      await queryClient.refetchQueries({
+        queryKey: ["patientProviderRatings"],
+      });
+      const fresh = queryClient.getQueryData(["patientProviderRatings"]) || [];
+      useUpdate = (Array.isArray(fresh) ? fresh : []).some(matchProviderRow);
+    }
+
+    if (useUpdate) {
+      await updateRateMutation.mutateAsync({ providerId, body });
+    } else {
+      await rateMutation.mutateAsync({ providerId, body });
+    }
+
+    setRateSuccess(true);
+    setShowRateForm(false);
+    // Refresh provider ratings after submitting
+    queryClient.invalidateQueries({ queryKey: ["providerRatings", numericId] });
+  };
 
   return (
     <div
@@ -489,9 +531,130 @@ export default function ServiceProviderDetailPage() {
           </div>
         </Section>
 
-        {/* ── RATING SECTION ── */}
+        {/* ── REVIEWS SECTION ── */}
+        <Section delay={300}>
+          <div className="bg-white border border-slate-100 rounded-2xl p-6 mb-6 shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-bold text-gray-800">
+                Patient Reviews
+              </h2>
+              {totalRatings > 0 && (
+                <span className="text-xs text-gray-400 font-medium">
+                  {totalRatings} review{totalRatings !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+
+            {loadingRatings ? (
+              <Loader />
+            ) : allReviews.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">No reviews yet.</p>
+            ) : (
+              <>
+                {/* Average + bar breakdown */}
+                <div className="flex flex-col sm:flex-row gap-6 mb-6 p-4 bg-slate-50 rounded-xl">
+                  {/* Big avg number */}
+                  <div className="flex flex-col items-center justify-center min-w-[80px]">
+                    <span className={`text-4xl font-extrabold ${accentClass}`}>
+                      {Number(averageRating).toFixed(1)}
+                    </span>
+                    <div className="flex items-center gap-0.5 mt-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <MdStar
+                          key={s}
+                          className={`w-3.5 h-3.5 ${
+                            s <= Math.round(averageRating)
+                              ? "text-amber-400"
+                              : "text-slate-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-400 mt-1">
+                      {totalRatings} review{totalRatings !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {/* Score bars */}
+                  <div className="flex-1 space-y-1.5">
+                    {[5, 4, 3, 2, 1].map((star) => {
+                      const count = scoreCounts[String(star)] ?? 0;
+                      const pct =
+                        totalRatings > 0 ? (count / totalRatings) * 100 : 0;
+                      return (
+                        <div key={star} className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 w-3 text-right">
+                            {star}
+                          </span>
+                          <MdStar className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                          <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${gradientBar} transition-all duration-700`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-400 w-4">
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Review cards */}
+                <div className="space-y-3">
+                  {allReviews.map((r, i) => (
+                    <div
+                      key={r.ratingId ?? i}
+                      className="border border-slate-100 rounded-xl p-4"
+                      style={{
+                        animation: `slideUp 0.35s ease ${i * 60}ms both`,
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <p className="font-semibold text-gray-800 text-sm">
+                            {r.heading}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {r.patientName || "Anonymous"} ·{" "}
+                            {new Date(r.ratedAt).toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <MdStar
+                              key={s}
+                              className={`w-3.5 h-3.5 ${
+                                s <= r.score
+                                  ? "text-amber-400"
+                                  : "text-slate-200"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {r.comment && (
+                        <p className="text-sm text-gray-500 leading-relaxed">
+                          {r.comment}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </Section>
+
+        {/* ── YOUR RATING SECTION ── */}
         {(role || "").toLowerCase() === "patient" && (
-          <Section delay={320}>
+          <Section delay={380}>
             <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <h2 className="text-base font-bold text-gray-800">
@@ -527,6 +690,7 @@ export default function ServiceProviderDetailPage() {
                 </div>
               )}
 
+              {/* Rating form */}
               {showRateForm && (
                 <div
                   style={{
@@ -534,13 +698,11 @@ export default function ServiceProviderDetailPage() {
                   }}
                   className="space-y-4"
                 >
-                  {/* Star picker */}
                   <StarPicker
                     value={rateForm.score}
                     onChange={(s) => setRateForm((p) => ({ ...p, score: s }))}
                   />
 
-                  {/* Heading input */}
                   <input
                     value={rateForm.heading}
                     onChange={(e) =>
@@ -550,7 +712,6 @@ export default function ServiceProviderDetailPage() {
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#316BE8]/30 focus:border-[#316BE8] transition-all"
                   />
 
-                  {/* Comment textarea */}
                   <textarea
                     value={rateForm.comment}
                     onChange={(e) =>
@@ -571,43 +732,7 @@ export default function ServiceProviderDetailPage() {
                         updateRateMutation.isPending ||
                         !String(rateForm.heading || "").trim()
                       }
-                      onClick={async () => {
-                        const userHeading = String(
-                          rateForm.heading || "",
-                        ).trim();
-                        if (!userHeading) return;
-                        const payload = {
-                          heading: userHeading,
-                          score: Number(rateForm.score),
-                          comment: rateForm.comment || "",
-                        };
-                        let useUpdate = !!existingRate;
-                        if (!useUpdate) {
-                          await queryClient.refetchQueries({
-                            queryKey: ["patientProviderRatings"],
-                          });
-                          const fresh =
-                            queryClient.getQueryData([
-                              "patientProviderRatings",
-                            ]) || [];
-                          useUpdate = (Array.isArray(fresh) ? fresh : []).some(
-                            matchProviderRow,
-                          );
-                        }
-                        if (useUpdate) {
-                          await updateRateMutation.mutateAsync({
-                            providerId,
-                            body: payload,
-                          });
-                        } else {
-                          await rateMutation.mutateAsync({
-                            providerId,
-                            body: payload,
-                          });
-                        }
-                        setRateSuccess(true);
-                        setShowRateForm(false);
-                      }}
+                      onClick={handleRatingSubmit}
                       className={`flex-1 h-10 rounded-xl text-white text-sm font-semibold
                         disabled:opacity-40 disabled:cursor-not-allowed
                         transition-all duration-200 active:scale-95
@@ -626,6 +751,9 @@ export default function ServiceProviderDetailPage() {
                         onClick={async () => {
                           await deleteRateMutation.mutateAsync(providerId);
                           setShowRateForm(false);
+                          queryClient.invalidateQueries({
+                            queryKey: ["providerRatings", numericId],
+                          });
                         }}
                         className="px-4 h-10 rounded-xl border border-red-200 text-red-500 text-sm font-semibold
                           hover:bg-red-50 transition-all duration-200 flex items-center gap-1.5"
@@ -638,13 +766,18 @@ export default function ServiceProviderDetailPage() {
                 </div>
               )}
 
+              {/* Existing rating display */}
               {!showRateForm && existingRate && !rateSuccess && (
                 <div className="bg-slate-50 rounded-xl p-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1 mb-1">
                     {[...Array(5)].map((_, i) => (
                       <MdStar
                         key={i}
-                        className={`w-4 h-4 ${i < (pick(existingRate, "score", "Score") || 0) ? "text-amber-400" : "text-slate-200"}`}
+                        className={`w-4 h-4 ${
+                          i < (pick(existingRate, "score", "Score") || 0)
+                            ? "text-amber-400"
+                            : "text-slate-200"
+                        }`}
                       />
                     ))}
                   </div>
@@ -659,6 +792,7 @@ export default function ServiceProviderDetailPage() {
                 </div>
               )}
 
+              {/* No rating yet */}
               {!showRateForm && !existingRate && !rateSuccess && (
                 <p className="text-sm text-gray-400">
                   You haven't rated this provider yet.

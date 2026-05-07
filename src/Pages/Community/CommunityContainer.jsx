@@ -100,14 +100,18 @@ const SkeletonCard = () => (
 );
 
 export default function CommunityContainer({ type }) {
-  const [expanded, setExpanded] = useState(false); // بديل focused — مش بيتأثر بالـ blur
+  const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState("");
-  const [image, setImage] = useState(null); // { file, preview }
+  const [image, setImage] = useState(null);
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState("all");
   const { role } = useAuth();
   const loadRef = useRef(null);
+
+  useEffect(() => {
+    setActiveTab("all");
+  }, [type]);
 
   const { data: trendingTags } = useGetTrendingTags(type);
 

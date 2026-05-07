@@ -41,6 +41,19 @@ function useDebounce(value, delay = 500) {
   return debounced;
 }
 
+/* ─── responsive hook ─── */
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(
+    () => window.innerWidth <= breakpoint,
+  );
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 /* ─── design tokens ─── */
 const C = {
   primary: "#316BE8",
@@ -525,6 +538,7 @@ function DoctorCard({
 ══════════════════════════════════════════ */
 export default function DoctorsListPage() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile(768);
 
   const [searchInput, setSearchInput] = useState("");
   const [selectedGender, setSelectedGender] = useState("all");
@@ -539,10 +553,9 @@ export default function DoctorsListPage() {
   const specialtiesRef = useRef(null);
   const favStorageKey = "dactra_favourite_doctors";
 
-  /* Debounced search — no request fires while user is still typing */
+  /* Debounced search */
   const searchTerm = useDebounce(searchInput, 500);
 
-  /* Reset to page 1 when search changes */
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -697,19 +710,29 @@ export default function DoctorsListPage() {
         </div>
 
         {/* ── Layout ── */}
-        <div style={{ display: "flex", gap: 22, alignItems: "flex-start" }}>
+        {/* CHANGE 1: on mobile, flex-direction becomes column so sidebar stacks above content */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: 22,
+            alignItems: "flex-start",
+          }}
+        >
           {/* Sidebar — shown only when filterOpen */}
           {filterOpen && (
             <aside
               style={{
-                width: 220,
+                /* CHANGE 2: on mobile, sidebar is full width and not sticky */
+                width: isMobile ? "100%" : 220,
                 flexShrink: 0,
                 background: C.white,
                 border: `0.5px solid ${C.border}`,
                 borderRadius: radius.lg,
                 padding: 20,
-                position: "sticky",
+                position: isMobile ? "static" : "sticky",
                 top: 100,
+                boxSizing: "border-box",
               }}
             >
               <FilterPanel
@@ -723,7 +746,7 @@ export default function DoctorsListPage() {
           )}
 
           {/* Main content */}
-          <section style={{ flex: 1, minWidth: 0 }}>
+          <section style={{ flex: 1, minWidth: 0, width: "100%" }}>
             <p
               style={{
                 fontSize: 15,
@@ -852,10 +875,13 @@ export default function DoctorsListPage() {
             </div>
 
             {/* Doctors grid */}
+            {/* CHANGE 3: on mobile use 1 column, on tablet 2, on desktop auto-fill */}
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gridTemplateColumns: isMobile
+                  ? "1fr"
+                  : "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: 16,
                 marginBottom: 32,
               }}

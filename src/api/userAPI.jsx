@@ -146,7 +146,7 @@ export const useUserAPI = () => {
     return asArray(res?.data);
   };
 
-  const rateProvider = async (providerId, body) => {
+  const rateProviderr = async (providerId, body) => {
     const res = await axiosInstance.post(
       `Rating/patient/rate-provider/${providerId}`,
       body,
@@ -210,6 +210,25 @@ export const useUserAPI = () => {
     return res.data.dailyCounts;
   };
 
+  const fetchProviderRating = async (providerId) => {
+    const res = await axiosInstance.get(`Rating/provider/rating${providerId}`);
+    return res.data;
+  };
+
+  const rateProvider = async ({ providerId, payload }) => {
+    console.log(payload);
+    const res = await axiosInstance.post(
+      `Rating/patient/rate-provider/${providerId}`,
+      payload,
+    );
+    return res.data;
+  };
+
+  const getMyRating = async () => {
+    const res = await axiosInstance.get("Rating/provider/my-ratings");
+    return res.data;
+  };
+
   return {
     getMePatient,
     getMeDoctor,
@@ -235,7 +254,7 @@ export const useUserAPI = () => {
     createSiteReview,
     getTopRatedDoctors,
     getPatientProviderRatings,
-    rateProvider,
+    rateProviderr,
     updateProviderRating,
     deleteProviderRating,
     getUserImage,
@@ -244,5 +263,8 @@ export const useUserAPI = () => {
     deleteUserImage,
     getWeeklyApp,
     getWeeklyAppById,
+    fetchProviderRating,
+    rateProvider,
+    getMyRating,
   };
 };

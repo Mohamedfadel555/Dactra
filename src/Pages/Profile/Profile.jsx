@@ -25,6 +25,7 @@ import ReferralModal from "../../Components/Profile/ReferralModal";
 import { MdOutlineScience } from "react-icons/md";
 import { HiOutlineBeaker } from "react-icons/hi2";
 import { useGetWeeklyAppById } from "../../hooks/useGetWeeklyAppById";
+import RatingSection from "./../../Components/Profile/RatingSection";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -574,34 +575,21 @@ export default function Profile({ role }) {
           </div>
 
           {/* ── Doctor ratings ─────────────────────────────────────────────── */}
-          {role === "Doctor" && user?.ratings?.length > 0 && (
+          {/* {role === "Doctor" && authRole === "Patient" && (
             <motion.div
               className="mt-5"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.48, ease: "easeOut", delay: 0.2 }}
             >
-              <Card className="p-5 md:p-6">
-                <p
-                  className="text-[11px] font-semibold text-gray-400 uppercase
-                               tracking-wider mb-5"
-                >
-                  Patient reviews
-                </p>
-                <SwiperComponent
-                  Card={CommentCard}
-                  data={user.ratings}
-                  mapProps={(item) => ({
-                    name: item.patientName,
-                    photo: profilePhoto,
-                    starsNo: item.score,
-                    heading: item.heading,
-                    body: item.comment,
-                  })}
-                />
-              </Card>
+              <RatingSection
+                providerId={id}
+                canRate={
+                  !!accessToken && authRole === "Patient" && !isOwnProfile
+                }
+              />
             </motion.div>
-          )}
+          )} */}
         </div>
       </div>
 

@@ -66,6 +66,7 @@ import { toast } from "react-toastify";
 import { FaFileCirclePlus } from "react-icons/fa6";
 import { useGetWeeklyApp } from "../../hooks/useGetWeeklyApp";
 import { useLocation } from "react-router-dom";
+import RatingSection from "../../Components/Profile/RatingSection";
 
 // ─── static data ─────────────────────────────────────────────────────────────
 
@@ -1024,29 +1025,14 @@ export default function MyProfile() {
           </div>
 
           {/* ── Doctor ratings ──────────────────────────────────────────────── */}
-          {role === "Doctor" && ratings?.ratings?.length > 0 && (
+          {role === "Doctor" && (
             <motion.div
               className="mt-5"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.48, ease: "easeOut", delay: 0.2 }}
             >
-              <Card className="p-5 md:p-6">
-                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-5">
-                  Patient reviews
-                </p>
-                <SwiperComponent
-                  Card={CommentCard}
-                  data={ratings.ratings}
-                  mapProps={(item) => ({
-                    name: item.PatientName,
-                    photo: profilePhoto,
-                    starsNo: item.Score,
-                    heading: item.Heading,
-                    body: item.Comment,
-                  })}
-                />
-              </Card>
+              <RatingSection canRate={false} />
             </motion.div>
           )}
         </div>

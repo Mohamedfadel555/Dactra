@@ -167,8 +167,7 @@ export default function Schedule({
   timeSlots = { inPerson: {}, online: {} },
   id,
 }) {
-  console.log(serverSlots);
-  console.log(workingDetails);
+  console.log(timeSlots);
 
   const todayRef = useRef(new Date());
   const today = todayRef.current;
@@ -430,6 +429,7 @@ export default function Schedule({
 
   async function handleBook() {
     if (!selectedSlot) return;
+    // console.log(selectedSlot);
     await bookMutation.mutateAsync(selectedSlot.slotId);
   }
 

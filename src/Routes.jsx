@@ -95,6 +95,7 @@ const NotificationsPage = lazy(
 );
 import DoctorDashboardLayout from "./Layout/DoctorDashboardLayout";
 import SponsorsPage from "./Pages/DoctorDashboard/SponsorPage";
+import MedicalFavorites from "./Pages/Profile/MedicalFavorites";
 
 export const route = createBrowserRouter([
   { path: "/Dactra/Chat", element: <MedicalChat /> },
@@ -153,6 +154,10 @@ export const route = createBrowserRouter([
             <PostDetailPage />
           </ProtectedRoutes>
         ),
+      },
+      {
+        path: "favourites",
+        element: <MedicalFavorites />,
       },
       {
         path: "Community/Posts",

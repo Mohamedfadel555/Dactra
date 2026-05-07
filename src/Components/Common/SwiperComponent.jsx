@@ -3,6 +3,7 @@ import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import { motion } from "framer-motion";
 export default function SwiperComponent({ data, Card, mapProps }) {
   return (
     <div className=" pb-[30px] overflow-hidden w-full max-w-screen-2xl mx-auto">
