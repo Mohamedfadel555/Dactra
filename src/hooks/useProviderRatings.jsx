@@ -16,12 +16,21 @@ export const usePatientProviderRatings = () => {
     retry: 1,
   });
 };
+export const useGetProviderRatings = (providerId) => {
+  const { fetchProviderRating } = useUserAPI();
+  return useQuery({
+    queryKey: ["providerRatings", providerId],
+    queryFn: () => fetchProviderRating(providerId),
+    enabled: Number.isFinite(Number(providerId)),
+    staleTime: 1000 * 60 * 2,
+  });
+};
 
 export const useRateProvider = () => {
-  const { rateProvider } = useUserAPI();
+  const { rateProviderr } = useUserAPI();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ providerId, body }) => rateProvider(providerId, body),
+    mutationFn: ({ providerId, body }) => rateProviderr(providerId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patientProviderRatings"] });
       toast.success("Rating submitted.", { position: "top-center" });
@@ -49,7 +58,8 @@ export const useUpdateProviderRating = () => {
   const { updateProviderRating } = useUserAPI();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ providerId, body }) => updateProviderRating(providerId, body),
+    mutationFn: ({ providerId, body }) =>
+      updateProviderRating(providerId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patientProviderRatings"] });
       toast.success("Rating updated.", { position: "top-center" });
@@ -91,4 +101,3 @@ export const useDeleteProviderRating = () => {
     },
   });
 };
-
