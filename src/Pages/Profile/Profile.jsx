@@ -575,7 +575,7 @@ export default function Profile({ role }) {
           </div>
 
           {/* ── Doctor ratings ─────────────────────────────────────────────── */}
-          {/* {role === "Doctor" && authRole === "Patient" && (
+          {role === "Doctor" && authRole === "Patient" && (
             <motion.div
               className="mt-5"
               initial={{ opacity: 0, y: 24 }}
@@ -589,7 +589,7 @@ export default function Profile({ role }) {
                 }
               />
             </motion.div>
-          )} */}
+          )}
         </div>
       </div>
 
