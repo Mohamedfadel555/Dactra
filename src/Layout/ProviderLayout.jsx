@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import { FaHandsHelping } from "react-icons/fa";
 import { FaUsers } from "react-icons/fa";
@@ -68,7 +74,9 @@ export default function ProviderLayout({ type }) {
         }`}
       >
         <div className="p-4 lg:p-6 flex items-center justify-between">
-          <BrandLogo textSize="text-white text-[24px] " />
+          <Link to="/">
+            <BrandLogo textSize="text-white text-[24px] " />
+          </Link>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-white hover:text-gray-300"

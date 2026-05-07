@@ -79,7 +79,7 @@ export default function PatientSection({
               setSelected(items ? items.map((i) => i.value) : [])
             }
             placeholder={`Search ${title.toLowerCase()}...`}
-            className="react-select-container"
+            className="react-select-container relative z-50 "
             classNamePrefix="react-select"
           />
 

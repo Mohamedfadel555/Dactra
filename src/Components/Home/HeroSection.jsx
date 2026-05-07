@@ -78,14 +78,18 @@ export default function HeroSection({ Role = "Patient" }) {
           onClick={() =>
             Role === "Patient"
               ? navigate("/doctors")
-              : navigate("/myappointments")
+              : Role === "Doctor"
+                ? navigate("/myappointments")
+                : navigate("/medicalprovider/referredpatients")
           }
           type="button"
           className="font-semibold cursor-pointer relative z-30 w-[80%] sm:w-[60%] md:w-[60%] md:h-[50px] lg:text-xl xl:text-2xl text-white h-[46px] bg-[linear-gradient(141deg,#A7E2FF,#316BE8)] rounded-2xl flex justify-center items-center"
         >
           {Role === "Patient" || Role === null
             ? "Book an appointment"
-            : "Check your appointments"}
+            : Role === "Doctor"
+              ? "Check your appointments"
+              : "Check your orders"}
           <HiChevronRight className="text-xl md:text-2xl lg:text-3xl ml-1" />
         </button>
       </motion.div>

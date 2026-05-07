@@ -47,6 +47,7 @@ import {
 } from "../hooks/useSiteReviews";
 import { useTopRatedDoctors } from "../hooks/useTopRatedDoctors";
 import ReviewsSection from "../Components/Home/SiteReviewsSection";
+import DactraFloatButton from "../Components/Home/DactraFloatButton";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -294,6 +295,7 @@ export default function HomePage() {
   return (
     <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
       {/* Section1 */}
+      {(role === "Patient" || role === "Doctor") && <DactraFloatButton />}
       <HeroSection Role={role} />
 
       {/* Section2 - Services */}

@@ -445,15 +445,6 @@ export default function DealsPage() {
             </motion.button>
           ))}
         </div>
-        <div className="relative ml-auto">
-          <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search provider…"
-            className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white focus:border-blue-400 outline-none text-[13px] text-slate-800"
-          />
-        </div>
       </div>
 
       {/* Cards grid */}

@@ -103,7 +103,7 @@ export const route = createBrowserRouter([
 
   /* ── Doctor Dashboard ────────────────────────────────────── */
   {
-    path: "/dd",
+    path: "/dashboard",
     element: <DoctorDashboardLayout />,
     children: [
       { index: true, element: <Navigate to="deals" replace /> },

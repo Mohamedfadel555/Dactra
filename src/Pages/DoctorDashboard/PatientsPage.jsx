@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   RiSearchLine,
-  RiUserLine,
   RiPhoneLine,
   RiMailLine,
+  RiArrowRightSLine,
 } from "react-icons/ri";
 import { useGetCarePatients } from "../../hooks/useGetCarePatients";
 
@@ -34,6 +35,7 @@ const ini = (n = "") =>
     .toUpperCase();
 
 export default function PatientsPage() {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useGetCarePatients();
   const [query, setQuery] = useState("");
 
@@ -138,18 +140,22 @@ export default function PatientsPage() {
                   exit={{ opacity: 0 }}
                   className="grid grid-cols-3 px-5 py-3.5 border-b border-slate-50 last:border-0 items-center hover:bg-slate-50/70 transition-colors"
                 >
-                  {/* Name */}
-                  <div className="flex items-center gap-3">
+                  {/* Name — clickable */}
+                  <button
+                    onClick={() => navigate(`/patient/profile/${p.patientId}`)}
+                    className="flex items-center gap-3 group text-left w-full"
+                  >
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-transform group-hover:scale-110"
                       style={{ background: color + "22", color }}
                     >
                       {ini(p.patientName)}
                     </div>
-                    <span className="text-[13px] text-slate-800 font-medium truncate">
+                    <span className="text-[13px] text-slate-800 font-medium truncate group-hover:text-blue-600 transition-colors">
                       {p.patientName}
                     </span>
-                  </div>
+                    <RiArrowRightSLine className="text-slate-300 group-hover:text-blue-400 shrink-0 transition-all -translate-x-1 group-hover:translate-x-0 opacity-0 group-hover:opacity-100" />
+                  </button>
 
                   {/* Phone */}
                   <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500">

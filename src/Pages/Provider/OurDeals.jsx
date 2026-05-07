@@ -291,7 +291,6 @@ function DealCard({ deal, index, onCounter, onCancel }) {
   const statusKey =
     deal.status === 0 ? "pending" : deal.status === 1 ? "rejected" : "counter";
   const meta = STATUS_META[statusKey];
-  console.log(deal);
 
   return (
     <motion.div
@@ -611,7 +610,6 @@ export default function OurDeals() {
   );
 
   const allDeals = dealsData?.pages.flatMap((page) => page.items) ?? [];
-  console.log(allDeals);
 
   const counts = {
     pending: summary?.pendingCount ?? 0,

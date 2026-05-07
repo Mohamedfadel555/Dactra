@@ -7,13 +7,13 @@ import { useAuth } from "../../Context/AuthContext";
 import { useLogout } from "./../../hooks/useLogout";
 import { IoPersonSharp } from "react-icons/io5";
 import { useGetUser } from "../../hooks/useGetUser";
-import { FaChevronRight } from "react-icons/fa";
+import { FaChevronRight, FaHandsHelping, FaUsers } from "react-icons/fa";
 import { IoIosHeartEmpty } from "react-icons/io";
 import AvatarIcon from "./AvatarIcon1";
 import NotificationBell from "./NotificationBell";
 import { PiCalendarDots } from "react-icons/pi";
-// import NotificationButton from "./../NotificationButton";
 import NotificationsWidget from "./../NotificationButton";
+import { FaUserDoctor } from "react-icons/fa6";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -84,7 +84,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handle);
   }, []);
 
-  /* ── lock body scroll when sidenav open ── */
   useEffect(() => {
     document.body.style.overflow = sidenav ? "hidden" : "";
     return () => {
@@ -92,7 +91,6 @@ export default function Navbar() {
     };
   }, [sidenav]);
 
-  /* ── close sidenav on ESC ── */
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") {
@@ -123,7 +121,7 @@ export default function Navbar() {
     role === "Patient" || role === null
       ? [
           { to: "/", label: "Home" },
-          { to: "/fav", label: "Favourite" },
+          { to: "/favourites", label: "Favourite" },
           {
             label: "Services",
             Links: [
@@ -140,18 +138,96 @@ export default function Navbar() {
           },
           { to: "/aboutus", label: "About Us" },
         ]
-      : [
-          { to: "/", label: "Home" },
-          { to: "/fav", label: "Favourite" },
+      : role === "Doctor"
+        ? [
+            { to: "/", label: "Home" },
+            {
+              label: "Community",
+              Links: [
+                { to: "/Community/Posts", label: "Posts" },
+                { to: "/Community/Questions", label: "Questions" },
+              ],
+            },
+            { to: "/dashboard", label: "Dashboard" },
+            { to: "/aboutus", label: "About Us" },
+          ]
+        : [
+            { to: "/", label: "Home" },
+            { to: "/medicalprovider/services", label: "Services" },
+            { to: "/medicalprovider/searchdoctors", label: "Doctors" },
+            { to: "/aboutus", label: "About Us" },
+          ];
+
+  /* ── popup account links per role ── */
+  const accountLinks =
+    role === "Patient"
+      ? [
           {
-            label: "Community",
-            Links: [
-              { to: "/Community/Posts", label: "Posts" },
-              { to: "/Community/Questions", label: "Questions" },
-            ],
+            to: "/myprofile",
+            icon: <IoPersonSharp className="w-4 h-4" />,
+            label: "Profile",
           },
-          { to: "/aboutus", label: "About Us" },
-        ];
+          {
+            to: "/myappointments",
+            icon: <PiCalendarDots />,
+            label: "My Appointments",
+          },
+          {
+            to: "/favourites",
+            icon: <IoIosHeartEmpty className="w-4 h-4" />,
+            label: "Favourites",
+          },
+          {
+            to: "/support",
+            icon: <IoIosHeartEmpty className="w-4 h-4" />,
+            label: "Support / Help",
+          },
+        ]
+      : role === "Doctor"
+        ? [
+            {
+              to: "/myprofile",
+              icon: <IoPersonSharp className="w-4 h-4" />,
+              label: "Profile",
+            },
+            {
+              to: "/myappointments",
+              icon: <PiCalendarDots />,
+              label: "My Appointments",
+            },
+            {
+              to: "/support",
+              icon: <IoIosHeartEmpty className="w-4 h-4" />,
+              label: "Support / Help",
+            },
+          ]
+        : [
+            {
+              to: "/medicalprovider/profile",
+              icon: <IoPersonSharp className="w-4 h-4" />,
+              label: "Profile",
+            },
+            {
+              to: "/medicalprovider/referredpatients",
+              icon: <FaUsers className="w-4 h-4" />,
+              label: "Orders",
+            },
+            {
+              to: "/medicalprovider/ourdeals",
+              icon: <FaHandsHelping className="w-4 h-4" />,
+              label: "Our Deals",
+            },
+            {
+              to: "/medicalprovider/sponsoreddoctors",
+              icon: <FaUserDoctor className="w-4 h-4" />,
+              label: "Our Doctors",
+            },
+            {
+              to: "/support",
+              icon: <IoIosHeartEmpty className="w-4 h-4" />,
+              label: "Support / Help",
+            },
+          ];
 
   /* ─────────────────────────────────────────
      Shared active-underline style helper
@@ -302,6 +378,7 @@ export default function Navbar() {
               <NotificationBell />
             </div>
           )}
+
           {/* Avatar / Sign-in */}
           {accessToken ? (
             <div className="hidden md:block relative">
@@ -336,28 +413,7 @@ export default function Navbar() {
 
                     {/* links */}
                     <div className="p-1.5">
-                      {[
-                        {
-                          to: "/myprofile",
-                          icon: <IoPersonSharp className="w-4 h-4" />,
-                          label: "Profile",
-                        },
-                        {
-                          to: "/myappointments",
-                          icon: <PiCalendarDots />,
-                          label: "My Appointments",
-                        },
-                        {
-                          to: "/favourites",
-                          icon: <IoIosHeartEmpty className="w-4 h-4" />,
-                          label: "Favourites",
-                        },
-                        {
-                          to: "/support",
-                          icon: <IoIosHeartEmpty className="w-4 h-4" />,
-                          label: "Support / Help",
-                        },
-                      ].map(({ to, icon, label }) => (
+                      {accountLinks.map(({ to, icon, label }) => (
                         <Link
                           key={to}
                           to={to}
@@ -451,19 +507,18 @@ export default function Navbar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] md:hidden"
+            className="fixed inset-0 z-100 bg-black/25 backdrop-blur-[2px] md:hidden"
           />
         )}
       </AnimatePresence>
-
-      {/* Panel */}
+      {/* sidenav */}
       <motion.aside
         ref={sidenavRef}
         initial={false}
         animate={{ x: sidenav ? 0 : "-100%" }}
         transition={{ type: "spring", stiffness: 320, damping: 34 }}
         className="
-          fixed top-0 left-0 z-50 h-dvh
+          fixed top-0 left-0 z-200 h-dvh
           w-[290px] sm:w-[340px]
           bg-white flex flex-col
           shadow-[4px_0_40px_rgba(0,0,0,0.10)]
@@ -498,7 +553,13 @@ export default function Navbar() {
         {/* user avatar row */}
         {accessToken && (
           <Link
-            to="/myprofile"
+            to={
+              role === "Doctor"
+                ? "/myprofile"
+                : role === "Patient"
+                  ? "/myprofile"
+                  : "/medicalprovider/profile"
+            }
             onClick={() => setSidenav(false)}
             className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 hover:bg-gray-50 transition-colors shrink-0"
           >
@@ -508,6 +569,11 @@ export default function Navbar() {
 
         {/* scrollable nav items */}
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
+          {/* ── Section: Navigation ── */}
+          <p className="px-4 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-widest text-gray-400">
+            Navigation
+          </p>
+
           {NavLinks.map((item, index) => {
             /* plain link */
             if (item.to) {
@@ -526,7 +592,6 @@ export default function Navbar() {
                 >
                   {({ isActive }) => (
                     <>
-                      {/* left accent bar */}
                       <span
                         className={`w-[3px] h-4 rounded-full flex-shrink-0 transition-all duration-200 ${
                           isActive ? "bg-[#316BE8]" : "bg-transparent"
@@ -561,7 +626,6 @@ export default function Navbar() {
                   `}
                 >
                   <div className="flex items-center gap-3">
-                    {/* left accent bar */}
                     <span
                       className={`w-[3px] h-4 rounded-full flex-shrink-0 transition-all duration-200 ${
                         parentActive ? "bg-[#316BE8]" : "bg-transparent"
@@ -622,6 +686,45 @@ export default function Navbar() {
               </div>
             );
           })}
+
+          {/* ── Section: My Account (popup links) — only when logged in ── */}
+          {accessToken && (
+            <>
+              <div className="h-px bg-gray-100 mx-1 my-2" />
+              <p className="px-4 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-widest text-gray-400">
+                My Account
+              </p>
+
+              {accountLinks.map(({ to, icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setSidenav(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14.5px] font-semibold transition-all duration-150 ${
+                      isActive
+                        ? "text-[#316BE8] bg-blue-50/80"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-[#316BE8]"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        className={`w-[3px] h-4 rounded-full flex-shrink-0 transition-all duration-200 ${
+                          isActive ? "bg-[#316BE8]" : "bg-transparent"
+                        }`}
+                      />
+                      <span className="text-[15px] flex items-center">
+                        {icon}
+                      </span>
+                      {label}
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </>
+          )}
         </div>
 
         {/* footer */}
