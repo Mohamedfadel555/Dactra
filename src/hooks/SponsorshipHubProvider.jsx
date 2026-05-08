@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef } from "react";
-import { getSponsorshipConnection, startConnection } from "./sponsorshipHub";
+import { getSponsorshipConnection, startConnection } from "./SponsorShipHub";
 
 // export الـ context علشان useHubEvent يقدر يستخدمه بدون throw
 export const SponsorshipHubContext = createContext(null);
