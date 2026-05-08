@@ -54,8 +54,8 @@ export const useSponsorshipAPI = () => {
 
   /** PUT /api/Sponsorship/doctor/cancel/{id} — cancel my counter offer */
   const cancelCounter = async (sponsorshipId) => {
-    const res = await axiosInstance.put(
-      `Sponsorship/doctor/cancel/${sponsorshipId}`,
+    const res = await axiosInstance.delete(
+      `Sponsorship/doctor/offer/${sponsorshipId}`,
     );
     return res;
   };
@@ -69,8 +69,8 @@ export const useSponsorshipAPI = () => {
 
   /** DELETE /api/Sponsorship/doctor/offer/{id} — remove a sponsor */
   const removeSponsor = async (sponsorshipId) => {
-    const res = await axiosInstance.delete(
-      `Sponsorship/doctor/offer/${sponsorshipId}`,
+    const res = await axiosInstance.put(
+      `Sponsorship/doctor/cancel/${sponsorshipId}`,
     );
     return res;
   };

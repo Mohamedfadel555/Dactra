@@ -20,24 +20,38 @@ const fmt = (d) =>
   new Date(d).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
 export default function SponsorsPage() {
-  const { data, isLoading, isError } = useGetActiveSponsors();
+  const { data, isLoading, isError, status, fetchStatus } =
+    useGetActiveSponsors();
+
+  console.log(
+    "STATUS:",
+    status,
+    "FETCH:",
+    fetchStatus,
+    "isLoading:",
+    isLoading,
+  );
+  console.log("RAW DATA:", data);
+  console.log("IS ARRAY:", Array.isArray(data));
+  console.log("TYPE:", typeof data);
   const removeMutation = useRemoveSponsor();
 
-  if (isLoading)
+  if (isLoading && !data)
     return (
       <div className="text-center py-20 text-slate-400 text-sm">
         Loading sponsors…
       </div>
     );
 
-  if (isError)
+  if (isError && !data)
     return (
       <div className="text-center py-20 text-rose-400 text-sm">
         Failed to load sponsors.
       </div>
     );
-
   const sponsorships = data?.sponsorships ?? [];
+  console.log("SPONSORSHIPS:", sponsorships);
+  console.log("SPONSORSHIPS LENGTH:", sponsorships.length);
   const avgDisc = data?.averageDiscountPercentage ?? 0;
   const patientCount = data?.patientBenefitsCount ?? 0;
   const activeCount = data?.activeSponsorsCount ?? 0;
@@ -80,7 +94,7 @@ export default function SponsorsPage() {
           {sponsorships.map((sp) => {
             const isLab = sp.providerType === 0;
             return (
-              <motion.div
+              <div
                 key={sp.id}
                 variants={fadeUp}
                 className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-5 hover:shadow-lg transition-shadow"
@@ -150,7 +164,7 @@ export default function SponsorsPage() {
                 >
                   <RiDeleteBinLine /> Remove Sponsor
                 </motion.button>
-              </motion.div>
+              </div>
             );
           })}
         </div>
