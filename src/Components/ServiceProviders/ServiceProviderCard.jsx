@@ -1,6 +1,9 @@
 import { useRef, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MdStar, MdLocationOn, MdScience, MdBiotech } from "react-icons/md";
+import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
+import { motion, AnimatePresence } from "framer-motion";
+import { useFavourite } from "../../hooks/useFavourite";
 
 // Stagger animation hook
 function useReveal(delay = 0) {
@@ -31,10 +34,31 @@ export default function ServiceProviderCard({
   avg_Rating,
   type,
   imageUrl,
+  isFavourite = false,
 }) {
   const isLab = type === 0;
   const { ref, visible, delay } = useReveal();
   const initial = name ? name.charAt(0).toUpperCase() : "?";
+
+  const [isFav, setIsFav] = useState(isFavourite);
+  const { mutate: toggleFav, isPending } = useFavourite(type === 0 ? 2 : 3); // adjust type key as needed
+
+  useEffect(() => {
+    setIsFav(isFavourite);
+  }, [isFavourite]);
+
+  const toggleFavourite = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!id || isPending) return;
+
+    const prevFav = isFav;
+    setIsFav(!isFav);
+    toggleFav(id, {
+      onError: () => setIsFav(prevFav),
+    });
+  };
 
   return (
     <div
@@ -117,7 +141,7 @@ export default function ServiceProviderCard({
               </div>
             )}
 
-            {/* Footer: rating + arrow */}
+            {/* Footer: rating + favourite + arrow */}
             <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
               {avg_Rating > 0 ? (
                 <div className="flex items-center gap-1">
@@ -130,26 +154,73 @@ export default function ServiceProviderCard({
               ) : (
                 <span className="text-xs text-gray-400">No ratings yet</span>
               )}
-              <span
-                className={`text-xs font-semibold flex items-center gap-1
-                ${isLab ? "text-[#316BE8]" : "text-[#0EA5E9]"}
-                group-hover:gap-2 transition-all duration-200`}
-              >
-                View details
-                <svg
-                  className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200"
-                  fill="none"
-                  viewBox="0 0 16 16"
+
+              <div className="flex items-center gap-3">
+                {/* Favourite button */}
+                <button
+                  type="button"
+                  onClick={toggleFavourite}
+                  disabled={isPending}
+                  className="cursor-pointer border-none bg-transparent p-0 disabled:opacity-50"
+                  aria-label={
+                    isFav ? "Remove from favourites" : "Add to favourites"
+                  }
                 >
-                  <path
-                    d="M3 8h10M9 4l4 4-4 4"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
+                  <AnimatePresence mode="wait">
+                    {isFav ? (
+                      <motion.div
+                        key="filled"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 10,
+                        }}
+                        whileTap={{ scale: 1.2 }}
+                      >
+                        <IoIosHeart className="text-[20px] text-red-500" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="empty"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 10,
+                        }}
+                        whileTap={{ scale: 1.2 }}
+                      >
+                        <IoIosHeartEmpty className="text-[20px] text-gray-400" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </button>
+
+                {/* View details arrow */}
+                <span
+                  className={`text-xs font-semibold flex items-center gap-1
+                  ${isLab ? "text-[#316BE8]" : "text-[#0EA5E9]"}
+                  group-hover:gap-2 transition-all duration-200`}
+                >
+                  View details
+                  <svg
+                    className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200"
+                    fill="none"
+                    viewBox="0 0 16 16"
+                  >
+                    <path
+                      d="M3 8h10M9 4l4 4-4 4"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </div>
             </div>
           </div>
         </div>

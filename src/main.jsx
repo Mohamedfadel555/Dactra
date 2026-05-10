@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./Context/AuthContext.jsx";
 import PasswordGate from "./Pages/Auth/passwordGate";
+import { NotificationsProvider } from "./Context/NotificationsContext.jsx";
 
 const client = new QueryClient();
 
@@ -12,9 +13,11 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={client}>
       <AuthProvider>
-        {/* <PasswordGate> */}
-        <App />
-        {/* </PasswordGate> */}
+        <NotificationsProvider>
+          {/* <PasswordGate> */}
+          <App />
+          {/* </PasswordGate> */}
+        </NotificationsProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

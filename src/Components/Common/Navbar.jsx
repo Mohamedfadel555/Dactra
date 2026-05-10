@@ -259,7 +259,6 @@ export default function Navbar() {
           size="w-[36px] sm:w-[42px]"
           textSize="text-[18px] sm:text-[21px]"
         />
-        <NotificationsWidget />
 
         {/* ── Desktop links ── */}
         <ul className="hidden md:flex items-center gap-0.5 font-english">

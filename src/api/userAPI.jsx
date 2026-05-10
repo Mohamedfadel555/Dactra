@@ -229,6 +229,44 @@ export const useUserAPI = () => {
     return res.data;
   };
 
+  const getFavorites = async ({ type, page = 1, pageSize = 10 }) => {
+    const res = await axiosInstance.get("Favorites", {
+      params: { Type: type, Page: page, PageSize: pageSize },
+    });
+    return res.data;
+  };
+
+  const favourite = async (id) => {
+    const res = await axiosInstance.post(`Favorites/${id}`);
+    return res;
+  };
+
+  /* ─── Medical Reports ─── */
+  const getMyReports = async () => {
+    const res = await axiosInstance.get("MedicalReport/my-reports");
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.$values)) return data.$values;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
+  };
+
+  const addReport = async (data) => {
+    const form = new FormData();
+    form.append("Name", data.name);
+    if (data.summary) form.append("Summary", data.summary);
+    data.files.forEach((file) => form.append("Files", file));
+    const res = await axiosInstance.post("MedicalReport", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  };
+
+  const deleteReport = async (reportId) => {
+    const res = await axiosInstance.delete(`MedicalReport/${reportId}`);
+    return res.data;
+  };
+
   return {
     getMePatient,
     getMeDoctor,
@@ -266,5 +304,11 @@ export const useUserAPI = () => {
     fetchProviderRating,
     rateProvider,
     getMyRating,
+    getFavorites,
+    favourite,
+    // Medical Reports
+    getMyReports,
+    addReport,
+    deleteReport,
   };
 };

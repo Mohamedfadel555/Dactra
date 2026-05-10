@@ -218,34 +218,62 @@ function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
   const resolveFreq = (val) =>
     FREQ_OPTIONS.find((o) => o.value === val) ?? FREQ_OPTIONS[1];
 
+  const localToUtc = (localTime) => {
+    const [h, m] = localTime.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    const utcH = String(d.getUTCHours()).padStart(2, "0");
+    const utcM = String(d.getUTCMinutes()).padStart(2, "0");
+    return `${utcH}:${utcM}`;
+  };
+
+  const utcToLocal = (utcTime) => {
+    const [h, m] = utcTime.split(":").map(Number);
+    const d = new Date();
+    d.setUTCHours(h, m, 0, 0);
+    const localH = String(d.getHours()).padStart(2, "0");
+    const localM = String(d.getMinutes()).padStart(2, "0");
+    return `${localH}:${localM}`;
+  };
+
   const [freq, setFreq] = useState(() =>
     resolveFreq(initialSchedule?.frequency),
   );
   const [mealRelation, setMealRelation] = useState(
     initialSchedule?.mealRelation ?? MEAL_OPTIONS[0].value,
   );
-  const [firstDoseTime, setFirstDoseTime] = useState(
-    initialSchedule?.firstDoseTime ?? "08:00",
+  const [firstDoseTime, setFirstDoseTime] = useState(() =>
+    initialSchedule?.firstDoseTime
+      ? utcToLocal(initialSchedule.firstDoseTime)
+      : "08:00",
   );
 
-  // لما الـ sidebar يتفتح بروشتة موجودة يحدّث الـ state
   useEffect(() => {
     const f = resolveFreq(initialSchedule?.frequency);
     const m = initialSchedule?.mealRelation ?? MEAL_OPTIONS[0].value;
-    const t = initialSchedule?.firstDoseTime ?? "08:00";
+    const localT = initialSchedule?.firstDoseTime
+      ? utcToLocal(initialSchedule.firstDoseTime)
+      : "08:00";
+
     setFreq(f);
     setMealRelation(m);
-    setFirstDoseTime(t);
-    onChange(index, { frequency: f.value, mealRelation: m, firstDoseTime: t });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setFirstDoseTime(localT);
+    onChange(index, {
+      frequency: f.value,
+      mealRelation: m,
+      firstDoseTime: localToUtc(localT),
+    });
   }, [
     initialSchedule?.frequency,
     initialSchedule?.mealRelation,
     initialSchedule?.firstDoseTime,
   ]);
-
-  const notify = (f, m, t) =>
-    onChange(index, { frequency: f.value, mealRelation: m, firstDoseTime: t });
+  const notify = (f, m, localT) =>
+    onChange(index, {
+      frequency: f.value,
+      mealRelation: m,
+      firstDoseTime: localToUtc(localT),
+    });
 
   const updateFreq = (opt) => {
     setFreq(opt);
@@ -260,8 +288,8 @@ function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
     notify(freq, mealRelation, val);
   };
 
-  const formatTime = (t) => {
-    const [h, m] = t.split(":");
+  const formatTime = (localT) => {
+    const [h, m] = localT.split(":");
     const hr = parseInt(h);
     return `${hr % 12 || 12}:${m} ${hr >= 12 ? "PM" : "AM"}`;
   };
@@ -320,7 +348,10 @@ function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
 
       {/* First dose time */}
       <div className="mb-3">
-        <p className="text-xs text-gray-400 mb-1">First dose time</p>
+        <p className="text-xs text-gray-400 mb-1">
+          First dose time{" "}
+          <span className="text-gray-300">(your local time)</span>
+        </p>
         <input
           type="time"
           value={firstDoseTime}
@@ -346,7 +377,10 @@ function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
         </svg>
         <div>
           <p className="text-xs font-semibold text-blue-700">
-            First reminder at: {formatTime(firstDoseTime)}
+            First reminder at: {formatTime(firstDoseTime)}{" "}
+            <span className="font-normal text-blue-400">
+              (UTC {localToUtc(firstDoseTime)})
+            </span>
           </p>
           <p className="text-xs text-blue-500 mt-0.5">
             {medicine.name || `Medicine ${index + 1}`}
@@ -358,7 +392,6 @@ function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
     </div>
   );
 }
-
 // ─── PRESCRIPTION SIDEBAR ─────────────────────────────────────────
 function PrescriptionSidebar({
   open,
@@ -375,7 +408,6 @@ function PrescriptionSidebar({
   ]);
   const [schedules, setSchedules] = useState([{}]);
 
-  // لما الـ sidebar يتفتح: حمّل البيانات الموجودة أو صفّر الـ form
   useEffect(() => {
     if (!open) return;
 
@@ -385,7 +417,7 @@ function PrescriptionSidebar({
         initialData.medicines.map(({ name, dose, duration }) => ({
           name,
           dose: dose ?? "",
-          duration, // رقم
+          duration,
         })),
       );
       setSchedules(initialData.medicines.map((m) => m.schedule ?? {}));
@@ -757,7 +789,6 @@ export default function VideoConsultation() {
     },
   });
 
-  // لو كان عنده روشتة موجودة من قبل، خلّي الزرار يبان saved من الأول
   useEffect(() => {
     if (savePrescriptionMutation.hasPrescription) {
       setPrescriptionSaved(true);

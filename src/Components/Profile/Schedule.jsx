@@ -36,7 +36,7 @@ function generateSlots(startTime, endTime, stepMinutes = 30, dayKey) {
   const [eh, em] = endTime.slice(0, 5).split(":").map(Number);
   const [dd, mm, yyyy] = dayKey.split("-").map(Number);
 
-  const tzOffsetMins = -new Date().getTimezoneOffset(); // +180 في القاهرة
+  const tzOffsetMins = -new Date().getTimezoneOffset();
   const startTotalMins = sh * 60 + sm + tzOffsetMins;
   let endTotalMins = eh * 60 + em + tzOffsetMins;
   if (endTotalMins <= startTotalMins) endTotalMins += 24 * 60;
@@ -66,6 +66,116 @@ function isSameLocalDay(dateA, dateB) {
   a.setHours(0, 0, 0, 0);
   b.setHours(0, 0, 0, 0);
   return a.getTime() === b.getTime();
+}
+
+// ─── Confirmation Modal ──────────────────────────────────────────────────────
+
+function BookingConfirmModal({
+  slot,
+  day,
+  consultationType,
+  onConfirm,
+  onCancel,
+  isLoading,
+}) {
+  const isOnline = consultationType === "online";
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-[400px] p-6 flex flex-col gap-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Icon */}
+        <div className="flex justify-center">
+          <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
+            {isOnline ? (
+              <BsCameraVideo className="text-blue-600 text-2xl" />
+            ) : (
+              <BsPeopleFill className="text-blue-600 text-2xl" />
+            )}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="text-center">
+          <h2 className="text-[17px] font-bold text-gray-800">
+            Confirm Appointment
+          </h2>
+          <p className="text-sm text-gray-400 mt-1">
+            Please review your booking details
+          </p>
+        </div>
+
+        {/* Details */}
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <BiCalendar className="text-blue-500 text-lg flex-shrink-0" />
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                Date
+              </p>
+              <p className="text-sm font-semibold text-gray-700">
+                {day.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+          </div>
+          <hr className="border-gray-100" />
+          <div className="flex items-center gap-3">
+            {isOnline ? (
+              <BsCameraVideo className="text-blue-500 text-lg flex-shrink-0" />
+            ) : (
+              <BsPeopleFill className="text-blue-500 text-lg flex-shrink-0" />
+            )}
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                Time & Type
+              </p>
+              <p className="text-sm font-semibold text-gray-700">
+                {formatSlotLabel(slot.slotTime)}{" "}
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ml-1 ${
+                    isOnline
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-green-100 text-green-700"
+                  }`}
+                >
+                  {isOnline ? "Online" : "In-person"}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-semibold text-sm hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Booking..." : "Confirm"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -167,8 +277,6 @@ export default function Schedule({
   timeSlots = { inPerson: {}, online: {} },
   id,
 }) {
-  console.log(timeSlots);
-
   const todayRef = useRef(new Date());
   const today = todayRef.current;
 
@@ -278,7 +386,6 @@ export default function Schedule({
 
     const allSlots = [...generatedSlots, ...extraBooked];
 
-    // ✅ مقارنة local day صح بدون string comparison
     if (!isSameLocalDay(dayPicked, today)) return allSlots;
 
     const cutoff = new Date(today.getTime() + 30 * 60 * 1000);
@@ -413,14 +520,15 @@ export default function Schedule({
 
     if (Object.keys(slots).length === 0) return;
 
-    console.log({ slots });
-
     await saveSlotsMutation.mutateAsync({ slots });
     setPending((prev) => ({ ...prev, [typeKey]: {} }));
   }
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
+
+  // ── Booking confirmation modal state ────────────────────────────────────
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const bookMutation = useBook(
     consultationType === "in-person" ? "cash" : "online",
@@ -429,8 +537,10 @@ export default function Schedule({
 
   async function handleBook() {
     if (!selectedSlot) return;
-    // console.log(selectedSlot);
     await bookMutation.mutateAsync(selectedSlot.slotId);
+    setShowConfirm(false);
+    setSelectedSlot(null);
+    setSelectedDay(null);
   }
 
   const safeTimeSlots = useMemo(() => {
@@ -460,7 +570,6 @@ export default function Schedule({
       (s) => !s.isBooked,
     );
 
-    // ✅ نفس الحل هنا
     if (!isSameLocalDay(dayPicked, today)) return daySlots;
 
     const cutoff = new Date(today.getTime() + 30 * 60 * 1000);
@@ -472,165 +581,195 @@ export default function Schedule({
   const isEmpty = visibleSlots.length === 0;
 
   return (
-    <div className="flex flex-col gap-[20px]">
-      <p className="text-[20px] font-bold">{title}</p>
+    <>
+      {/* ── Confirmation Modal ── */}
+      {showConfirm && selectedSlot && selectedDay && (
+        <BookingConfirmModal
+          slot={selectedSlot}
+          day={selectedDay}
+          consultationType={consultationType}
+          onConfirm={handleBook}
+          onCancel={() => setShowConfirm(false)}
+          isLoading={bookMutation.isPending}
+        />
+      )}
 
-      <ConsultationTypePicker
-        value={consultationType}
-        onChange={(type) => {
-          setConsultationType(type);
-          setSelectedSlot(null);
-          setSelectedDay(null);
-        }}
-      />
+      <div className="flex flex-col gap-[20px]">
+        <p className="text-[20px] font-bold">{title}</p>
 
-      <div className="flex flex-col gap-[10px] border p-[10px] rounded-xl border-[#BBC1C7]">
-        <div className="flex justify-between items-center gap-[5px]">
-          <p className="text-[16px] text-[#404448]">{subtitle}</p>
-          <div className="flex items-center gap-2 text-[#404448]">
-            <BiCalendar className="size-[20px]" />
-            {weekDays[6].toLocaleDateString("en-US", { month: "long" })},{" "}
-            {weekDays[6].getFullYear()}
-          </div>
-        </div>
-
-        <hr className="w-[98%] self-center border-[#BBC1C7]" />
-
-        <div className="flex items-center gap-2 text-sm text-[#6D7379]">
-          {consultationType === "online" ? (
-            <BsCameraVideo className="text-blue-500" />
-          ) : (
-            <BsPeopleFill className="text-blue-500" />
-          )}
-          <span>
-            {consultationType === "in-person"
-              ? "In-person slots"
-              : "Online consultation slots"}
-          </span>
-        </div>
-
-        <WeekNav
-          weekDays={weekDays}
-          dayPicked={dayPicked}
-          onPickDay={(day) => {
-            setDayPicked(day);
+        <ConsultationTypePicker
+          value={consultationType}
+          onChange={(type) => {
+            setConsultationType(type);
             setSelectedSlot(null);
             setSelectedDay(null);
           }}
-          onPrev={goPrevWeek}
-          onNext={goNextWeek}
-          today={today}
         />
 
-        <div className="flex flex-wrap gap-3 justify-center mt-5 max-h-[200px] overflow-scroll sm:overflow-hidden sm:max-h-[600px]">
-          {isLoadingSlots ? (
-            <div className="w-full flex justify-center py-6">
-              <p className="text-[#6D7379] text-sm animate-pulse">
-                Loading slots...
+        <div className="flex flex-col gap-[10px] border p-[10px] rounded-xl border-[#BBC1C7]">
+          <div className="flex justify-between items-center gap-[5px]">
+            <p className="text-[16px] text-[#404448]">{subtitle}</p>
+            <div className="flex items-center gap-2 text-[#404448]">
+              <BiCalendar className="size-[20px]" />
+              {weekDays[6].toLocaleDateString("en-US", { month: "long" })},{" "}
+              {weekDays[6].getFullYear()}
+            </div>
+          </div>
+
+          <hr className="w-[98%] self-center border-[#BBC1C7]" />
+
+          <div className="flex items-center gap-2 text-sm text-[#6D7379]">
+            {consultationType === "online" ? (
+              <BsCameraVideo className="text-blue-500" />
+            ) : (
+              <BsPeopleFill className="text-blue-500" />
+            )}
+            <span>
+              {consultationType === "in-person"
+                ? "In-person slots"
+                : "Online consultation slots"}
+            </span>
+          </div>
+
+          {/* ── Online note for patients only ── */}
+          {consultationType === "online" && !isDoctor && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <RiErrorWarningLine className="text-amber-500 text-lg flex-shrink-0 mt-0.5" />
+              <p className="text-amber-800 text-sm">
+                <span className="font-semibold">Please note:</span> It is
+                recommended to book an online consultation{" "}
+                <span className="font-semibold">
+                  only when your doctor specifically requests it
+                </span>
+                . For regular visits, please book an in-person appointment
+                instead.
               </p>
             </div>
-          ) : isDoctor && !hasWorkDetails ? (
-            <MissingWorkDetailsWarning type={consultationType} />
-          ) : isEmpty ? (
-            <div className="w-full flex flex-col items-center justify-center py-4 text-center">
-              <div className="bg-gray-100 rounded-2xl px-6 py-4 shadow-sm">
-                <p className="text-gray-600 text-lg font-medium">
-                  No Available Appointments
-                </p>
-                <p className="text-gray-400 text-sm mt-1">
-                  Please select another day
+          )}
+
+          <WeekNav
+            weekDays={weekDays}
+            dayPicked={dayPicked}
+            onPickDay={(day) => {
+              setDayPicked(day);
+              setSelectedSlot(null);
+              setSelectedDay(null);
+            }}
+            onPrev={goPrevWeek}
+            onNext={goNextWeek}
+            today={today}
+          />
+
+          <div className="flex flex-wrap gap-3 justify-center mt-5 max-h-[200px] overflow-scroll sm:overflow-hidden sm:max-h-[600px]">
+            {isLoadingSlots ? (
+              <div className="w-full flex justify-center py-6">
+                <p className="text-[#6D7379] text-sm animate-pulse">
+                  Loading slots...
                 </p>
               </div>
-            </div>
-          ) : isDoctor ? (
-            visibleSlots.map((iso, i) => {
-              const state = getDoctorSlotState(iso);
-              return (
-                <div
-                  key={i}
-                  onClick={() => doctorToggleSlot(iso)}
-                  className={`flex justify-center items-center py-2 rounded-md w-[90px] transition-colors ${slotClassName(state)}`}
-                >
-                  {formatSlotLabel(iso)}
+            ) : isDoctor && !hasWorkDetails ? (
+              <MissingWorkDetailsWarning type={consultationType} />
+            ) : isEmpty ? (
+              <div className="w-full flex flex-col items-center justify-center py-4 text-center">
+                <div className="bg-gray-100 rounded-2xl px-6 py-4 shadow-sm">
+                  <p className="text-gray-600 text-lg font-medium">
+                    No Available Appointments
+                  </p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Please select another day
+                  </p>
                 </div>
-              );
-            })
-          ) : (
-            visibleSlots.map((slot, i) => {
-              const isSelected = selectedSlot?.slotId === slot.slotId;
-              return (
-                <div
-                  key={i}
-                  onClick={() => {
-                    setSelectedSlot(slot);
-                    setSelectedDay(dayPicked);
-                  }}
-                  className={`flex justify-center items-center py-2 rounded-md w-[90px] cursor-pointer transition-colors
-                    ${isSelected ? "bg-blue-600 text-white" : "bg-[#F5F6F7] text-[#6D7379]"}`}
-                >
-                  {formatSlotLabel(slot.slotTime)}
-                </div>
-              );
-            })
-          )}
-        </div>
+              </div>
+            ) : isDoctor ? (
+              visibleSlots.map((iso, i) => {
+                const state = getDoctorSlotState(iso);
+                return (
+                  <div
+                    key={i}
+                    onClick={() => doctorToggleSlot(iso)}
+                    className={`flex justify-center items-center py-2 rounded-md w-[90px] transition-colors ${slotClassName(state)}`}
+                  >
+                    {formatSlotLabel(iso)}
+                  </div>
+                );
+              })
+            ) : (
+              visibleSlots.map((slot, i) => {
+                const isSelected = selectedSlot?.slotId === slot.slotId;
+                return (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setSelectedSlot(slot);
+                      setSelectedDay(dayPicked);
+                    }}
+                    className={`flex justify-center items-center py-2 rounded-md w-[90px] cursor-pointer transition-colors
+                      ${isSelected ? "bg-blue-600 text-white" : "bg-[#F5F6F7] text-[#6D7379]"}`}
+                  >
+                    {formatSlotLabel(slot.slotTime)}
+                  </div>
+                );
+              })
+            )}
+          </div>
 
-        <div className="flex justify-between items-center mt-5">
-          {isDoctor ? (
-            hasWorkDetails && !isEmpty ? (
-              <div
-                className="cursor-pointer flex items-center gap-2"
-                onClick={doctorToggleAll}
-              >
+          <div className="flex justify-between items-center mt-5">
+            {isDoctor ? (
+              hasWorkDetails && !isEmpty ? (
                 <div
-                  className={`size-[18px] border border-blue-600 rounded-sm flex justify-center items-center text-white
-                    ${allSelected ? "bg-blue-600" : ""}`}
+                  className="cursor-pointer flex items-center gap-2"
+                  onClick={doctorToggleAll}
                 >
-                  &#10004;
+                  <div
+                    className={`size-[18px] border border-blue-600 rounded-sm flex justify-center items-center text-white
+                      ${allSelected ? "bg-blue-600" : ""}`}
+                  >
+                    &#10004;
+                  </div>
+                  <p>{allSelected ? "Unselect All" : "Select All"}</p>
                 </div>
-                <p>{allSelected ? "Unselect All" : "Select All"}</p>
+              ) : (
+                <p />
+              )
+            ) : selectedDay && selectedSlot ? (
+              <div className="flex items-center gap-[5px]">
+                {consultationType === "online" ? (
+                  <BsCameraVideo className="size-[20px] text-blue-600" />
+                ) : (
+                  <BiCalendar className="size-[20px] text-blue-600" />
+                )}
+                <p className="text-sm">
+                  {`${selectedDay.toLocaleDateString("en-us", { weekday: "long" })}, ${selectedDay.toLocaleDateString("en-us", { month: "long" })} ${selectedDay.getDate()} — ${formatSlotLabel(selectedSlot.slotTime)}`}
+                  {consultationType === "online" && (
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                      Video call
+                    </span>
+                  )}
+                </p>
               </div>
             ) : (
               <p />
-            )
-          ) : selectedDay && selectedSlot ? (
-            <div className="flex items-center gap-[5px]">
-              {consultationType === "online" ? (
-                <BsCameraVideo className="size-[20px] text-blue-600" />
-              ) : (
-                <BiCalendar className="size-[20px] text-blue-600" />
-              )}
-              <p className="text-sm">
-                {`${selectedDay.toLocaleDateString("en-us", { weekday: "long" })}, ${selectedDay.toLocaleDateString("en-us", { month: "long" })} ${selectedDay.getDate()} — ${formatSlotLabel(selectedSlot.slotTime)}`}
-                {consultationType === "online" && (
-                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                    Video call
-                  </span>
-                )}
-              </p>
-            </div>
-          ) : (
-            <p />
-          )}
+            )}
 
-          <button
-            type="button"
-            onClick={() => (isDoctor ? handleSave() : handleBook())}
-            disabled={
-              saveSlotsMutation.isPending ||
-              (isDoctor && (!hasWorkDetails || !isDirty(typeKey))) ||
-              (!isDoctor && !selectedSlot)
-            }
-            className="w-[100px] h-[40px] cursor-pointer font-bold rounded-[10px] bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saveSlotsMutation.isPending
-              ? "Saving..."
-              : isDoctor
-                ? "Save"
-                : "Book"}
-          </button>
+            <button
+              type="button"
+              onClick={() => (isDoctor ? handleSave() : setShowConfirm(true))}
+              disabled={
+                saveSlotsMutation.isPending ||
+                (isDoctor && (!hasWorkDetails || !isDirty(typeKey))) ||
+                (!isDoctor && !selectedSlot)
+              }
+              className="w-[100px] h-[40px] cursor-pointer font-bold rounded-[10px] bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saveSlotsMutation.isPending
+                ? "Saving..."
+                : isDoctor
+                  ? "Save"
+                  : "Book"}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

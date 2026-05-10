@@ -8,6 +8,7 @@ import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 
 import { useDoctors } from "../hooks/useDoctors";
 import { useMajors } from "../hooks/useMajors";
+import { useFavourite } from "../hooks/useFavourite";
 
 /* ─── inject keyframes once ─── */
 const KEYFRAMES = `
@@ -31,7 +32,7 @@ if (!document.getElementById("dactra-kf")) {
   document.head.appendChild(s);
 }
 
-/* ─── debounce hook — delays API call until user stops typing ─── */
+/* ─── debounce hook ─── */
 function useDebounce(value, delay = 500) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -294,6 +295,7 @@ function DoctorCard({
   onToggleFav,
   onClick,
   index,
+  isPending,
 }) {
   const [imgError, setImgError] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -346,7 +348,6 @@ function DoctorCard({
       }}
     >
       <div style={{ padding: "18px 18px 0" }}>
-        {/* Avatar + info */}
         <div
           style={{
             display: "flex",
@@ -355,7 +356,6 @@ function DoctorCard({
             alignItems: "flex-start",
           }}
         >
-          {/* Avatar */}
           <div
             style={{
               width: 80,
@@ -390,7 +390,6 @@ function DoctorCard({
             )}
           </div>
 
-          {/* Text */}
           <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
             <p
               style={{
@@ -413,7 +412,6 @@ function DoctorCard({
               </p>
             )}
 
-            {/* Rating + fav */}
             <div
               style={{
                 display: "flex",
@@ -430,6 +428,7 @@ function DoctorCard({
 
               <button
                 type="button"
+                disabled={isPending}
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleFav();
@@ -437,18 +436,23 @@ function DoctorCard({
                 style={{
                   background: "none",
                   border: "none",
-                  cursor: "pointer",
+                  cursor: isPending ? "not-allowed" : "pointer",
                   padding: 3,
                   lineHeight: 1,
-                  color: isFav ? C.red : C.primary,
-                  transition: "transform 0.18s",
+                  color: isFav ? C.red : C.hint,
+                  transition: "color 0.18s, transform 0.18s",
+                  opacity: isPending ? 0.5 : 1,
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.3)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.transform = "scale(1)")
-                }
+                onMouseEnter={(e) => {
+                  if (!isPending) {
+                    e.currentTarget.style.transform = "scale(1.3)";
+                    if (!isFav) e.currentTarget.style.color = C.red;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.color = isFav ? C.red : C.hint;
+                }}
               >
                 {isFav ? (
                   <IoIosHeart style={{ width: 20, height: 20 }} />
@@ -460,7 +464,6 @@ function DoctorCard({
           </div>
         </div>
 
-        {/* Price badges */}
         {(doctor.onlinePrice || doctor.offlinePrice) && (
           <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
             {doctor.onlinePrice && (
@@ -499,7 +502,6 @@ function DoctorCard({
         )}
       </div>
 
-      {/* Book button */}
       <div style={{ padding: "0 18px 18px", marginTop: "auto" }}>
         <button
           type="button"
@@ -533,9 +535,6 @@ function DoctorCard({
   );
 }
 
-/* ══════════════════════════════════════════
-   MAIN PAGE
-══════════════════════════════════════════ */
 export default function DoctorsListPage() {
   const navigate = useNavigate();
   const isMobile = useIsMobile(768);
@@ -546,42 +545,75 @@ export default function DoctorsListPage() {
     useState(null);
   const [sortedByRating, setSortedByRating] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [favouriteDoctorIds, setFavouriteDoctorIds] = useState([]);
-  const [filterOpen, setFilterOpen] = useState(false);
+
+  // ── Favourite state ───────────────────────────────────────────────────────
+  // Tracks IDs whose fav state has been TOGGLED locally (flipped vs API value).
+  // Key insight: we don't store the full fav list — we just track which IDs
+  // have been toggled so we can XOR against doctor.isFavorite from the API.
+  const [toggledIds, setToggledIds] = useState(new Set());
+  const [pendingFavIds, setPendingFavIds] = useState(new Set());
 
   const pageSize = 9;
   const specialtiesRef = useRef(null);
-  const favStorageKey = "dactra_favourite_doctors";
-
-  /* Debounced search */
   const searchTerm = useDebounce(searchInput, 500);
+  const { mutate: toggleFav } = useFavourite(1);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  /* Load favourites */
+  // When page/filters change, clear local toggles so fresh API data is trusted
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(favStorageKey) || "[]");
-      setFavouriteDoctorIds(Array.isArray(saved) ? saved : []);
-    } catch {
-      setFavouriteDoctorIds([]);
-    }
-  }, []);
+    setToggledIds(new Set());
+  }, [
+    currentPage,
+    searchTerm,
+    selectedSpecializationId,
+    selectedGender,
+    sortedByRating,
+  ]);
 
-  const toggleFavouriteDoctor = useCallback((doctor) => {
-    const doctorId = doctor.id || doctor.profileId || doctor.userId;
-    if (!doctorId) return;
-    setFavouriteDoctorIds((prev) => {
-      const id = String(doctorId);
-      const next = prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id];
-      localStorage.setItem(favStorageKey, JSON.stringify(next));
-      return next;
-    });
-  }, []);
+  const toggleFavouriteDoctor = useCallback(
+    (doctor) => {
+      const doctorId = String(
+        doctor.id || doctor.profileId || doctor.userId || "",
+      );
+      if (!doctorId || pendingFavIds.has(doctorId)) return;
+
+      // Optimistic: flip the toggled set
+      setToggledIds((prev) => {
+        const next = new Set(prev);
+        next.has(doctorId) ? next.delete(doctorId) : next.add(doctorId);
+        return next;
+      });
+
+      setPendingFavIds((prev) => new Set(prev).add(doctorId));
+
+      toggleFav(doctor.id || doctor.profileId || doctor.userId, {
+        onSuccess: () => {
+          setPendingFavIds((prev) => {
+            const next = new Set(prev);
+            next.delete(doctorId);
+            return next;
+          });
+        },
+        onError: () => {
+          // Revert the toggle on error
+          setToggledIds((prev) => {
+            const next = new Set(prev);
+            next.has(doctorId) ? next.delete(doctorId) : next.add(doctorId);
+            return next;
+          });
+          setPendingFavIds((prev) => {
+            const next = new Set(prev);
+            next.delete(doctorId);
+            return next;
+          });
+        },
+      });
+    },
+    [toggleFav, pendingFavIds],
+  );
 
   const handleDoctorClick = useCallback(
     (doctor) => {
@@ -591,7 +623,6 @@ export default function DoctorsListPage() {
     [navigate],
   );
 
-  /* API */
   const genderValue =
     selectedGender === "all" ? null : selectedGender === "male" ? 0 : 1;
 
@@ -623,13 +654,21 @@ export default function DoctorsListPage() {
     return majors.find((m) => String(m.id) === String(specId));
   };
 
-  /* ════════════════ RENDER ════════════════ */
+  // XOR: if the ID is in toggledIds, flip the API value
+  const isFavourite = (doctor) => {
+    const id = String(doctor.id || doctor.profileId || doctor.userId || "");
+    const apiValue = !!doctor.isFavorite;
+    return toggledIds.has(id) ? !apiValue : apiValue;
+  };
+
+  const [filterOpen, setFilterOpen] = useState(false);
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg, paddingTop: 90 }}>
       <main
         style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 48px" }}
       >
-        {/* ── Search bar ── */}
+        {/* Search + Filter toggle */}
         <div
           style={{
             display: "flex",
@@ -638,7 +677,6 @@ export default function DoctorsListPage() {
             marginBottom: 20,
           }}
         >
-          {/* Filter toggle */}
           <button
             type="button"
             onClick={() => setFilterOpen((o) => !o)}
@@ -666,7 +704,6 @@ export default function DoctorsListPage() {
             {filterOpen ? "Close" : "Filter"}
           </button>
 
-          {/* Search input */}
           <div style={{ flex: 1, position: "relative" }}>
             <FiSearch
               style={{
@@ -709,8 +746,6 @@ export default function DoctorsListPage() {
           </div>
         </div>
 
-        {/* ── Layout ── */}
-        {/* CHANGE 1: on mobile, flex-direction becomes column so sidebar stacks above content */}
         <div
           style={{
             display: "flex",
@@ -719,11 +754,10 @@ export default function DoctorsListPage() {
             alignItems: "flex-start",
           }}
         >
-          {/* Sidebar — shown only when filterOpen */}
+          {/* Filter sidebar */}
           {filterOpen && (
             <aside
               style={{
-                /* CHANGE 2: on mobile, sidebar is full width and not sticky */
                 width: isMobile ? "100%" : 220,
                 flexShrink: 0,
                 background: C.white,
@@ -875,7 +909,6 @@ export default function DoctorsListPage() {
             </div>
 
             {/* Doctors grid */}
-            {/* CHANGE 3: on mobile use 1 column, on tablet 2, on desktop auto-fill */}
             <div
               style={{
                 display: "grid",
@@ -912,7 +945,8 @@ export default function DoctorsListPage() {
                       key={doctorId || index}
                       doctor={doctor}
                       specialization={getSpecialization(doctor)}
-                      isFav={favouriteDoctorIds.includes(doctorId)}
+                      isFav={isFavourite(doctor)}
+                      isPending={pendingFavIds.has(doctorId)}
                       onToggleFav={() => toggleFavouriteDoctor(doctor)}
                       onClick={() => handleDoctorClick(doctor)}
                       index={index}
@@ -922,7 +956,7 @@ export default function DoctorsListPage() {
               )}
             </div>
 
-            {/* Pagination — hide when only 1 page */}
+            {/* Pagination */}
             {totalPages > 1 && (
               <div
                 style={{

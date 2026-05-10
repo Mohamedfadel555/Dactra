@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { HiBars3, HiPlus } from "react-icons/hi2";
+import { HiArrowLeft } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
 
 const PAGE_TITLES = {
   chat: { label: "Medical Assistant", sub: "Powered by Gemini" },
@@ -12,6 +14,8 @@ const PAGE_TITLES = {
 export default function Topbar({ activeNav, onNewChat, onMenuToggle }) {
   const t = PAGE_TITLES[activeNav] || PAGE_TITLES.chat;
   const isAnalysis = activeNav === "analysis";
+  const navigate = useNavigate();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -12 }}
@@ -20,6 +24,7 @@ export default function Topbar({ activeNav, onNewChat, onMenuToggle }) {
       className="flex items-center justify-between px-4 md:px-5 py-3 bg-white border-b border-blue-100 flex-shrink-0 gap-3"
     >
       <div className="flex items-center gap-3">
+        {/* Mobile sidebar toggle */}
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
@@ -28,6 +33,19 @@ export default function Topbar({ activeNav, onNewChat, onMenuToggle }) {
         >
           <HiBars3 className="w-5 h-5" />
         </motion.button>
+
+        {/* Back button */}
+        <motion.button
+          whileHover={{ scale: 1.06, x: -2 }}
+          whileTap={{ scale: 0.93 }}
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-slate-500 bg-slate-50 border border-slate-200 text-[12px] font-semibold cursor-pointer hover:bg-slate-100 transition-colors"
+          title="Go back"
+        >
+          <HiArrowLeft className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Back</span>
+        </motion.button>
+
         <div>
           <h1 className="text-[15px] md:text-[16px] font-extrabold text-blue-900 leading-tight">
             {t.label}
@@ -35,6 +53,7 @@ export default function Topbar({ activeNav, onNewChat, onMenuToggle }) {
           <p className="text-[10px] text-slate-400">{t.sub}</p>
         </div>
       </div>
+
       <div className="flex items-center gap-2">
         <div
           className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border ${isAnalysis ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-blue-50 border-blue-100 text-blue-600"}`}

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+// src/pages/PatientsPage.jsx
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,25 +35,46 @@ const ini = (n = "") =>
     .slice(0, 2)
     .toUpperCase();
 
+function LoadMoreButton({ onClick, loading }) {
+  return (
+    <motion.button
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      disabled={loading}
+      className="w-full py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-500 font-medium flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+    >
+      {loading ? (
+        <motion.span
+          animate={{ rotate: 360 }}
+          transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }}
+          className="w-4 h-4 border-2 border-slate-200 border-t-slate-500 rounded-full inline-block"
+        />
+      ) : (
+        "Load more"
+      )}
+    </motion.button>
+  );
+}
+
 export default function PatientsPage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError } = useGetCarePatients();
   const [query, setQuery] = useState("");
 
-  const patients = data?.patients ?? [];
-  const totalPatients = data?.totalPatients ?? 0;
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isDebouncing,
+  } = useGetCarePatients(query);
 
-  const filtered = useMemo(
-    () =>
-      patients.filter(
-        (p) =>
-          !query ||
-          p.patientName?.toLowerCase().includes(query.toLowerCase()) ||
-          p.email?.toLowerCase().includes(query.toLowerCase()) ||
-          p.phoneNumber?.includes(query),
-      ),
-    [patients, query],
-  );
+  const patients = data?.pages.flatMap((page) => page.items) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
+  const isStale = isDebouncing || isFetching;
 
   if (isLoading)
     return (
@@ -75,19 +97,6 @@ export default function PatientsPage() {
       animate="show"
       className="flex flex-col gap-5"
     >
-      {/* Stats */}
-      <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4">
-        {[
-          { l: "Under care", v: totalPatients, bg: "bg-blue-600" },
-          { l: "Showing", v: filtered.length, bg: "bg-slate-700" },
-        ].map(({ l, v, bg }) => (
-          <div key={l} className={`${bg} rounded-2xl px-5 py-4 text-white`}>
-            <p className="text-[12px] font-medium opacity-70 mb-1">{l}</p>
-            <p className="text-[30px] font-extrabold leading-none">{v}</p>
-          </div>
-        ))}
-      </motion.div>
-
       {/* Search */}
       <motion.div variants={fadeUp} className="relative">
         <RiSearchLine className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -95,14 +104,21 @@ export default function PatientsPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, email or phone…"
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-400 outline-none text-[13px] text-slate-900"
+          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-400 outline-none text-[13px] text-slate-900"
         />
+        {isStale && (
+          <motion.span
+            animate={{ rotate: 360 }}
+            transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-slate-200 border-t-blue-400 rounded-full"
+          />
+        )}
       </motion.div>
 
       {/* Table */}
       <motion.div
         variants={fadeUp}
-        className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
+        className={`bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm transition-opacity duration-200 ${isStale ? "opacity-60" : "opacity-100"}`}
       >
         <div className="grid grid-cols-3 px-5 py-3 bg-slate-50 border-b border-slate-100">
           {["Patient", "Phone", "Email"].map((h) => (
@@ -116,17 +132,17 @@ export default function PatientsPage() {
         </div>
 
         <AnimatePresence mode="popLayout">
-          {filtered.length === 0 ? (
+          {patients.length === 0 ? (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="text-center py-12 text-slate-400 text-sm"
             >
-              No patients found
+              {query ? `No results for "${query}"` : "No patients found"}
             </motion.p>
           ) : (
-            filtered.map((p, i) => {
+            patients.map((p, i) => {
               const color = COLORS[p.patientId % COLORS.length];
               return (
                 <motion.div
@@ -140,7 +156,6 @@ export default function PatientsPage() {
                   exit={{ opacity: 0 }}
                   className="grid grid-cols-3 px-5 py-3.5 border-b border-slate-50 last:border-0 items-center hover:bg-slate-50/70 transition-colors"
                 >
-                  {/* Name — clickable */}
                   <button
                     onClick={() => navigate(`/patient/profile/${p.patientId}`)}
                     className="flex items-center gap-3 group text-left w-full"
@@ -157,13 +172,11 @@ export default function PatientsPage() {
                     <RiArrowRightSLine className="text-slate-300 group-hover:text-blue-400 shrink-0 transition-all -translate-x-1 group-hover:translate-x-0 opacity-0 group-hover:opacity-100" />
                   </button>
 
-                  {/* Phone */}
                   <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500">
                     <RiPhoneLine className="text-slate-300 shrink-0" />
                     {p.phoneNumber || "—"}
                   </div>
 
-                  {/* Email */}
                   <div className="flex items-center gap-1.5 text-[12px] text-slate-400 truncate">
                     <RiMailLine className="text-slate-300 shrink-0" />
                     <span className="truncate">{p.email || "—"}</span>
@@ -174,6 +187,14 @@ export default function PatientsPage() {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Load More */}
+      {hasNextPage && !isStale && (
+        <LoadMoreButton
+          onClick={() => fetchNextPage()}
+          loading={isFetchingNextPage}
+        />
+      )}
     </motion.div>
   );
 }

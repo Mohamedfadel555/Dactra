@@ -67,6 +67,8 @@ import { FaFileCirclePlus } from "react-icons/fa6";
 import { useGetWeeklyApp } from "../../hooks/useGetWeeklyApp";
 import { useLocation } from "react-router-dom";
 import RatingSection from "../../Components/Profile/RatingSection";
+import MedicalReports from "../../Components/Profile/MedicalReports";
+import NotificationsCard from "../../Components/NotificationsCard";
 
 // ─── static data ─────────────────────────────────────────────────────────────
 
@@ -859,49 +861,14 @@ export default function MyProfile() {
                   </div>
                 </Card>
               </motion.div>
-
-              {/* Medical reports (patient only) */}
               {role === "Patient" && (
                 <motion.div variants={itemFade}>
-                  <Card className="p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                        Medical reports
-                      </p>
-                      <FaFileCirclePlus className="size-[16px] text-blue-600 cursor-pointer" />
-                    </div>
-                    <div className="flex flex-col gap-2.5">
-                      {[
-                        "Complete Blood Count",
-                        "Liver Function",
-                        "Kidney Function",
-                        "Blood Sugar",
-                      ].map((r, i) => (
-                        <motion.div
-                          key={i}
-                          whileHover={{ x: 4 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 20,
-                          }}
-                          className="flex items-center justify-between p-2.5 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <div className="size-8 rounded-lg bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors flex-shrink-0">
-                              <FaFileMedicalAlt className="text-blue-500 size-[14px]" />
-                            </div>
-                            <span className="text-[13px] text-gray-700 font-medium">
-                              {r} Report
-                            </span>
-                          </div>
-                          <IoTrashOutline className="size-[15px] text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </Card>
+                  <NotificationsCard />
                 </motion.div>
               )}
+
+              {/* Medical reports (patient only) */}
+              {role === "Patient" && <MedicalReports />}
 
               {/* Allergies + Chronics (patient only) */}
               {role === "Patient" && (

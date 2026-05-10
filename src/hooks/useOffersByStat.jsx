@@ -1,22 +1,21 @@
+// useOffersByStat.js
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useSponsorshipAPI } from "../api/sponsorshipAPI";
 import { useHubEvent } from "./useHubEvent";
 
-/**
- * Infinite-paginated list of offers for a given status filter (provider side).
- * GET /api/Sponsorship/provider/offers/by-status/{status}
- *
- * Real-time events handled:
- *  - OfferAccepted        → a doctor accepted our offer
- *  - OfferRejected        → a doctor rejected our offer
- *  - CounterOfferReceived → a doctor sent a counter offer
- *  - SponsorshipCancelled → an active sponsorship was cancelled
- *
- * @param {number} id  - OfferFilterStatus value (0=Pending, 1=Rejected, 2=Counter)
- */
 export function useOffersByStat(id) {
   const { offersBYStat } = useSponsorshipAPI();
   const qc = useQueryClient();
+
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["deals"] });
+    qc.invalidateQueries({ queryKey: ["offers-summary"] });
+  };
+
+  const invalidateWithSponsored = () => {
+    invalidateAll();
+    qc.invalidateQueries({ queryKey: ["sponsored"] });
+  };
 
   const query = useInfiniteQuery({
     queryFn: ({ pageParam }) =>
@@ -28,27 +27,17 @@ export function useOffersByStat(id) {
     enabled: id !== null && id !== undefined,
   });
 
-  // Doctor accepted → pending list shrinks, active list grows
-  useHubEvent("OfferAccepted", () => {
-    qc.invalidateQueries({ queryKey: ["deals"] });
-    qc.invalidateQueries({ queryKey: ["sponsored"] });
-  });
+  // Doctor accepted our offer → pending list shrinks, sponsored grows
+  useHubEvent("OfferAccepted", invalidateWithSponsored);
 
-  // Doctor rejected → pending → rejected
-  useHubEvent("OfferRejected", () => {
-    qc.invalidateQueries({ queryKey: ["deals"] });
-  });
+  // Doctor rejected → pending → rejected tab
+  useHubEvent("OfferRejected", invalidateAll);
 
-  // Doctor sent counter → pending → counter
-  useHubEvent("CounterOfferReceived", () => {
-    qc.invalidateQueries({ queryKey: ["deals"] });
-  });
+  // Doctor sent counter → pending → counter tab
+  useHubEvent("CounterOfferReceived", invalidateAll);
 
   // Either side cancelled active sponsorship
-  useHubEvent("SponsorshipCancelled", () => {
-    qc.invalidateQueries({ queryKey: ["deals"] });
-    qc.invalidateQueries({ queryKey: ["sponsored"] });
-  });
+  useHubEvent("SponsorshipCancelled", invalidateWithSponsored);
 
   return query;
 }

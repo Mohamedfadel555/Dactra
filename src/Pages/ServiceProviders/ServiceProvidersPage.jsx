@@ -1,15 +1,67 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useProviderAPI } from "../../api/providerAPI";
-import ServiceProviderCard from "../../Components/ServiceProviders/ServiceProviderCard";
-import { MdSearch, MdScience, MdBiotech, MdApps } from "react-icons/md";
-import Loader from "../../Components/Common/loader";
+import { useFavourite } from "../../hooks/useFavourite";
+import {
+  MdSearch,
+  MdScience,
+  MdBiotech,
+  MdApps,
+  MdLocationOn,
+} from "react-icons/md";
+import { FaStar } from "react-icons/fa";
+import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
+import { motion, AnimatePresence } from "framer-motion";
 
 const FILTER_ALL = "all";
 const FILTER_LAB = "lab";
 const FILTER_SCAN = "scan";
 
-// Pulse skeleton for loading state
+/* ─── Heart button ─── */
+function HeartButton({ isFav, isPending, onClick }) {
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (isPending) return;
+    onClick();
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isPending}
+      aria-label={isFav ? "Remove from favourites" : "Add to favourites"}
+      className="cursor-pointer border-none bg-transparent p-0 disabled:opacity-50 flex-shrink-0"
+    >
+      <AnimatePresence mode="wait">
+        {isFav ? (
+          <motion.div
+            key="filled"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 10 }}
+            whileTap={{ scale: 1.2 }}
+          >
+            <IoIosHeart className="text-[22px] text-red-500" />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 10 }}
+            whileTap={{ scale: 1.2 }}
+          >
+            <IoIosHeartEmpty className="text-[22px] text-gray-400" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </button>
+  );
+}
+
+/* ─── Skeleton ─── */
 function SkeletonCard() {
   return (
     <div className="rounded-2xl overflow-hidden border border-slate-100 bg-white h-[172px] animate-pulse">
@@ -28,9 +80,8 @@ function SkeletonCard() {
   );
 }
 
-// Animated section heading
+/* ─── Hero ─── */
 function HeroSection() {
-  const ref = useRef(null);
   const [show, setShow] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 80);
@@ -39,7 +90,6 @@ function HeroSection() {
 
   return (
     <div
-      ref={ref}
       style={{
         opacity: show ? 1 : 0,
         transform: show ? "translateY(0)" : "translateY(20px)",
@@ -48,7 +98,6 @@ function HeroSection() {
       }}
       className="mb-8"
     >
-      {/* Decorative pill */}
       <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest text-[#316BE8] bg-[#EEF3FF] px-3 py-1 rounded-full mb-3 uppercase">
         <span className="w-1.5 h-1.5 rounded-full bg-[#316BE8] animate-pulse" />
         Medical Network
@@ -64,11 +113,287 @@ function HeroSection() {
   );
 }
 
+/* ─── Provider card ─── */
+function ServiceProviderCard({
+  id,
+  name,
+  address,
+  avg_Rating,
+  type,
+  imageUrl,
+  animationDelay = 0,
+  isFav,
+  isPending,
+  onToggleFav,
+}) {
+  const navigate = useNavigate();
+  const [imgError, setImgError] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const isLab = type === 0;
+  const TypeIcon = isLab ? MdScience : MdBiotech;
+  const typeLabel = isLab ? "Laboratory" : "Scan Center";
+  const accentColor = isLab ? "#316BE8" : "#7C3AED";
+  const accentAlpha = isLab ? "rgba(49,107,232,0.09)" : "rgba(124,58,237,0.09)";
+
+  const rating = avg_Rating != null ? Number(avg_Rating).toFixed(1) : null;
+
+  const initials = (name || "")
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <article
+      onClick={() => id && navigate(`/provider/${id}`)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: "#fff",
+        border: `1px solid ${hovered ? accentColor + "55" : "#e8edf5"}`,
+        borderRadius: 18,
+        overflow: "hidden",
+        cursor: "pointer",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        boxShadow: hovered
+          ? `0 16px 40px ${accentColor}18`
+          : "0 2px 8px rgba(0,0,0,0.05)",
+        transition:
+          "transform 0.22s cubic-bezier(.22,.68,0,1.2), box-shadow 0.22s ease, border-color 0.2s ease",
+        animation: `providerFadeUp 0.35s ease both`,
+        animationDelay: `${animationDelay}ms`,
+      }}
+    >
+      {/* Top accent bar */}
+      <div
+        style={{
+          height: 4,
+          background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)`,
+          opacity: hovered ? 1 : 0.6,
+          transition: "opacity 0.2s",
+        }}
+      />
+
+      <div
+        style={{
+          padding: "16px 18px",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Header row */}
+        <div
+          style={{
+            display: "flex",
+            gap: 14,
+            alignItems: "flex-start",
+            marginBottom: 12,
+          }}
+        >
+          {/* Avatar */}
+          <div
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: 14,
+              overflow: "hidden",
+              flexShrink: 0,
+              background: accentAlpha,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: `1px solid ${accentColor}22`,
+            }}
+          >
+            {imageUrl && !imgError ? (
+              <img
+                src={imageUrl}
+                alt={name}
+                onError={() => setImgError(true)}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: accentColor,
+                  userSelect: "none",
+                }}
+              >
+                {initials}
+              </span>
+            )}
+          </div>
+
+          {/* Name + badge */}
+          <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+            <p
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: hovered ? accentColor : "#111827",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                marginBottom: 5,
+                transition: "color 0.18s",
+              }}
+            >
+              {name || "Unknown"}
+            </p>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 11,
+                fontWeight: 600,
+                color: accentColor,
+                background: accentAlpha,
+                padding: "3px 9px",
+                borderRadius: 999,
+              }}
+            >
+              <TypeIcon style={{ width: 12, height: 12 }} />
+              {typeLabel}
+            </span>
+          </div>
+
+          {/* Heart */}
+          <HeartButton
+            isFav={isFav}
+            isPending={isPending}
+            onClick={onToggleFav}
+          />
+        </div>
+
+        {/* Address */}
+        {address && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 5,
+              marginBottom: 12,
+            }}
+          >
+            <MdLocationOn
+              style={{
+                color: "#94a3b8",
+                width: 14,
+                height: 14,
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            />
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                lineHeight: 1.45,
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              }}
+            >
+              {address}
+            </p>
+          </div>
+        )}
+
+        {/* Footer: rating + view details */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: "auto",
+            paddingTop: 10,
+            borderTop: "1px solid #f1f5f9",
+          }}
+        >
+          {/* Rating */}
+          {rating ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <FaStar style={{ color: "#FBBF24", fontSize: 13 }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>
+                {rating}
+              </span>
+              <span style={{ fontSize: 11, color: "#9ca3af" }}>/ 5</span>
+            </div>
+          ) : (
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>
+              No ratings yet
+            </span>
+          )}
+
+          {/* View details */}
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              id && navigate(`/service-providers/${id}`);
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: hovered ? 6 : 4,
+              fontSize: 12,
+              fontWeight: 600,
+              color: accentColor,
+              transition: "gap 0.2s ease",
+            }}
+          >
+            View details
+            <svg
+              style={{
+                width: 14,
+                height: 14,
+                transform: hovered ? "translateX(2px)" : "translateX(0)",
+                transition: "transform 0.2s ease",
+              }}
+              fill="none"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M3 8h10M9 4l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes providerFadeUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </article>
+  );
+}
+
+/* ─── Main page ─── */
 export default function ServiceProvidersPage() {
   const providerAPI = useProviderAPI();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState(FILTER_ALL);
   const [headerVisible, setHeaderVisible] = useState(false);
+  const [favouriteIds, setFavouriteIds] = useState([]);
+  const [pendingFavIds, setPendingFavIds] = useState(new Set());
+
+  const { mutate: toggleFav } = useFavourite();
 
   useEffect(() => {
     const t = setTimeout(() => setHeaderVisible(true), 50);
@@ -79,6 +404,14 @@ export default function ServiceProvidersPage() {
     queryKey: ["medicalTestsProviders"],
     queryFn: () => providerAPI.getMedicalTestsProviders(),
   });
+
+  useEffect(() => {
+    if (providers.length > 0) {
+      setFavouriteIds(
+        providers.filter((p) => p.isFavorite).map((p) => String(p.id)),
+      );
+    }
+  }, [providers]);
 
   const filtered = useMemo(() => {
     let list = [...providers];
@@ -94,6 +427,40 @@ export default function ServiceProvidersPage() {
     }
     return list;
   }, [providers, filter, search]);
+
+  const toggleFavouriteProvider = useCallback(
+    (providerId) => {
+      const id = String(providerId);
+      if (pendingFavIds.has(id)) return;
+
+      setFavouriteIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      );
+
+      setPendingFavIds((prev) => new Set(prev).add(id));
+
+      toggleFav(providerId, {
+        onSuccess: () => {
+          setPendingFavIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        },
+        onError: () => {
+          setFavouriteIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+          );
+          setPendingFavIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        },
+      });
+    },
+    [toggleFav, pendingFavIds],
+  );
 
   const tabs = [
     { key: FILTER_ALL, label: "All", icon: MdApps },
@@ -111,7 +478,7 @@ export default function ServiceProvidersPage() {
       <div className="max-w-6xl mx-auto">
         <HeroSection />
 
-        {/* Controls bar */}
+        {/* Controls */}
         <div
           style={{
             opacity: headerVisible ? 1 : 0,
@@ -192,10 +559,7 @@ export default function ServiceProvidersPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div
-            className="flex flex-col items-center justify-center py-20 text-center"
-            style={{ opacity: 1, animation: "fadeIn 0.4s ease" }}
-          >
+          <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#EEF3FF] flex items-center justify-center mb-4">
               <MdSearch className="w-8 h-8 text-[#316BE8]" />
             </div>
@@ -218,6 +582,9 @@ export default function ServiceProvidersPage() {
                   type={p.type}
                   imageUrl={p.imageUrl || p.profileImageUrl || p.logoUrl || ""}
                   animationDelay={idx * 70}
+                  isFav={favouriteIds.includes(String(p.id))}
+                  isPending={pendingFavIds.has(String(p.id))}
+                  onToggleFav={() => toggleFavouriteProvider(p.id)}
                 />
               </div>
             ))}

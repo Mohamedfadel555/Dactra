@@ -1,16 +1,8 @@
+// useSponsoredDoctors.js
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useSponsorshipAPI } from "../api/sponsorshipAPI";
 import { useHubEvent } from "./useHubEvent";
 
-/**
- * Infinite-paginated list of actively sponsored doctors (provider side).
- * GET /api/Sponsorship/provider/active-sponsors/overview
- *
- * Real-time events handled:
- *  - OfferAccepted        → new doctor became active
- *  - CounterOfferReceived → list state might change (counter pending)
- *  - SponsorshipCancelled → a doctor left the active list
- */
 export function useSponsoredDoctors() {
   const { sponsoredDoctors } = useSponsorshipAPI();
   const qc = useQueryClient();
@@ -24,18 +16,14 @@ export function useSponsoredDoctors() {
       lastPage.hasNextPage ? lastPage.page + 1 : undefined,
   });
 
+  // هنا بس بنعمل invalidate على sponsored لأن deals و summary
+  // بيتعملهم invalidate من useOffersByStat
   useHubEvent("OfferAccepted", () => {
     qc.invalidateQueries({ queryKey: ["sponsored"] });
-    qc.invalidateQueries({ queryKey: ["deals"] });
-  });
-
-  useHubEvent("CounterOfferReceived", () => {
-    qc.invalidateQueries({ queryKey: ["deals"] });
   });
 
   useHubEvent("SponsorshipCancelled", () => {
     qc.invalidateQueries({ queryKey: ["sponsored"] });
-    qc.invalidateQueries({ queryKey: ["deals"] });
   });
 
   return query;

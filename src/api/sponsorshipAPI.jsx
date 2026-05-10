@@ -75,10 +75,13 @@ export const useSponsorshipAPI = () => {
     return res;
   };
 
-  // ── Doctor: Patients ────────────────────────────────────────────
-  /** GET /api/PatientReferral/doctor/care-patients */
-  const getCarePatients = async () => {
-    const res = await axiosInstance.get("PatientReferral/doctor/care-patients");
+  const getCarePatients = async (params) => {
+    const res = await axiosInstance.get(
+      "PatientReferral/doctor/care-patients",
+      {
+        params,
+      },
+    );
     return res.data;
   };
 

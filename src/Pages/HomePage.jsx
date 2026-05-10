@@ -228,6 +228,9 @@ export default function HomePage() {
     queryKey: ["medicalTestsProviders"],
     queryFn: () => providerAPI.getMedicalTestsProviders(),
   });
+
+  console.log(providers);
+
   const { data: siteReviews = [] } = useSiteReviews();
   const { data: siteReviewsStats } = useSiteReviewsStats();
   const { data: siteReviewsDistribution } = useSiteReviewsDistribution();
@@ -235,6 +238,8 @@ export default function HomePage() {
   const { data: topDoctors = [] } = useTopRatedDoctors(10);
   const labs = (providers || []).filter((p) => p.type === 0);
   const scans = (providers || []).filter((p) => p.type === 1);
+
+  console.log(topDoctors);
 
   const effectiveReviews =
     Array.isArray(siteReviews) && siteReviews.length > 0
@@ -471,7 +476,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             ? String(doc.totalRatings)
                             : doc.ratingNo || "0"
                         }
-                        isFavourite={doc.isFavourite || false}
+                        isFavourite={doc.isFavorite || false}
                         imageUrl={
                           doc.imageUrl ||
                           doc.profileImageUrl ||
@@ -564,6 +569,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             imageUrl={
                               p.imageUrl || p.profileImageUrl || p.logoUrl || ""
                             }
+                            isFavourite={p.isFavorite}
                           />
                         </motion.div>
                       ))}
@@ -587,10 +593,11 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             name={p.name}
                             address={p.address}
                             avg_Rating={p.avg_Rating}
-                            type={1}
+                            type={0}
                             imageUrl={
                               p.imageUrl || p.profileImageUrl || p.logoUrl || ""
                             }
+                            isFavourite={p.isFavorite}
                           />
                         </motion.div>
                       ))}
