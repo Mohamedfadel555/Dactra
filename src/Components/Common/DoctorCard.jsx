@@ -1,8 +1,9 @@
 import { IoIosHeart, IoIosHeartEmpty } from "react-icons/io";
-import { FaStar } from "react-icons/fa";
+import { FaStar, FaUserMd } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useFavourite } from "./../../hooks/useFavourite";
 
 export default function DoctorCard({
   doctorId = null,
@@ -14,59 +15,51 @@ export default function DoctorCard({
   imageUrl = "",
 }) {
   const navigate = useNavigate();
-  const favStorageKey = "dactra_favourite_doctors";
   const [isFav, setIsFav] = useState(isFavourite);
+  const [imgError, setImgError] = useState(false);
+  const { mutate: toggleFav, isPending } = useFavourite(1);
 
   useEffect(() => {
-    if (!doctorId) {
-      setIsFav(isFavourite);
-      return;
-    }
-    try {
-      const saved = JSON.parse(localStorage.getItem(favStorageKey) || "[]");
-      const savedIds = Array.isArray(saved) ? saved.map(String) : [];
-      setIsFav(savedIds.includes(String(doctorId)));
-    } catch {
-      setIsFav(isFavourite);
-    }
-  }, [doctorId, isFavourite]);
+    setIsFav(isFavourite);
+  }, [isFavourite]);
 
-  const toggleFavourite = () => {
-    if (!doctorId) {
-      setIsFav((prev) => !prev);
-      return;
-    }
-    try {
-      const saved = JSON.parse(localStorage.getItem(favStorageKey) || "[]");
-      const savedIds = Array.isArray(saved) ? saved.map(String) : [];
-      const id = String(doctorId);
-      const next = savedIds.includes(id)
-        ? savedIds.filter((item) => item !== id)
-        : [...savedIds, id];
-      localStorage.setItem(favStorageKey, JSON.stringify(next));
-      setIsFav(next.includes(id));
-    } catch {
-      setIsFav((prev) => !prev);
-    }
+  const toggleFavourite = (e) => {
+    e.stopPropagation();
+
+    if (!doctorId || isPending) return;
+
+    const prevFav = isFav;
+    setIsFav(!isFav);
+    toggleFav(doctorId, {
+      onError: () => setIsFav(prevFav),
+    });
   };
 
   const displayName = (name || "").trim() || "Unknown";
 
   return (
-    <div className="w-[300px] bg-white p-[18px] rounded-[20px] flex flex-col gap-1 shadow-[0_3px_6px_rgba(0,0,0,0.06),0_12px_28px_rgba(0,0,0,0.10)]">
-      <img
-        loading="lazy"
-        alt="Doctor photo"
-        src={imageUrl || ""}
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-        onClick={() => {
-          if (doctorId) navigate(`/doctor/profile/${doctorId}`);
-        }}
-        className="w-full rounded-[20px] cursor-pointer object-cover aspect-[4/3] bg-gray-100"
-      />
-      <h3 className="text-[#3D3D3D] text-[25px] font-bold">{"Dr. " + displayName}</h3>
+    <div
+      onClick={() => navigate(`/doctor/profile/${doctorId}`)}
+      className="w-[300px] bg-white p-[18px] rounded-[20px] flex flex-col gap-1 shadow-[0_3px_6px_rgba(0,0,0,0.06),0_12px_28px_rgba(0,0,0,0.10)] cursor-pointer"
+    >
+      <div className="w-full rounded-[20px] aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden">
+        {!imageUrl || imgError ? (
+          <FaUserMd className="text-[80px] text-gray-400" />
+        ) : (
+          <img
+            loading="lazy"
+            alt="Doctor"
+            src={imageUrl}
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover"
+          />
+        )}
+      </div>
+
+      <h3 className="text-[#3D3D3D] text-[25px] font-bold">
+        {"Dr. " + displayName}
+      </h3>
+
       <p className="text-[#64748B] font-semibold text-[22px]">
         {specialist + " Specialist"}
       </p>
@@ -82,8 +75,9 @@ export default function DoctorCard({
         <button
           type="button"
           onClick={toggleFavourite}
-          className="cursor-pointer border-none bg-transparent p-0"
-          aria-label={isFav ? "Remove doctor from favourites" : "Add doctor to favourites"}
+          disabled={isPending}
+          className="cursor-pointer border-none bg-transparent p-0 disabled:opacity-50"
+          aria-label={isFav ? "Remove from favourites" : "Add to favourites"}
         >
           <AnimatePresence mode="wait">
             {isFav ? (
@@ -91,11 +85,7 @@ export default function DoctorCard({
                 key="filled"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 10,
-                }}
+                transition={{ type: "spring", stiffness: 500, damping: 10 }}
                 whileTap={{ scale: 1.2 }}
               >
                 <IoIosHeart className="text-[25px] text-red-500" />
@@ -105,11 +95,7 @@ export default function DoctorCard({
                 key="empty"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 10,
-                }}
+                transition={{ type: "spring", stiffness: 500, damping: 10 }}
                 whileTap={{ scale: 1.2 }}
               >
                 <IoIosHeartEmpty className="text-[25px] text-[#64748B]" />

@@ -24,10 +24,7 @@ import { useEditComment } from "../../hooks/useEditComment";
 import EditModal from "./EditModal";
 import ReportModal from "../Common/ReportModal";
 import { toast } from "react-toastify";
-import {
-  REPORT_TYPE,
-  buildReportContent,
-} from "../../utils/reportConstants";
+import { REPORT_TYPE, buildReportContent } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 import { avatarUserFromAuthor } from "../../utils/communityAvatars";
@@ -49,6 +46,10 @@ export default function CommentItem({ comment, idx, type }) {
     comment.isLikedByCurrentUser,
   );
   const [optimisticCount, setOptimisticCount] = useState(comment.likesCount);
+  useEffect(() => {
+    setOptimisticLiked(comment.isLikedByCurrentUser);
+    setOptimisticCount(comment.likesCount);
+  }, [comment.isLikedByCurrentUser, comment.likesCount]);
 
   const { accessToken } = useAuth();
   const { createReport } = useReportApi();
@@ -152,13 +153,10 @@ export default function CommentItem({ comment, idx, type }) {
   const handleSubmitReport = async ({ reason, details }) => {
     setReportSubmitting(true);
     try {
-      const text = buildReportContent(
-        (details || "").trim(),
-        {
-          questionId: comment.questionId,
-          threadType: type === "Artical" ? "Artical" : "Question",
-        },
-      );
+      const text = buildReportContent((details || "").trim(), {
+        questionId: comment.questionId,
+        threadType: type === "Artical" ? "Artical" : "Question",
+      });
       await createReport({
         type: REPORT_TYPE.COMMENT,
         title: reason,

@@ -1,3 +1,4 @@
+// useProviderCancelOffer.js
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSponsorshipAPI } from "../api/sponsorshipAPI";
 import { toast } from "react-toastify";
@@ -5,9 +6,14 @@ import { toast } from "react-toastify";
 export const useProviderCancelOffer = () => {
   const { providerCancelOffer } = useSponsorshipAPI();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: providerCancelOffer,
-    onSuccess: () => queryClient.invalidateQueries(["deals", 0]),
+    onSuccess: () => {
+      // invalidate كل حاجة متعلقة بعد الكانسل
+      queryClient.invalidateQueries({ queryKey: ["deals"] });
+      queryClient.invalidateQueries({ queryKey: ["offers-summary"] });
+    },
     onError: () =>
       toast.error("something went wrong, try again later", {
         position: "top-center",

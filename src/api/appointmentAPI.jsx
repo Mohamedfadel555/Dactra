@@ -95,6 +95,11 @@ export const useAppointmentAPI = () => {
     return res;
   };
 
+  const resumePay = async (id) => {
+    const res = await axiosInstance.get(`Appointment/${id}/resume`);
+    return res.data;
+  };
+
   return {
     getWorkDetails,
     saveWorkDetails,
@@ -111,5 +116,6 @@ export const useAppointmentAPI = () => {
     getAppointmentStat,
     getMyAppointments,
     cancelAppointment,
+    resumePay,
   };
 };

@@ -46,6 +46,8 @@ import {
   useSiteReviewsStats,
 } from "../hooks/useSiteReviews";
 import { useTopRatedDoctors } from "../hooks/useTopRatedDoctors";
+import ReviewsSection from "../Components/Home/SiteReviewsSection";
+import DactraFloatButton from "../Components/Home/DactraFloatButton";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -226,6 +228,9 @@ export default function HomePage() {
     queryKey: ["medicalTestsProviders"],
     queryFn: () => providerAPI.getMedicalTestsProviders(),
   });
+
+  console.log(providers);
+
   const { data: siteReviews = [] } = useSiteReviews();
   const { data: siteReviewsStats } = useSiteReviewsStats();
   const { data: siteReviewsDistribution } = useSiteReviewsDistribution();
@@ -234,8 +239,12 @@ export default function HomePage() {
   const labs = (providers || []).filter((p) => p.type === 0);
   const scans = (providers || []).filter((p) => p.type === 1);
 
+  console.log(topDoctors);
+
   const effectiveReviews =
-    Array.isArray(siteReviews) && siteReviews.length > 0 ? siteReviews : comments;
+    Array.isArray(siteReviews) && siteReviews.length > 0
+      ? siteReviews
+      : comments;
   const mappedSiteReviews = effectiveReviews.map((item, index) => ({
     name:
       item.name ||
@@ -251,8 +260,10 @@ export default function HomePage() {
   const fallbackReviewsAvg =
     fallbackReviewsCount > 0
       ? (
-          mappedSiteReviews.reduce((sum, r) => sum + (Number(r.starsNo) || 0), 0) /
-          fallbackReviewsCount
+          mappedSiteReviews.reduce(
+            (sum, r) => sum + (Number(r.starsNo) || 0),
+            0,
+          ) / fallbackReviewsCount
         ).toFixed(1)
       : "0.0";
   const reviewsCount =
@@ -274,17 +285,22 @@ export default function HomePage() {
       )
     : mappedSiteReviews.reduce(
         (acc, r) => {
-          const score = Math.min(5, Math.max(1, Math.round(Number(r.starsNo) || 0)));
+          const score = Math.min(
+            5,
+            Math.max(1, Math.round(Number(r.starsNo) || 0)),
+          );
           acc[score] += 1;
           return acc;
         },
         { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       );
   const doctorsToRender = topDoctors.length > 0 ? topDoctors : doctorsFallback;
+  console.log(doctorsToRender);
 
   return (
     <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
       {/* Section1 */}
+      {(role === "Patient" || role === "Doctor") && <DactraFloatButton />}
       <HeroSection Role={role} />
 
       {/* Section2 - Services */}
@@ -438,7 +454,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                       className="flex justify-center"
                     >
                       <DoctorCard
-                        doctorId={doc.id || doc.profileId || doc.userId || index}
+                        doctorId={doc.doctorId}
                         name={
                           doc.name ||
                           doc.doctorName ||
@@ -460,7 +476,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             ? String(doc.totalRatings)
                             : doc.ratingNo || "0"
                         }
-                        isFavourite={doc.isFavourite || false}
+                        isFavourite={doc.isFavorite || false}
                         imageUrl={
                           doc.imageUrl ||
                           doc.profileImageUrl ||
@@ -524,7 +540,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
 
           {/* Labs & Scan Centers for Patient */}
           {(labs.length > 0 || scans.length > 0) && (
-          <div className="flex flex-col gap-10 justify-center items-center px-4 md:px-8 lg:px-12 mt-4">
+            <div className="flex flex-col gap-10 justify-center items-center px-4 md:px-8 lg:px-12 mt-4">
               <HeaderSection
                 leftText="Labs &"
                 gradientText=" Scan Centers"
@@ -533,10 +549,17 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
               />
               <div className="w-full max-w-screen-2xl mx-auto flex flex-col gap-10">
                 {labs.length > 0 && (
-                <div className="w-full">
+                  <div className="w-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                       {labs.slice(0, 6).map((p) => (
-                        <motion.div key={p.id} className="h-full" initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                        <motion.div
+                          key={p.id}
+                          className="h-full"
+                          initial="hidden"
+                          whileInView="show"
+                          viewport={{ once: true }}
+                          variants={fadeUp}
+                        >
                           <ServiceProviderCard
                             id={p.id}
                             name={p.name}
@@ -546,6 +569,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                             imageUrl={
                               p.imageUrl || p.profileImageUrl || p.logoUrl || ""
                             }
+                            isFavourite={p.isFavorite}
                           />
                         </motion.div>
                       ))}
@@ -553,19 +577,27 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                   </div>
                 )}
                 {scans.length > 0 && (
-                <div className="w-full">
+                  <div className="w-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                       {scans.slice(0, 6).map((p) => (
-                        <motion.div key={p.id} className="h-full" initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+                        <motion.div
+                          key={p.id}
+                          className="h-full"
+                          initial="hidden"
+                          whileInView="show"
+                          viewport={{ once: true }}
+                          variants={fadeUp}
+                        >
                           <ServiceProviderCard
                             id={p.id}
                             name={p.name}
                             address={p.address}
                             avg_Rating={p.avg_Rating}
-                            type={1}
+                            type={0}
                             imageUrl={
                               p.imageUrl || p.profileImageUrl || p.logoUrl || ""
                             }
+                            isFavourite={p.isFavorite}
                           />
                         </motion.div>
                       ))}
@@ -630,7 +662,8 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                     whileHover={{ scale: 1.05, backgroundColor: "#1D5EDB" }}
                     className="w-[200px] flex justify-center items-center gap-[5px] h-[50px] rounded-xl bg-[#316BE8] text-[20px] font-bold text-white mx-auto lg:mx-0"
                   >
-                    Book Now <HiChevronRight className="text-[24px] font-bold" />
+                    Book Now{" "}
+                    <HiChevronRight className="text-[24px] font-bold" />
                   </motion.button>
                 </Link>
               </motion.div>
@@ -763,176 +796,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 leftText={"What People Think"}
                 gradientText={"About Us"}
               />
-              <motion.div
-                variants={fadeUp}
-                className="w-[80%] m-auto flex flex-col justify-center items-center gap-10"
-              >
-                <ReviewsDetailsSection
-                  data={ratingsDist}
-                  NumOfReviews={reviewsCount}
-                  avgRating={reviewsAvg}
-                  onAddReview={() => setShowAddReview((v) => !v)}
-                />
-                {(role === "Patient" || role === "Doctor") && showAddReview && (
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      try {
-                        await createReviewMutation.mutateAsync({
-                          title: newReview.title.trim(),
-                          score: Number(newReview.score),
-                          comment: newReview.comment.trim(),
-                        });
-                        setNewReview({ title: "", score: 5, comment: "" });
-                        setShowAddReview(false);
-                      } catch {
-                        /* handled by react-query consumer */
-                      }
-                    }}
-                    className="w-full bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3"
-                  >
-                    <p className="text-sm font-bold text-slate-800">
-                      Add site review
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <input
-                        value={newReview.title}
-                        onChange={(e) =>
-                          setNewReview((p) => ({ ...p, title: e.target.value }))
-                        }
-                        placeholder="Title"
-                        required
-                        className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
-                      />
-                      <select
-                        value={newReview.score}
-                        onChange={(e) =>
-                          setNewReview((p) => ({
-                            ...p,
-                            score: Number(e.target.value),
-                          }))
-                        }
-                        className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
-                      >
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <option key={s} value={s}>
-                            {s} star{s > 1 ? "s" : ""}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="submit"
-                        disabled={createReviewMutation.isPending}
-                        className="h-10 rounded-xl bg-[#316BE8] text-white text-sm font-semibold disabled:opacity-70"
-                      >
-                        {createReviewMutation.isPending ? "Submitting..." : "Submit"}
-                      </button>
-                    </div>
-                    <textarea
-                      value={newReview.comment}
-                      onChange={(e) =>
-                        setNewReview((p) => ({ ...p, comment: e.target.value }))
-                      }
-                      placeholder="Comment"
-                      required
-                      rows={3}
-                      className="rounded-xl border border-slate-200 p-3 text-sm resize-none"
-                    />
-                  </form>
-                )}
-                <div className=" pb-[30px] overflow-hidden w-full max-w-screen-2xl mx-auto">
-                  <Swiper
-                    modules={[Navigation, Pagination, Autoplay]}
-                    spaceBetween={30}
-                    slidesPerView={1}
-                    breakpoints={{
-                      640: { slidesPerView: 2, spaceBetween: 24 },
-                      768: { slidesPerView: 2, spaceBetween: 30 },
-                      1024: { slidesPerView: 3, spaceBetween: 30 },
-                      1280: { slidesPerView: 3, spaceBetween: 32 },
-                    }}
-                    navigation={{
-                      nextEl: ".swiper-button-next-custom",
-                      prevEl: ".swiper-button-prev-custom",
-                    }}
-                    pagination={{
-                      clickable: true,
-                      el: "#custom-swiper-pagination",
-                      bulletClass: "custom-bullet",
-                      bulletActiveClass: "custom-bullet-active",
-                    }}
-                    autoplay={{ delay: 4000, disableOnInteraction: false }}
-                    loop={true}
-                    grabCursor={true}
-                    className="!overflow-visible pb-20"
-                  >
-                    {mappedSiteReviews.map((comment, index) => (
-                      <SwiperSlide key={index}>
-                        <motion.div
-                          initial="hidden"
-                          whileInView="show"
-                          viewport={{ once: false, margin: "-100px" }}
-                          variants={fadeUp}
-                          className="flex justify-center"
-                        >
-                          <CommentCard
-                            name={comment.name}
-                            photo={comment.photo}
-                            starsNo={comment.starsNo}
-                            heading={comment.heading}
-                            body={comment.body}
-                          />
-                        </motion.div>
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-
-                  <div
-                    id="custom-swiper-pagination"
-                    className=" flex justify-center gap-3 mt-10"
-                  ></div>
-
-                  <div className="flex justify-center gap-6 mt-12">
-                    <button
-                      type="button"
-                      className="swiper-button-prev-custom bg-white shadow-xl hover:shadow-2xl w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 border border-gray-200 z-10"
-                    >
-                      <svg
-                        className="w-7 h-7 text-gray-700"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="swiper-button-next-custom bg-white shadow-xl hover:shadow-2xl w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 border border-gray-200 z-10"
-                    >
-                      <svg
-                        className="w-7 h-7 text-gray-700"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
+              <ReviewsSection role={role} />
             </div>
           </motion.div>
         </>

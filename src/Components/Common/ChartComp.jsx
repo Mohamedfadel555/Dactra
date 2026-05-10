@@ -32,7 +32,7 @@ export default function ChartComp({
         .max(field.max, "Too high")
         .required("required");
       return acc;
-    }, {})
+    }, {}),
   );
 
   return (
@@ -87,7 +87,7 @@ export default function ChartComp({
               <Formik
                 initialValues={fields.reduce(
                   (acc, field) => ({ ...acc, [field.key]: "" }),
-                  {}
+                  {},
                 )}
                 validationSchema={validationsch}
                 onSubmit={async (values, { resetForm }) => {
@@ -97,8 +97,8 @@ export default function ChartComp({
                       title === "Blood Pressure"
                         ? 1
                         : title === "Heart Rate"
-                        ? 2
-                        : 3,
+                          ? 2
+                          : 3,
                   });
                   setShowForm(false);
                   resetForm();

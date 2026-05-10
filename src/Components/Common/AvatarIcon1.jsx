@@ -2,7 +2,6 @@ import { IoPersonSharp } from "react-icons/io5";
 import { useUserImage } from "../../hooks/useUserImage";
 export default function AvatarIcon({
   user,
-  /** When false, only the circle is shown (feed cards already render the name beside). */
   showLabel = true,
   handle,
   ref,

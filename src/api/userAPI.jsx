@@ -146,7 +146,7 @@ export const useUserAPI = () => {
     return asArray(res?.data);
   };
 
-  const rateProvider = async (providerId, body) => {
+  const rateProviderr = async (providerId, body) => {
     const res = await axiosInstance.post(
       `Rating/patient/rate-provider/${providerId}`,
       body,
@@ -197,6 +197,76 @@ export const useUserAPI = () => {
     return res?.data;
   };
 
+  const getWeeklyApp = async () => {
+    const res = await axiosInstance.get(
+      "AppointmentStatistics/my-weekly-appointments",
+    );
+    return res.data.dailyCounts;
+  };
+  const getWeeklyAppById = async (id) => {
+    const res = await axiosInstance.get(
+      `AppointmentStatistics/doctor/${id}/weekly-appointments`,
+    );
+    return res.data.dailyCounts;
+  };
+
+  const fetchProviderRating = async (providerId) => {
+    const res = await axiosInstance.get(`Rating/provider/rating${providerId}`);
+    return res.data;
+  };
+
+  const rateProvider = async ({ providerId, payload }) => {
+    console.log(payload);
+    const res = await axiosInstance.post(
+      `Rating/patient/rate-provider/${providerId}`,
+      payload,
+    );
+    return res.data;
+  };
+
+  const getMyRating = async () => {
+    const res = await axiosInstance.get("Rating/provider/my-ratings");
+    return res.data;
+  };
+
+  const getFavorites = async ({ type, page = 1, pageSize = 10 }) => {
+    const res = await axiosInstance.get("Favorites", {
+      params: { Type: type, Page: page, PageSize: pageSize },
+    });
+    return res.data;
+  };
+
+  const favourite = async (id) => {
+    const res = await axiosInstance.post(`Favorites/${id}`);
+    return res;
+  };
+
+  /* ─── Medical Reports ─── */
+  const getMyReports = async () => {
+    const res = await axiosInstance.get("MedicalReport/my-reports");
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.$values)) return data.$values;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
+  };
+
+  const addReport = async (data) => {
+    const form = new FormData();
+    form.append("Name", data.name);
+    if (data.summary) form.append("Summary", data.summary);
+    data.files.forEach((file) => form.append("Files", file));
+    const res = await axiosInstance.post("MedicalReport", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  };
+
+  const deleteReport = async (reportId) => {
+    const res = await axiosInstance.delete(`MedicalReport/${reportId}`);
+    return res.data;
+  };
+
   return {
     getMePatient,
     getMeDoctor,
@@ -222,12 +292,23 @@ export const useUserAPI = () => {
     createSiteReview,
     getTopRatedDoctors,
     getPatientProviderRatings,
-    rateProvider,
+    rateProviderr,
     updateProviderRating,
     deleteProviderRating,
     getUserImage,
     createUserImage,
     updateUserImage,
     deleteUserImage,
+    getWeeklyApp,
+    getWeeklyAppById,
+    fetchProviderRating,
+    rateProvider,
+    getMyRating,
+    getFavorites,
+    favourite,
+    // Medical Reports
+    getMyReports,
+    addReport,
+    deleteReport,
   };
 };

@@ -6,7 +6,7 @@ export const useGetMyAppointments = ({ tab, page }) => {
   return useQuery({
     queryKey: ["appointments", tab, page],
     queryFn: () => getMyAppointments({ tab, page }),
-    keepPreviousData: true, // smooth pagination
+    keepPreviousData: true,
     staleTime: 15_000,
   });
 };

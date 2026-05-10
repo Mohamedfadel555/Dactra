@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FiMessageCircle,
@@ -35,6 +35,8 @@ import { REPORT_TYPE } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 import { avatarUserFromAuthor } from "../../utils/communityAvatars";
+import { FiZoomIn, FiX } from "react-icons/fi";
+import { useQuestionHub } from "../../hooks/useQuestionHub";
 
 function handleTime(create) {
   const diff = Date.now() - new Date(create).getTime();
@@ -61,11 +63,17 @@ export default function PostDetailPage() {
   const queryClient = useQueryClient();
 
   const { data: post } = useGetQuestionById(param.id);
+  console.log(post);
   const { role, accessToken } = useAuth();
 
-  const userEmail = accessToken
-    ? JSON.parse(atob(accessToken.split(".")[1])).email
-    : null;
+  const userEmail = useMemo(() => {
+    if (!accessToken) return null;
+    try {
+      return JSON.parse(atob(accessToken.split(".")[1])).email;
+    } catch {
+      return null;
+    }
+  }, [accessToken]); // بيتحسب بس لما accessToken يتغير
 
   const isOwner = post?.email === userEmail;
 
@@ -78,6 +86,8 @@ export default function PostDetailPage() {
   const [displayContent, setDisplayContent] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     if (!post) return;
@@ -103,7 +113,9 @@ export default function PostDetailPage() {
     hasNextPage,
     isFetchingNextPage,
     isLoading: commentsLoading,
-  } = useGetQuestionsAnswersInfinite(post?.id);
+  } = useGetQuestionsAnswersInfinite(param.id);
+
+  useQuestionHub(param.id);
 
   const allComments = commentsData
     ? [
@@ -221,6 +233,28 @@ export default function PostDetailPage() {
     type === "Question" ? post?.patient : post?.doctor,
   );
 
+  const overlayVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { duration: 0.25, ease: "easeOut" } },
+    exit: { opacity: 0, transition: { duration: 0.2, ease: "easeIn" } },
+  };
+
+  const imageVariants = {
+    hidden: { opacity: 0, scale: 0.92, y: 16 },
+    show: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.94,
+      y: 8,
+      transition: { duration: 0.2, ease: "easeIn" },
+    },
+  };
+
   return (
     <>
       <div className="pt-[60px] min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-white">
@@ -301,6 +335,30 @@ export default function PostDetailPage() {
                   {displayContent}
                 </p>
 
+                {post?.imageUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    onClick={() => {
+                      setImageLoaded(false);
+                      setImageOpen(true);
+                    }}
+                    className="relative mb-5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm cursor-zoom-in group"
+                  >
+                    <img
+                      src={post.imageUrl}
+                      alt="post"
+                      className="w-full max-h-96 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg">
+                        <FiZoomIn size={18} className="text-slate-700" />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
                 {post?.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-5">
                     {post.tags.map((t) => (
@@ -313,7 +371,7 @@ export default function PostDetailPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
-                    {role === "Patient" && (
+                    {role === "Patient" ? (
                       <ActionBtn
                         iconActive={FaAngleDoubleUp}
                         iconInactive={FaAngleUp}
@@ -324,6 +382,11 @@ export default function PostDetailPage() {
                         onClick={handleInterest}
                         count={likes}
                       />
+                    ) : (
+                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-slate-500 bg-slate-50 select-none">
+                        <FaAngleDoubleUp size={14} />
+                        <span>{likes}</span>
+                      </div>
                     )}
                     <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-blue-600 bg-blue-50 select-none">
                       <FiMessageCircle size={15} />
@@ -505,6 +568,76 @@ export default function PostDetailPage() {
         isSubmitting={reportSubmitting}
         contentLabel={type === "Artical" ? "article" : "question"}
       />
+      <AnimatePresence>
+        {imageOpen && (
+          <motion.div
+            variants={overlayVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            onClick={() => setImageOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+            style={{
+              backgroundColor: "rgba(2, 8, 23, 0.85)",
+              backdropFilter: "blur(6px)",
+            }}
+          >
+            <motion.button
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.15 } }}
+              exit={{ opacity: 0 }}
+              onClick={() => setImageOpen(false)}
+              className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full p-2.5 transition-colors cursor-pointer backdrop-blur-sm"
+            >
+              <FiX size={18} />
+            </motion.button>
+
+            <motion.div
+              variants={imageVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-4xl w-full"
+            >
+              {!imageLoaded && (
+                <div className="w-full h-64 rounded-2xl bg-white/10 animate-pulse" />
+              )}
+              <img
+                src={post.imageUrl}
+                alt="post full"
+                onLoad={() => setImageLoaded(true)}
+                className={`w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl transition-opacity duration-300 ${
+                  imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"
+                }`}
+              />
+              {imageLoaded && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0, transition: { delay: 0.1 } }}
+                  className="mt-3 flex items-center justify-between px-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <AvatarIcon user={authorAvatarUser} showLabel={false} />
+                    <span className="text-white/80 text-sm font-medium">
+                      {authorName}
+                    </span>
+                  </div>
+                  <span className="text-white/40 text-xs">{timeAgo}</span>
+                </motion.div>
+              )}
+            </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.4 } }}
+              className="absolute bottom-4 left-0 right-0 text-center text-white/30 text-xs pointer-events-none"
+            >
+              tap outside to close
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

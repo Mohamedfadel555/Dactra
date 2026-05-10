@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MdSearch, MdClose, MdVerified, MdBlock } from "react-icons/md";
+import {
+  MdSearch,
+  MdClose,
+  MdVerified,
+  MdBlock,
+  MdPhone,
+} from "react-icons/md";
 import { FaUserDoctor } from "react-icons/fa6";
 import { TbPlugConnectedX } from "react-icons/tb";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
@@ -215,6 +221,7 @@ function CancelModal({ doctor, onClose }) {
 
 // ─── DoctorCard ───────────────────────────────────────────────────────────────
 function DoctorCard({ doctor, index, onCancel }) {
+  console.log(doctor);
   const { firstName, lastName } = splitName(doctor.doctorName);
 
   return (
@@ -233,7 +240,6 @@ function DoctorCard({ doctor, index, onCancel }) {
             size="40"
             className="gap-2 min-w-0 flex-1"
           />
-          <MdVerified size={14} style={{ color: BLUE }} className="shrink-0" />
         </div>
         <div
           className="shrink-0 flex flex-col items-center justify-center w-10 h-10 rounded-xl"
@@ -249,6 +255,11 @@ function DoctorCard({ doctor, index, onCancel }) {
       <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 cursor-pointer">
         {doctor.description}
       </p>
+
+      {/* <div>
+        <MdPhone/>
+        <p>doctor.phone</p>
+      </div> */}
 
       <div className="flex items-center justify-between gap-2 cursor-pointer">
         <div

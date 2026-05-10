@@ -2,13 +2,10 @@ import { useState, useMemo, useRef } from "react";
 import { BiCalendar, BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import { BsCameraVideo, BsPeopleFill } from "react-icons/bs";
 import { RiErrorWarningLine } from "react-icons/ri";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { toast } from "react-toastify";
 import { useSaveSlots } from "../../hooks/useSaveSlots";
-import { useGetSlots } from "../../hooks/useGetSlots";
-import { useGetSlotsById } from "../../hooks/useGetSlotsById";
 import { useBook } from "../../hooks/useBook";
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function formatDateKey(date) {
   const d = date.getDate().toString().padStart(2, "0");
@@ -16,41 +13,172 @@ function formatDateKey(date) {
   return `${d}-${m}-${date.getFullYear()}`;
 }
 
-// UTC string → local 12h label
-function formatSlotLabel(utcTime) {
-  const [h, m] = utcTime.split(":");
-  const date = new Date();
-  date.setUTCHours(+h, +m, 0, 0);
-  const localH = date.getHours();
-  const localM = date.getMinutes().toString().padStart(2, "0");
-  if (localH === 0) return `12:${localM} am`;
-  if (localH === 12) return `12:${localM} pm`;
-  if (localH > 12) return `${localH - 12}:${localM} pm`;
-  return `${localH}:${localM} am`;
+function localDateKeyFromISO(iso) {
+  const date = new Date(iso);
+  const d = date.getDate().toString().padStart(2, "0");
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  return `${d}-${m}-${date.getFullYear()}`;
 }
 
-// working hours جاية من الباك بـ UTC → generate UTC slots
-function generateSlots(start, end, stepMinutes = 30) {
-  if (!start || !end) return [];
+function formatSlotLabel(value) {
+  const date = new Date(value);
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function generateSlots(startTime, endTime, stepMinutes = 30, dayKey) {
+  if (!startTime || !endTime || !dayKey) return [];
+
+  const [sh, sm] = startTime.slice(0, 5).split(":").map(Number);
+  const [eh, em] = endTime.slice(0, 5).split(":").map(Number);
+  const [dd, mm, yyyy] = dayKey.split("-").map(Number);
+
+  const tzOffsetMins = -new Date().getTimezoneOffset();
+  const startTotalMins = sh * 60 + sm + tzOffsetMins;
+  let endTotalMins = eh * 60 + em + tzOffsetMins;
+  if (endTotalMins <= startTotalMins) endTotalMins += 24 * 60;
+
   const slots = [];
-  const s = new Date();
-  const e = new Date();
-  const [sh, sm] = start.split(":");
-  const [eh, em] = end.split(":");
-  s.setUTCHours(+sh, +sm, 0, 0);
-  e.setUTCHours(+eh, +em, 0, 0);
-  if (s > e) e.setUTCDate(e.getUTCDate() + 1);
-  while (s <= e) {
-    slots.push(
-      `${s.getUTCHours().toString().padStart(2, "0")}:${s
-        .getUTCMinutes()
-        .toString()
-        .padStart(2, "0")}`,
-    );
-    s.setMinutes(s.getMinutes() + stepMinutes);
+  let cur = startTotalMins;
+
+  while (cur <= endTotalMins) {
+    const localMins = cur % (24 * 60);
+    const h = Math.floor(localMins / 60);
+    const m = localMins % 60;
+    const localDate = new Date(yyyy, mm - 1, dd, h, m, 0);
+    slots.push(localDate.toISOString());
+    cur += stepMinutes;
   }
+
   return slots;
 }
+
+function sameTime(isoA, isoB) {
+  return new Date(isoA).getTime() === new Date(isoB).getTime();
+}
+
+function isSameLocalDay(dateA, dateB) {
+  const a = new Date(dateA);
+  const b = new Date(dateB);
+  a.setHours(0, 0, 0, 0);
+  b.setHours(0, 0, 0, 0);
+  return a.getTime() === b.getTime();
+}
+
+// ─── Confirmation Modal ──────────────────────────────────────────────────────
+
+function BookingConfirmModal({
+  slot,
+  day,
+  consultationType,
+  onConfirm,
+  onCancel,
+  isLoading,
+}) {
+  const isOnline = consultationType === "online";
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-[400px] p-6 flex flex-col gap-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Icon */}
+        <div className="flex justify-center">
+          <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
+            {isOnline ? (
+              <BsCameraVideo className="text-blue-600 text-2xl" />
+            ) : (
+              <BsPeopleFill className="text-blue-600 text-2xl" />
+            )}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="text-center">
+          <h2 className="text-[17px] font-bold text-gray-800">
+            Confirm Appointment
+          </h2>
+          <p className="text-sm text-gray-400 mt-1">
+            Please review your booking details
+          </p>
+        </div>
+
+        {/* Details */}
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <BiCalendar className="text-blue-500 text-lg flex-shrink-0" />
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                Date
+              </p>
+              <p className="text-sm font-semibold text-gray-700">
+                {day.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+          </div>
+          <hr className="border-gray-100" />
+          <div className="flex items-center gap-3">
+            {isOnline ? (
+              <BsCameraVideo className="text-blue-500 text-lg flex-shrink-0" />
+            ) : (
+              <BsPeopleFill className="text-blue-500 text-lg flex-shrink-0" />
+            )}
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                Time & Type
+              </p>
+              <p className="text-sm font-semibold text-gray-700">
+                {formatSlotLabel(slot.slotTime)}{" "}
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ml-1 ${
+                    isOnline
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-green-100 text-green-700"
+                  }`}
+                >
+                  {isOnline ? "Online" : "In-person"}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-semibold text-sm hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Booking..." : "Confirm"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
 function ConsultationTypePicker({ value, onChange }) {
   return (
@@ -63,7 +191,7 @@ function ConsultationTypePicker({ value, onChange }) {
           key={id}
           type="button"
           onClick={() => onChange(id)}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-colors
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-medium transition-colors
             ${
               value === id
                 ? "bg-blue-50 text-blue-700 border-blue-400"
@@ -80,6 +208,7 @@ function ConsultationTypePicker({ value, onChange }) {
 
 function WeekNav({ weekDays, dayPicked, onPickDay, onPrev, onNext, today }) {
   const isPrevDisabled = today.toDateString() === weekDays[0].toDateString();
+
   return (
     <div className="flex self-center justify-center sm:justify-between max-w-[230px] sm:max-w-full w-[90%] lg:flex-nowrap lg:w-full xl:w-[90%] items-center flex-wrap gap-x-[5px] gap-y-[8px] relative">
       <button
@@ -91,17 +220,20 @@ function WeekNav({ weekDays, dayPicked, onPickDay, onPrev, onNext, today }) {
         <BiChevronLeft className="text-[30px]" />
       </button>
 
-      {weekDays.map((day, i) => (
-        <div
-          key={i}
-          onClick={() => onPickDay(day)}
-          className={`py-[5px] w-[54px] md:w-fit sm:px-[10px] text-[#6D7379] bg-[#F5F6F7] rounded-md cursor-pointer flex flex-col justify-center items-center
-            ${day.toDateString() === dayPicked.toDateString() ? "bg-blue-600 text-white" : ""}`}
-        >
-          <div>{day.toLocaleDateString("en-US", { weekday: "short" })}</div>
-          <div>{day.getDate() + "/" + (day.getMonth() + 1)}</div>
-        </div>
-      ))}
+      {weekDays.map((day, i) => {
+        const isSelected = day.toDateString() === dayPicked.toDateString();
+        return (
+          <div
+            key={i}
+            onClick={() => onPickDay(day)}
+            className={`py-[5px] w-[54px] md:w-fit sm:px-[10px] rounded-md cursor-pointer flex flex-col justify-center items-center
+              ${isSelected ? "bg-blue-600 text-white" : "bg-[#F5F6F7] text-[#6D7379]"}`}
+          >
+            <div>{day.toLocaleDateString("en-US", { weekday: "short" })}</div>
+            <div>{day.getDate() + "/" + (day.getMonth() + 1)}</div>
+          </div>
+        );
+      })}
 
       <button
         onClick={onNext}
@@ -133,33 +265,24 @@ function MissingWorkDetailsWarning({ type }) {
   );
 }
 
+// ─── Main Component ──────────────────────────────────────────────────────────
+
 export default function Schedule({
   title,
   subtitle,
   role,
   workingDetails = { inPerson: null, online: null },
+  serverSlots = { inPerson: {}, online: {} },
+  isLoadingSlots = false,
   timeSlots = { inPerson: {}, online: {} },
   id,
 }) {
   const todayRef = useRef(new Date());
   const today = todayRef.current;
 
-  // ── type toggle ──
   const [consultationType, setConsultationType] = useState("in-person");
   const typeKey = consultationType === "in-person" ? "inPerson" : "online";
 
-  // ── fetch server slots (Doctor only) ──
-  const { data: inPersonData = {}, isLoading: loadingIP } = useGetSlots(
-    role,
-    "in-person",
-  );
-  console.log(inPersonData);
-  const { data: onlineData = {}, isLoading: loadingOL } = useGetSlots(
-    role,
-    "online",
-  );
-
-  // ── save mutations ──
   const saveInPersonMutation = useSaveSlots("in-person");
   const saveOnlineMutation = useSaveSlots("online");
   const saveSlotsMutation =
@@ -167,11 +290,6 @@ export default function Schedule({
       ? saveInPersonMutation
       : saveOnlineMutation;
 
-  // ── working details for active type ──
-  const activeWorkDetails = workingDetails[typeKey];
-  const hasWorkDetails = !!activeWorkDetails?.workingStartTime;
-
-  // ── week navigation ──
   const [weekDays, setWeekDays] = useState(() =>
     Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today);
@@ -182,8 +300,8 @@ export default function Schedule({
   const [dayPicked, setDayPicked] = useState(weekDays[0]);
   const dayKey = formatDateKey(dayPicked);
 
-  function getNextDays() {
-    const last = new Date(weekDays[6]);
+  function goNextWeek() {
+    const last = weekDays[6];
     setWeekDays(
       Array.from({ length: 7 }, (_, i) => {
         const d = new Date(last);
@@ -193,8 +311,8 @@ export default function Schedule({
     );
   }
 
-  function getPreviousDays() {
-    const first = new Date(weekDays[0]);
+  function goPrevWeek() {
+    const first = weekDays[0];
     setWeekDays(
       Array.from({ length: 7 }, (_, i) => {
         const d = new Date(first);
@@ -204,197 +322,213 @@ export default function Schedule({
     );
   }
 
-  // ── Doctor: local tables initialised from server data ──
-  const [tables, setTables] = useState({
-    inPerson: {},
-    online: {},
-  });
+  const [pending, setPending] = useState({ inPerson: {}, online: {} });
 
-  // sync server data into tables when it arrives (only if local not yet dirty)
-  const [syncedTypes, setSyncedTypes] = useState({
-    inPerson: false,
-    online: false,
-  });
-
-  if (!syncedTypes.inPerson && Object.keys(inPersonData).length > 0) {
-    setTables((prev) => ({ ...prev, inPerson: inPersonData }));
-    setSyncedTypes((prev) => ({ ...prev, inPerson: true }));
-  }
-  if (!syncedTypes.online && Object.keys(onlineData).length > 0) {
-    setTables((prev) => ({ ...prev, online: onlineData }));
-    setSyncedTypes((prev) => ({ ...prev, online: true }));
+  function getDayPending(tk, dk) {
+    return pending[tk]?.[dk] ?? { add: new Set(), remove: new Set() };
   }
 
-  // track dirty days
-  const [dirtyDays, setDirtyDays] = useState({
-    inPerson: new Set(),
-    online: new Set(),
-  });
+  function isDirty(tk) {
+    return Object.keys(pending[tk] ?? {}).some((dk) => {
+      const p = pending[tk][dk];
+      return p.add.size > 0 || p.remove.size > 0;
+    });
+  }
 
-  // ── generate all slots from working hours (UTC) ──
-  const generatedInPerson = useMemo(
-    () =>
-      role === "Doctor"
-        ? generateSlots(
-            workingDetails.inPerson?.workingStartTime?.slice(0, 5),
-            workingDetails.inPerson?.workingEndTime?.slice(0, 5),
-            workingDetails.inPerson?.consultationDurationMinutes || 30,
-          )
-        : [],
-    [role, workingDetails.inPerson],
-  );
-
-  const generatedOnline = useMemo(
-    () =>
-      role === "Doctor"
-        ? generateSlots(
-            workingDetails.online?.workingStartTime?.slice(0, 5),
-            workingDetails.online?.workingEndTime?.slice(0, 5),
-            workingDetails.online?.consultationDurationMinutes || 30,
-          )
-        : [],
-    [role, workingDetails.online],
-  );
-
-  const generatedSlots =
-    typeKey === "inPerson" ? generatedInPerson : generatedOnline;
-
-  const visibleSlots = useMemo(() => {
-    const isToday = dayKey === formatDateKey(today);
-
-    let rawSlots;
-
-    if (role === "Doctor") {
-      // الـ booked slots برا الـ working hours تظهر في الأول
-      const bookedOutsideWorkingHours = (tables[typeKey]?.[dayKey] || [])
-        .filter((s) => s.isBooked && !generatedSlots.includes(s.slotTime))
-        .map((s) => s.slotTime);
-
-      rawSlots = [...bookedOutsideWorkingHours, ...generatedSlots];
-    } else {
-      rawSlots = (timeSlots[typeKey]?.[dayKey] || []).filter(
-        (s) => !s.isBooked,
-      );
+  const safeServer = useMemo(() => {
+    function regroup(typeSlots) {
+      if (!typeSlots || Array.isArray(typeSlots)) return {};
+      const result = {};
+      Object.values(typeSlots)
+        .flat()
+        .forEach((slot) => {
+          const localKey = localDateKeyFromISO(slot.slotTime);
+          if (!result[localKey]) result[localKey] = [];
+          result[localKey].push(slot);
+        });
+      return result;
     }
 
-    if (!isToday) return rawSlots;
+    return {
+      inPerson: regroup(serverSlots.inPerson),
+      online: regroup(serverSlots.online),
+    };
+  }, [serverSlots]);
 
-    // cutoff = now + 30 min
+  const activeWork = workingDetails[typeKey];
+  const hasWorkDetails = !!activeWork?.workingStartTime;
+
+  const generatedSlots = useMemo(
+    () =>
+      role === "Doctor" && hasWorkDetails
+        ? generateSlots(
+            activeWork.workingStartTime,
+            activeWork.workingEndTime,
+            activeWork.consultationDurationMinutes || 30,
+            dayKey,
+          )
+        : [],
+    [role, hasWorkDetails, activeWork, dayKey],
+  );
+
+  const doctorVisibleSlots = useMemo(() => {
+    if (role !== "Doctor") return [];
+
+    const serverDaySlots = safeServer[typeKey]?.[dayKey] ?? [];
+
+    const extraBooked = serverDaySlots
+      .filter(
+        (s) =>
+          s.isBooked &&
+          !generatedSlots.some((iso) => sameTime(iso, s.slotTime)),
+      )
+      .map((s) => s.slotTime);
+
+    const allSlots = [...generatedSlots, ...extraBooked];
+
+    if (!isSameLocalDay(dayPicked, today)) return allSlots;
+
     const cutoff = new Date(today.getTime() + 30 * 60 * 1000);
+    return allSlots.filter((iso) => new Date(iso) >= cutoff);
+  }, [role, safeServer, typeKey, dayKey, generatedSlots, today, dayPicked]);
 
-    return rawSlots.filter((slot) => {
-      const slotTime = role === "Doctor" ? slot : slot.slotTime;
-      const [h, m] = slotTime.split(":");
-      // slot جاي بـ UTC → قارنه مع الـ cutoff الـ local صح
-      const slotDate = new Date();
-      slotDate.setUTCHours(+h, +m, 0, 0);
-      return slotDate >= cutoff;
-    });
-  }, [role, generatedSlots, tables, timeSlots, typeKey, dayKey, today]);
+  function getDoctorSlotState(iso) {
+    const serverDaySlots = safeServer[typeKey]?.[dayKey] ?? [];
+    const serverSlot = serverDaySlots.find((s) => sameTime(s.slotTime, iso));
+    const { add, remove } = getDayPending(typeKey, dayKey);
 
-  const isEmpty = visibleSlots.length === 0;
+    if (serverSlot?.isBooked) return "booked";
+    if (add.has(iso)) return "selected";
+    if (remove.has(iso)) return "available";
+    if (serverSlot && !serverSlot.isBooked) return "selected";
 
-  // ── Doctor: toggle one slot (مع منع تعديل الـ booked) ──
-  function doctorToggleSlot(timeslot) {
-    const daySlots = tables[typeKey]?.[dayKey] || [];
-    // لو الـ slot محجوز، منع التعديل
-    if (daySlots.find((s) => s.slotTime === timeslot && s.isBooked)) return;
+    return "available";
+  }
 
-    setTables((prev) => {
-      const currentSlots = prev[typeKey]?.[dayKey] || [];
+  function slotClassName(state) {
+    if (state === "booked")
+      return "bg-blue-900 text-white cursor-not-allowed opacity-80";
+    if (state === "selected") return "bg-blue-600 text-white cursor-pointer";
+    return "bg-[#F5F6F7] text-[#6D7379] cursor-pointer";
+  }
+
+  function doctorToggleSlot(iso) {
+    const state = getDoctorSlotState(iso);
+    if (state === "booked") return;
+
+    setPending((prev) => {
+      const dayP = getDayPending(typeKey, dayKey);
+      const add = new Set(dayP.add);
+      const remove = new Set(dayP.remove);
+
+      if (state === "selected") {
+        const inServer = !!(safeServer[typeKey]?.[dayKey] ?? []).find(
+          (s) => sameTime(s.slotTime, iso) && !s.isBooked,
+        );
+        if (inServer) {
+          remove.add(iso);
+          add.delete(iso);
+        } else {
+          add.delete(iso);
+        }
+      } else {
+        if (remove.has(iso)) {
+          remove.delete(iso);
+        } else {
+          add.add(iso);
+        }
+      }
+
       return {
         ...prev,
         [typeKey]: {
           ...prev[typeKey],
-          [dayKey]: currentSlots.find((s) => s.slotTime === timeslot)
-            ? currentSlots.filter((s) => s.slotTime !== timeslot)
-            : [...currentSlots, { slotTime: timeslot, isBooked: false }],
+          [dayKey]: { add, remove },
         },
       };
     });
-    setDirtyDays((prev) => ({
-      ...prev,
-      [typeKey]: new Set([...prev[typeKey], dayKey]),
-    }));
   }
 
-  // ── Doctor: select / deselect all (مع الحفاظ على الـ booked) ──
+  const selectableSlots = doctorVisibleSlots.filter(
+    (iso) => getDoctorSlotState(iso) !== "booked",
+  );
+
+  const allSelected =
+    selectableSlots.length > 0 &&
+    selectableSlots.every((iso) => getDoctorSlotState(iso) === "selected");
+
   function doctorToggleAll() {
-    setTables((prev) => {
-      const daySlots = prev[typeKey]?.[dayKey] || [];
-      const bookedSlots = daySlots.filter((s) => s.isBooked);
-      const nonBookedSelected = daySlots.filter((s) => !s.isBooked);
-      const nonBookedGenerated = generatedSlots.filter(
-        (t) => !bookedSlots.find((s) => s.slotTime === t),
-      );
-      const allSelected =
-        nonBookedSelected.length === nonBookedGenerated.length;
+    const serverDaySlots = safeServer[typeKey]?.[dayKey] ?? [];
+
+    setPending((prev) => {
+      let add = new Set();
+      let remove = new Set();
+
+      if (allSelected) {
+        selectableSlots.forEach((iso) => {
+          const s = serverDaySlots.find(
+            (s) => sameTime(s.slotTime, iso) && !s.isBooked,
+          );
+          if (s) remove.add(iso);
+        });
+      } else {
+        selectableSlots.forEach((iso) => {
+          const s = serverDaySlots.find((s) => sameTime(s.slotTime, iso));
+          if (!s) {
+            add.add(iso);
+          } else if (!s.isBooked) {
+            remove.delete(iso);
+          }
+        });
+      }
 
       return {
         ...prev,
         [typeKey]: {
           ...prev[typeKey],
-          [dayKey]: allSelected
-            ? bookedSlots // سيب الـ booked بس
-            : [
-                ...bookedSlots,
-                ...nonBookedGenerated.map((t) => ({
-                  slotTime: t,
-                  isBooked: false,
-                })),
-              ],
+          [dayKey]: { add, remove },
         },
       };
     });
-    setDirtyDays((prev) => ({
-      ...prev,
-      [typeKey]: new Set([...prev[typeKey], dayKey]),
-    }));
   }
 
-  // "Select All" يتحسب بدون الـ booked
-  const doctorAllSelected = useMemo(() => {
-    const daySlots = tables[typeKey]?.[dayKey] || [];
-    const bookedSlots = daySlots.filter((s) => s.isBooked);
-    const nonBookedSelected = daySlots.filter((s) => !s.isBooked);
-    const nonBookedGenerated = generatedSlots.filter(
-      (t) => !bookedSlots.find((s) => s.slotTime === t),
-    );
-    return (
-      nonBookedGenerated.length > 0 &&
-      nonBookedSelected.length === nonBookedGenerated.length
-    );
-  }, [tables, typeKey, dayKey, generatedSlots]);
-
-  // ── Doctor slot colour ──
-  function doctorSlotClass(t) {
-    const daySlots = tables[typeKey]?.[dayKey] || [];
-    if (daySlots.find((s) => s.slotTime === t && s.isBooked))
-      return "bg-blue-900 text-white";
-    if (daySlots.find((s) => s.slotTime === t)) return "bg-blue-600 text-white";
-    return "bg-[#F5F6F7]";
-  }
-
-  // ── Doctor: save — all dirty days in one request ──
   async function handleSave() {
-    const days = [...(dirtyDays[typeKey] || [])];
-    if (!days.length) return;
+    const daysPending = pending[typeKey] ?? {};
+    const slots = {};
 
-    const slotsPayload = Object.fromEntries(
-      days.map((date) => [date, tables[typeKey][date] || []]),
-    );
+    Object.keys(daysPending).forEach((dk) => {
+      const { add, remove } = daysPending[dk];
+      if (add.size === 0 && remove.size === 0) return;
 
-    Object.keys(slotsPayload).forEach((k) => {
-      slotsPayload[k] = slotsPayload[k].filter((i) => !i.isBooked);
+      const serverDaySlots = safeServer[typeKey]?.[dk] ?? [];
+      const finalSlots = [];
+
+      serverDaySlots.forEach((s) => {
+        if (s.isBooked) return;
+        if ([...remove].some((iso) => sameTime(iso, s.slotTime))) return;
+        finalSlots.push({ slotTime: s.slotTime, isBooked: false });
+      });
+
+      add.forEach((iso) => {
+        if (!serverDaySlots.find((s) => sameTime(s.slotTime, iso))) {
+          finalSlots.push({ slotTime: iso, isBooked: false });
+        }
+      });
+
+      slots[dk] = finalSlots;
     });
-    console.log(slotsPayload);
 
-    await saveSlotsMutation.mutateAsync({ slots: slotsPayload });
-    setDirtyDays((prev) => ({ ...prev, [typeKey]: new Set() }));
+    if (Object.keys(slots).length === 0) return;
+
+    await saveSlotsMutation.mutateAsync({ slots });
+    setPending((prev) => ({ ...prev, [typeKey]: {} }));
   }
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
+
+  // ── Booking confirmation modal state ────────────────────────────────────
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const bookMutation = useBook(
     consultationType === "in-person" ? "cash" : "online",
@@ -403,190 +537,239 @@ export default function Schedule({
 
   async function handleBook() {
     if (!selectedSlot) return;
-    const paymentMethod = consultationType === "in-person" ? "cash" : "online";
-    console.log(selectedSlot);
-    console.log(selectedSlot.slotTime);
     await bookMutation.mutateAsync(selectedSlot.slotId);
+    setShowConfirm(false);
+    setSelectedSlot(null);
+    setSelectedDay(null);
   }
 
-  const isLoading = role === "Doctor" && (loadingIP || loadingOL);
+  const safeTimeSlots = useMemo(() => {
+    function regroup(typeSlots) {
+      if (!typeSlots || Array.isArray(typeSlots)) return {};
+      const result = {};
+      Object.values(typeSlots)
+        .flat()
+        .forEach((slot) => {
+          const localKey = localDateKeyFromISO(slot.slotTime);
+          if (!result[localKey]) result[localKey] = [];
+          result[localKey].push(slot);
+        });
+      return result;
+    }
+
+    return {
+      inPerson: regroup(timeSlots.inPerson),
+      online: regroup(timeSlots.online),
+    };
+  }, [timeSlots]);
+
+  const patientVisibleSlots = useMemo(() => {
+    if (role === "Doctor") return [];
+
+    const daySlots = (safeTimeSlots[typeKey]?.[dayKey] ?? []).filter(
+      (s) => !s.isBooked,
+    );
+
+    if (!isSameLocalDay(dayPicked, today)) return daySlots;
+
+    const cutoff = new Date(today.getTime() + 30 * 60 * 1000);
+    return daySlots.filter((s) => new Date(s.slotTime) >= cutoff);
+  }, [role, safeTimeSlots, typeKey, dayKey, today, dayPicked]);
+
+  const isDoctor = role === "Doctor";
+  const visibleSlots = isDoctor ? doctorVisibleSlots : patientVisibleSlots;
+  const isEmpty = visibleSlots.length === 0;
 
   return (
-    <div className="flex flex-col gap-[20px]">
-      <p className="text-[20px] font-bold">{title}</p>
+    <>
+      {/* ── Confirmation Modal ── */}
+      {showConfirm && selectedSlot && selectedDay && (
+        <BookingConfirmModal
+          slot={selectedSlot}
+          day={selectedDay}
+          consultationType={consultationType}
+          onConfirm={handleBook}
+          onCancel={() => setShowConfirm(false)}
+          isLoading={bookMutation.isPending}
+        />
+      )}
 
-      {/* type picker */}
-      <ConsultationTypePicker
-        value={consultationType}
-        onChange={(type) => {
-          setConsultationType(type);
-          setSelectedSlot(null);
-          setSelectedDay(null);
-        }}
-      />
+      <div className="flex flex-col gap-[20px]">
+        <p className="text-[20px] font-bold">{title}</p>
 
-      {/* schedule card */}
-      <div className="flex flex-col gap-[10px] border p-[10px] rounded-xl border-[#BBC1C7]">
-        {/* header */}
-        <div className="flex justify-between items-center gap-[5px]">
-          <p className="text-[16px] text-[#404448]">{subtitle}</p>
-          <div className="flex items-center gap-2 text-[#404448]">
-            <BiCalendar className="size-[20px]" />
-            {weekDays[6].toLocaleDateString("en-US", { month: "long" })},{" "}
-            {weekDays[6].getFullYear()}
-          </div>
-        </div>
-
-        <hr className="w-[98%] self-center border-[#BBC1C7]" />
-
-        {/* context label */}
-        <div className="flex items-center gap-2 text-sm text-[#6D7379]">
-          {consultationType === "online" ? (
-            <BsCameraVideo className="text-blue-500" />
-          ) : (
-            <BsPeopleFill className="text-blue-500" />
-          )}
-          <span>
-            {consultationType === "in-person"
-              ? "In-person slots"
-              : "Online consultation slots"}
-          </span>
-        </div>
-
-        {/* week nav */}
-        <WeekNav
-          weekDays={weekDays}
-          dayPicked={dayPicked}
-          onPickDay={(day) => {
-            setDayPicked(day);
+        <ConsultationTypePicker
+          value={consultationType}
+          onChange={(type) => {
+            setConsultationType(type);
             setSelectedSlot(null);
             setSelectedDay(null);
           }}
-          onPrev={getPreviousDays}
-          onNext={getNextDays}
-          today={today}
         />
 
-        {/* slots grid */}
-        <div className="flex flex-wrap gap-3 justify-center mt-5 max-h-[200px] overflow-scroll sm:overflow-hidden sm:max-h-[600px]">
-          {isLoading ? (
-            <div className="w-full flex justify-center py-6">
-              <p className="text-[#6D7379] text-sm animate-pulse">
-                Loading slots...
+        <div className="flex flex-col gap-[10px] border p-[10px] rounded-xl border-[#BBC1C7]">
+          <div className="flex justify-between items-center gap-[5px]">
+            <p className="text-[16px] text-[#404448]">{subtitle}</p>
+            <div className="flex items-center gap-2 text-[#404448]">
+              <BiCalendar className="size-[20px]" />
+              {weekDays[6].toLocaleDateString("en-US", { month: "long" })},{" "}
+              {weekDays[6].getFullYear()}
+            </div>
+          </div>
+
+          <hr className="w-[98%] self-center border-[#BBC1C7]" />
+
+          <div className="flex items-center gap-2 text-sm text-[#6D7379]">
+            {consultationType === "online" ? (
+              <BsCameraVideo className="text-blue-500" />
+            ) : (
+              <BsPeopleFill className="text-blue-500" />
+            )}
+            <span>
+              {consultationType === "in-person"
+                ? "In-person slots"
+                : "Online consultation slots"}
+            </span>
+          </div>
+
+          {/* ── Online note for patients only ── */}
+          {consultationType === "online" && !isDoctor && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <RiErrorWarningLine className="text-amber-500 text-lg flex-shrink-0 mt-0.5" />
+              <p className="text-amber-800 text-sm">
+                <span className="font-semibold">Please note:</span> It is
+                recommended to book an online consultation{" "}
+                <span className="font-semibold">
+                  only when your doctor specifically requests it
+                </span>
+                . For regular visits, please book an in-person appointment
+                instead.
               </p>
             </div>
-          ) : role === "Doctor" && !hasWorkDetails ? (
-            <MissingWorkDetailsWarning type={consultationType} />
-          ) : isEmpty ? (
-            <div className="w-full flex flex-col items-center justify-center py-4 text-center">
-              <div className="bg-gray-100 rounded-2xl px-6 py-4 shadow-sm">
-                <p className="text-gray-600 text-lg font-medium">
-                  No Available Appointments
-                </p>
-                <p className="text-gray-400 text-sm mt-1">
-                  Please select another day
+          )}
+
+          <WeekNav
+            weekDays={weekDays}
+            dayPicked={dayPicked}
+            onPickDay={(day) => {
+              setDayPicked(day);
+              setSelectedSlot(null);
+              setSelectedDay(null);
+            }}
+            onPrev={goPrevWeek}
+            onNext={goNextWeek}
+            today={today}
+          />
+
+          <div className="flex flex-wrap gap-3 justify-center mt-5 max-h-[200px] overflow-scroll sm:overflow-hidden sm:max-h-[600px]">
+            {isLoadingSlots ? (
+              <div className="w-full flex justify-center py-6">
+                <p className="text-[#6D7379] text-sm animate-pulse">
+                  Loading slots...
                 </p>
               </div>
-            </div>
-          ) : (
-            visibleSlots.map((t, ind) => {
-              const isDoctor = role === "Doctor";
-              const slotTime = isDoctor ? t : t.slotTime;
-              const isSelected = !isDoctor && selectedSlot?.slotId === t.slotId;
-
-              // الـ slot محجوز؟
-              const isBooked =
-                isDoctor &&
-                !!(tables[typeKey]?.[dayKey] || []).find(
-                  (s) => s.slotTime === t && s.isBooked,
+            ) : isDoctor && !hasWorkDetails ? (
+              <MissingWorkDetailsWarning type={consultationType} />
+            ) : isEmpty ? (
+              <div className="w-full flex flex-col items-center justify-center py-4 text-center">
+                <div className="bg-gray-100 rounded-2xl px-6 py-4 shadow-sm">
+                  <p className="text-gray-600 text-lg font-medium">
+                    No Available Appointments
+                  </p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Please select another day
+                  </p>
+                </div>
+              </div>
+            ) : isDoctor ? (
+              visibleSlots.map((iso, i) => {
+                const state = getDoctorSlotState(iso);
+                return (
+                  <div
+                    key={i}
+                    onClick={() => doctorToggleSlot(iso)}
+                    className={`flex justify-center items-center py-2 rounded-md w-[90px] transition-colors ${slotClassName(state)}`}
+                  >
+                    {formatSlotLabel(iso)}
+                  </div>
                 );
-
-              return (
-                <div
-                  key={ind}
-                  onClick={() => {
-                    if (isDoctor) {
-                      doctorToggleSlot(t);
-                    } else {
-                      setSelectedSlot(t);
+              })
+            ) : (
+              visibleSlots.map((slot, i) => {
+                const isSelected = selectedSlot?.slotId === slot.slotId;
+                return (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setSelectedSlot(slot);
                       setSelectedDay(dayPicked);
-                    }
-                  }}
-                  className={`flex justify-center items-center py-2 rounded-md w-[90px]
-                    ${
-                      isDoctor
-                        ? doctorSlotClass(t)
-                        : isSelected
-                          ? "bg-blue-600 text-white"
-                          : "bg-[#F5F6F7]"
-                    }
-                    ${isBooked ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
-                >
-                  {formatSlotLabel(slotTime)}
-                </div>
-              );
-            })
-          )}
-        </div>
+                    }}
+                    className={`flex justify-center items-center py-2 rounded-md w-[90px] cursor-pointer transition-colors
+                      ${isSelected ? "bg-blue-600 text-white" : "bg-[#F5F6F7] text-[#6D7379]"}`}
+                  >
+                    {formatSlotLabel(slot.slotTime)}
+                  </div>
+                );
+              })
+            )}
+          </div>
 
-        {/* footer */}
-        <div className="flex justify-between items-center mt-5">
-          {role === "Doctor" ? (
-            hasWorkDetails ? (
-              <div
-                className="cursor-pointer flex items-center gap-2"
-                onClick={doctorToggleAll}
-              >
+          <div className="flex justify-between items-center mt-5">
+            {isDoctor ? (
+              hasWorkDetails && !isEmpty ? (
                 <div
-                  className={`size-[18px] border border-blue-600 rounded-sm flex justify-center items-center text-white
-                    ${doctorAllSelected ? "bg-blue-600" : ""}`}
+                  className="cursor-pointer flex items-center gap-2"
+                  onClick={doctorToggleAll}
                 >
-                  &#10004;
+                  <div
+                    className={`size-[18px] border border-blue-600 rounded-sm flex justify-center items-center text-white
+                      ${allSelected ? "bg-blue-600" : ""}`}
+                  >
+                    &#10004;
+                  </div>
+                  <p>{allSelected ? "Unselect All" : "Select All"}</p>
                 </div>
-                <p>{doctorAllSelected ? "Unselect All" : "Select All"}</p>
+              ) : (
+                <p />
+              )
+            ) : selectedDay && selectedSlot ? (
+              <div className="flex items-center gap-[5px]">
+                {consultationType === "online" ? (
+                  <BsCameraVideo className="size-[20px] text-blue-600" />
+                ) : (
+                  <BiCalendar className="size-[20px] text-blue-600" />
+                )}
+                <p className="text-sm">
+                  {`${selectedDay.toLocaleDateString("en-us", { weekday: "long" })}, ${selectedDay.toLocaleDateString("en-us", { month: "long" })} ${selectedDay.getDate()} — ${formatSlotLabel(selectedSlot.slotTime)}`}
+                  {consultationType === "online" && (
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                      Video call
+                    </span>
+                  )}
+                </p>
               </div>
             ) : (
               <p />
-            )
-          ) : selectedDay && selectedSlot ? (
-            <div className="flex items-center gap-[5px]">
-              {consultationType === "online" ? (
-                <BsCameraVideo className="size-[20px] text-blue-600" />
-              ) : (
-                <BiCalendar className="size-[20px] text-blue-600" />
-              )}
-              <p className="text-sm">
-                {`${selectedDay.toLocaleDateString("en-us", { weekday: "long" })}, ${selectedDay.toLocaleDateString("en-us", { month: "long" })} ${selectedDay.getDate()} — ${formatSlotLabel(selectedSlot.slotTime)}`}
-                {consultationType === "online" && (
-                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                    Video call
-                  </span>
-                )}
-              </p>
-            </div>
-          ) : (
-            <p />
-          )}
+            )}
 
-          <button
-            type="button"
-            onClick={() => (role === "Doctor" ? handleSave() : handleBook())}
-            disabled={
-              saveSlotsMutation.isPending ||
-              (role === "Doctor" &&
-                (!hasWorkDetails || dirtyDays[typeKey]?.size === 0)) ||
-              (role !== "Doctor" && !selectedSlot)
-            }
-            className="w-[100px] h-[40px] cursor-pointer font-bold rounded-[10px] bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saveSlotsMutation.isPending
-              ? "Saving..."
-              : role === "Doctor"
-                ? "Save"
-                : "Book"}
-          </button>
+            <button
+              type="button"
+              onClick={() => (isDoctor ? handleSave() : setShowConfirm(true))}
+              disabled={
+                saveSlotsMutation.isPending ||
+                (isDoctor && (!hasWorkDetails || !isDirty(typeKey))) ||
+                (!isDoctor && !selectedSlot)
+              }
+              className="w-[100px] h-[40px] cursor-pointer font-bold rounded-[10px] bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saveSlotsMutation.isPending
+                ? "Saving..."
+                : isDoctor
+                  ? "Save"
+                  : "Book"}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

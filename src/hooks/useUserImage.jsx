@@ -20,6 +20,7 @@ export const useCreateUserImage = () => {
     mutationFn: createUserImage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userImage"] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
   });
 };
@@ -31,6 +32,7 @@ export const useUpdateUserImage = () => {
     mutationFn: updateUserImage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userImage"] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
   });
 };
@@ -42,7 +44,7 @@ export const useDeleteUserImage = () => {
     mutationFn: deleteUserImage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userImage"] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
   });
 };
-

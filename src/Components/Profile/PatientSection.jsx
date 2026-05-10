@@ -36,7 +36,7 @@ export default function PatientSection({
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 260 }}
-      className="md:w-1/2 w-full h-full flex flex-col gap-4 bg-white shadow-md rounded-xl p-5 relative z-10"
+      className=" w-full h-full flex flex-col gap-4 bg-white shadow-md rounded-xl p-5 relative z-10"
     >
       <h3 className="text-xl flex justify-between items-center">
         {title}
@@ -79,7 +79,7 @@ export default function PatientSection({
               setSelected(items ? items.map((i) => i.value) : [])
             }
             placeholder={`Search ${title.toLowerCase()}...`}
-            className="react-select-container"
+            className="react-select-container relative z-50 "
             classNamePrefix="react-select"
           />
 

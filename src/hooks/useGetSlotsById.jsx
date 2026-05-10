@@ -1,27 +1,26 @@
-// hooks/useGetSlotsById.js
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as signalR from "@microsoft/signalr";
 import { useAppointmentAPI } from "../api/appointmentAPI";
+import { useAuth } from "../Context/AuthContext";
 
 const HUB_URL = "https://dactra.runasp.net/doctorScheduleHub";
 
-export const useGetSlotsById = (type, id) => {
+export const useGetSlotsById = (type, id, role) => {
   const { getInpersonSlotsById, getOnlineSlotsById } = useAppointmentAPI();
   const queryClient = useQueryClient();
   const connectionRef = useRef(null);
 
   const queryKey = [type, id];
-  console.log(queryKey);
 
   const query = useQuery({
     queryFn: () =>
       type === "online" ? getOnlineSlotsById(id) : getInpersonSlotsById(id),
     queryKey,
-    enabled: !!id,
+    enabled: !!id && role === "Doctor",
   });
   useEffect(() => {
-    if (!id) return;
+    if (!id || role !== "Doctor") return;
 
     const numericId = Number(id);
     let cancelled = false;
@@ -36,10 +35,9 @@ export const useGetSlotsById = (type, id) => {
 
       connectionRef.current = connection;
 
-      // انتظر لحظة صغيرة — عشان StrictMode cleanup يخلص الأول
       await new Promise((r) => setTimeout(r, 100));
 
-      if (cancelled) return; // لو cleanup اشتغل في الـ 100ms دول، وقف
+      if (cancelled) return;
 
       try {
         await connection.start();
@@ -49,11 +47,8 @@ export const useGetSlotsById = (type, id) => {
         }
 
         await connection.invoke("JoinDoctorSchedule", numericId);
-        // ← أضف السطر ده بعدها مباشرة
-        console.log("✅ Joined group DoctorSchedule_" + numericId);
 
         connection.on("SlotsUpdated", (data) => {
-          console.log("🔄 SlotsUpdated received:", data);
           if (data?.DoctorId && data.DoctorId !== numericId) return;
           queryClient.invalidateQueries({ queryKey });
         });

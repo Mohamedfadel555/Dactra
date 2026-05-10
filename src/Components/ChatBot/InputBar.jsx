@@ -68,6 +68,7 @@ export default function InputBar({ onSend, disabled, lang }) {
       const preview =
         mime !== "application/pdf" ? URL.createObjectURL(f) : null;
       processed.push({
+        file: f, // ← الـ File object الأصلي للرفع على السيرفر
         base64,
         mimeType: mime,
         preview,

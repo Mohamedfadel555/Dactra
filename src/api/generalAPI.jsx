@@ -18,5 +18,22 @@ export const useGeneralAPI = () => {
     return res.data;
   };
 
-  return { getCities, getAllAllergies, getAllChronic };
+  const getSiteReviews = async () => {
+    const res = await axiosInstance.get("SiteReviews");
+    return res.data;
+  };
+
+  const sendReview = async (Data) => {
+    console.log(Data);
+    const res = await axiosInstance.post("SiteReviews", Data);
+    return res;
+  };
+
+  return {
+    getCities,
+    getAllAllergies,
+    getAllChronic,
+    getSiteReviews,
+    sendReview,
+  };
 };

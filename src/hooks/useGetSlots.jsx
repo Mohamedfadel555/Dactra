@@ -6,7 +6,7 @@ import { useAppointmentAPI } from "../api/appointmentAPI";
 
 const HUB_URL = "https://dactra.runasp.net/doctorScheduleHub";
 
-export const useGetSlots = (role, type) => {
+export const useGetSlots = (role, type, id) => {
   const { getInPersonSlots, getOnlineSlots } = useAppointmentAPI();
   const queryClient = useQueryClient();
   const connectionRef = useRef(null);
@@ -17,16 +17,18 @@ export const useGetSlots = (role, type) => {
     queryKey: [queryKey],
     queryFn: type === "in-person" ? getInPersonSlots : getOnlineSlots,
     staleTime: 1000 * 60 * 5,
-    enabled: role === "Doctor",
+    enabled: role === "Doctor" && !!id,
   });
 
   useEffect(() => {
     if (role !== "Doctor") return;
 
+    let cancelled = false;
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(HUB_URL)
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Warning)
+      .configureLogging(signalR.LogLevel.None) // ← سكّت كل الـ logs
       .build();
 
     connectionRef.current = connection;
@@ -34,21 +36,40 @@ export const useGetSlots = (role, type) => {
     connection
       .start()
       .then(() => {
+        if (cancelled) {
+          connection.stop();
+          return;
+        }
+
+        if (!id) {
+          console.warn("No doctor id yet, skipping JoinDoctorSchedule");
+          return;
+        }
+
+        connection.invoke("JoinDoctorSchedule", Number(id));
+
         connection.on("SlotsUpdated", (data) => {
-          queryClient.invalidateQueries({ queryKey: [queryKey] });
           if (data?.WorkingHoursUpdated) {
             queryClient.invalidateQueries({ queryKey: ["inPersonSlots"] });
             queryClient.invalidateQueries({ queryKey: ["onlineSlots"] });
+            queryClient.refetchQueries({ queryKey: ["inPersonSlots"] });
+            queryClient.refetchQueries({ queryKey: ["onlineSlots"] });
+          } else {
+            queryClient.invalidateQueries({ queryKey: [queryKey] });
+            queryClient.refetchQueries({ queryKey: [queryKey] });
           }
         });
       })
-      .catch((err) => console.error("SignalR failed:", err));
+      .catch((err) => {
+        if (!cancelled) console.error("SignalR failed:", err);
+      });
 
     return () => {
+      cancelled = true;
       connection.off("SlotsUpdated");
       connection.stop();
     };
-  }, [role, queryKey, queryClient]);
+  }, [role, queryKey, queryClient, id]);
 
   return query;
 };

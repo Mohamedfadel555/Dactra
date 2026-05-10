@@ -166,10 +166,10 @@ export default function DoctorSection({ title, info, editFlag = true }) {
                       ? "Adding your qualifiactions helps build greater trust with patients and enhances your profile credibility"
                       : "This doctor has not shared qualifications details yet"
                     : title === "Experience"
-                    ? editFlag
-                      ? "Add your experience to help patients make informed desicions with confidence"
-                      : "This doctor has not shared experience details yet"
-                    : null}
+                      ? editFlag
+                        ? "Add your experience to help patients make informed desicions with confidence"
+                        : "This doctor has not shared experience details yet"
+                      : null}
                 </div>
               </motion.div>
             )}
