@@ -26,7 +26,6 @@ import PatientsPage from "./Pages/DoctorDashboard/PatientsPage";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
-const CallBack = lazy(() => import("./Pages/Auth/CallBack"));
 const LoginPage = lazy(() => import("./Pages/Auth/LoginPage"));
 const SignupPage = lazy(() => import("./Pages/Auth/SignupPage"));
 const ForgotPasswordPage = lazy(
