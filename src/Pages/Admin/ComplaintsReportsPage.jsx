@@ -251,7 +251,7 @@ export default function ComplaintsReportsPage() {
             }`}
           >
             {ok ? "Resolved" : "Open"}{" "}
-            <span className="opacity-70 font-normal">({String(code)})</span>
+           
           </span>
         );
       },
