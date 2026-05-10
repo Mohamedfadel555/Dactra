@@ -104,13 +104,13 @@ function StatusOverlay({ status, isDoctor, onRejoin }) {
         className="absolute w-64 h-64 rounded-full border border-blue-50 animate-ping opacity-20"
         style={{ animationDelay: "0.5s" }}
       />
-      <div className="relative z-10 bg-white rounded-2xl shadow-xl border border-blue-100 px-12 py-10 flex flex-col items-center gap-5 max-w-sm text-center">
+      <div className="relative z-10 bg-white rounded-2xl shadow-xl border border-blue-100 px-8 sm:px-12 py-8 sm:py-10 flex flex-col items-center gap-5 max-w-sm w-full mx-4 text-center">
         {c.icon}
         <div>
-          <p className="text-gray-800 font-semibold text-lg leading-snug">
+          <p className="text-gray-800 font-semibold text-base sm:text-lg leading-snug">
             {c.title}
           </p>
-          <p className="text-gray-400 text-sm mt-1.5 leading-relaxed">
+          <p className="text-gray-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
             {c.sub}
           </p>
         </div>
@@ -392,6 +392,7 @@ function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
     </div>
   );
 }
+
 // ─── PRESCRIPTION SIDEBAR ─────────────────────────────────────────
 function PrescriptionSidebar({
   open,
@@ -467,15 +468,16 @@ function PrescriptionSidebar({
       {open && (
         <div className="fixed inset-0 z-20 bg-black/20" onClick={onClose} />
       )}
+      {/* Sidebar: full-width on mobile, 440px on sm+ */}
       <div
-        className={`fixed top-0 right-0 h-full w-[440px] bg-white shadow-2xl z-30 flex flex-col transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-white shadow-2xl z-30 flex flex-col transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-100">
           <div>
-            <h2 className="text-base font-bold text-gray-800">
+            <h2 className="text-sm sm:text-base font-bold text-gray-800">
               Prescription & Treatment Plan
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -498,7 +500,7 @@ function PrescriptionSidebar({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 px-5 pt-3">
+        <div className="flex border-b border-gray-100 px-4 sm:px-5 pt-3">
           {[
             { key: "rx", label: "Prescription" },
             { key: "plan", label: "Treatment Plan" },
@@ -519,7 +521,7 @@ function PrescriptionSidebar({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
           {/* Loading state */}
           {isLoading && (
             <div className="flex items-center justify-center h-32">
@@ -683,7 +685,7 @@ function PrescriptionSidebar({
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-gray-100">
+        <div className="p-4 sm:p-5 border-t border-gray-100">
           <button
             type="button"
             onClick={handleSave}
@@ -702,8 +704,8 @@ function PrescriptionSidebar({
 function ConfirmEndModal({ open, onConfirm, onCancel, onOpenPrescription }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 max-w-sm w-full mx-4 flex flex-col items-center gap-5 text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 sm:p-8 max-w-sm w-full flex flex-col items-center gap-5 text-center">
         <div className="w-16 h-16 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center">
           <svg
             className="w-8 h-8 text-orange-400"
@@ -1080,22 +1082,23 @@ export default function VideoConsultation() {
       )}
 
       {/* ══ HEADER ══ */}
-      <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 z-30">
+      <header className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-6 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 z-30 gap-2">
         <BrandLogo />
 
-        <div className="flex items-center gap-2">
+        {/* Status badge — hidden on very small screens, shown from xs+ */}
+        <div className="flex items-center min-w-0">
           {callStatus === "connected" ? (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-600 px-4 py-1.5 rounded-full text-sm font-semibold">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-green-50 border border-green-200 text-green-600 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse" />
               Live
             </div>
           ) : callStatus === "left" ? (
-            <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-600 px-4 py-1.5 rounded-full text-sm font-medium">
-              <span className="w-2 h-2 rounded-full bg-yellow-400" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-yellow-50 border border-yellow-200 text-yellow-600 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-yellow-400" />
               Out of call
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-400 px-4 py-1.5 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 border border-gray-200 text-gray-400 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
               {{
                 loading: "Initializing...",
                 waiting: isDoctor
@@ -1109,17 +1112,22 @@ export default function VideoConsultation() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action buttons */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {isDoctor && !sessionEnded && (
             <button
-              onClick={() => setSidebarOpen(true)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition border ${
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition border ${
                 prescriptionSaved
                   ? "bg-green-50 text-green-600 border-green-200"
                   : "bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200"
               }`}
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <svg
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                   stroke="currentColor"
@@ -1128,7 +1136,10 @@ export default function VideoConsultation() {
                   strokeLinejoin="round"
                 />
               </svg>
-              {prescriptionSaved ? "Saved" : "Prescription"}
+              {/* Label hidden on mobile, shown on sm+ */}
+              <span className="hidden sm:inline">
+                {prescriptionSaved ? "Saved" : "Prescription"}
+              </span>
             </button>
           )}
 
@@ -1136,9 +1147,13 @@ export default function VideoConsultation() {
             <button
               onClick={handleEndClick}
               disabled={endSessionMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-semibold rounded-lg transition shadow-sm"
+              className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-xs sm:text-sm font-semibold rounded-lg transition shadow-sm"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <svg
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path
                   d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45c.907.34 1.85.573 2.81.7A2 2 0 0122 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.52 10.5 19.79 19.79 0 01.44 1.88 2 2 0 012.44 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 003.77 5.4z"
                   stroke="white"
@@ -1146,7 +1161,9 @@ export default function VideoConsultation() {
                   strokeLinecap="round"
                 />
               </svg>
-              {endSessionMutation.isPending ? "Ending..." : "End Session"}
+              <span className="hidden sm:inline">
+                {endSessionMutation.isPending ? "Ending..." : "End Session"}
+              </span>
             </button>
           )}
         </div>

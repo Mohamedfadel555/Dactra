@@ -1,223 +1,245 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/Dactra-دكترة-4F46E5?style=for-the-badge&logo=react&logoColor=white" alt="Dactra"/>
+<img src="https://img.shields.io/badge/Dactra-Medical%20Platform-3E69FE?style=for-the-badge&logo=heart&logoColor=white" alt="Dactra" />
 
-# 🏥 Dactra — دكترة
+# 🏥 Dactra
 
-### An integrated medical platform connecting patients with doctors and labs in one place
+### A Comprehensive Digital Healthcare Platform
 
-[![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=flat&logo=react-query&logoColor=white)](https://tanstack.com/query)
-[![React Router](https://img.shields.io/badge/React_Router-CA4245?style=flat&logo=react-router&logoColor=white)](https://reactrouter.com/)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Vercel](https://img.shields.io/badge/Live_Demo-000000?style=flat&logo=vercel&logoColor=white)](https://dactrav1.vercel.app/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+_Connecting Patients, Doctors & Medical Providers — All in One Place_
 
-**🔗 [dactrav1.vercel.app](https://dactrav1.vercel.app/)**
+<br/>
+
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white)](https://jwt.io/)
+
+<br/>
 
 </div>
 
 ---
 
-## 📖 About the Project
+## 📋 Table of Contents
 
-**Dactra (دكترة)** is a comprehensive medical platform that simplifies the patient's entire journey — from booking appointments to AI-powered radiology analysis. The platform connects patients, doctors, labs, and radiology centers all under one roof.
-
-> This is a graduation project built with React.js, featuring a complete role-based system: Patient — Doctor — Service Provider (Lab/Radiology Center) — Admin.
-
----
-
-## ✨ Key Features
-
-### 👤 Patient
-
-- **Appointment Booking** — Online and offline with any doctor
-- **Video Consultation** — Remote checkups via video call
-- **Medical Profile** — Includes vital signs (blood pressure, blood sugar, heart rate...), allergies, and chronic conditions
-- **Medical Archive** — Store and access lab results and radiology reports
-- **Exclusive Discounts** — On lab tests when booked through a sponsoring doctor
-
-### 🩺 Doctor
-
-- **Professional Profile** — Includes qualifications, experience, specializations, and ratings
-- **Dashboard** — Manage patients, appointments, and offers
-- **Sponsorship System** — Doctors sponsor labs and grant their patients discounts
-- **Referral Management** — Refer patients to labs with case tracking
-
-### 🏨 Service Provider (Lab / Radiology Center)
-
-- **Provider Profile** — Lists services, pricing, and offers
-- **Deals System** — Negotiate sponsorship terms with doctors
-- **Referred Patient Management** — Track patients referred through doctors
-
-### 🤖 AI Features (Chatbot)
-
-- **Medical Chatbot** — Answers general medical questions
-- **Radiology Analysis** — Reads X-ray and CT scan images
-- **Lab Result Interpretation** — Analyzes blood tests and lab results
-- **Skin Disease Detection** — Diagnoses skin conditions from photos
-- **Injury Analysis** — Assists in injury assessment
-
-### 💬 Medical Community
-
-- **Medical Articles** — Published by doctors and specialists
-- **Q&A Forum** — A space for medical cases and inquiries
-- **Tags** — Filter content by specialty
-
-### 🔔 Notification System
-
-- Instant notifications via **Firebase Cloud Messaging**
-- Real-time notifications via **SignalR**
+- [About](#-about)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [User Roles](#-user-roles)
+- [Screenshots](#-screenshots)
+- [Team](#-team)
 
 ---
 
-## 🛠️ Tech Stack
+## 🌟 About
 
-| Technology                       | Usage                           |
-| -------------------------------- | ------------------------------- |
-| **React.js 18**                  | Frontend UI                     |
-| **JavaScript (ES6+)**            | Core programming language       |
-| **React Router v6**              | Page navigation (Lazy Loading)  |
-| **TanStack Query (React Query)** | Server state & cache management |
-| **Axios**                        | API communication               |
-| **Tailwind CSS**                 | Styling & design                |
-| **Framer Motion**                | Animations & transitions        |
-| **Firebase (FCM)**               | Push notifications              |
-| **SignalR**                      | Real-time communication         |
-| **Swiper.js**                    | Sliders & carousels             |
-| **React Icons**                  | Icons                           |
-| **React Toastify**               | UI toast notifications          |
-| **Formik / Yup**                 | Form management & validation    |
+**Dactra** is a full-featured medical web platform designed to bridge the gap between patients, doctors, and medical providers. It enables seamless healthcare management — from booking appointments and tracking health metrics, to AI-powered medical report analysis and doctor–lab partnership deals.
+
+> Built as a graduation project with a focus on real-world healthcare needs.
 
 ---
 
-## 🗂️ Project Structure
+## ✨ Features
+
+### 🧑‍⚕️ For Patients
+
+| Feature                  | Description                                                        |
+| ------------------------ | ------------------------------------------------------------------ |
+| 📊 **Health Dashboard**  | Visual charts for blood pressure, blood sugar & heart rate         |
+| 📁 **Medical Reports**   | Upload and view PDFs/images of lab results & scans                 |
+| 🤖 **AI Chatbot**        | Ask medical questions and get AI-powered analysis of your reports  |
+| 🔍 **Find Doctors**      | Search by specialty, view credentials, ratings & reviews           |
+| 🏥 **Find Providers**    | Discover labs & scan centers with services, prices & availability  |
+| 📅 **My Appointments**   | Track upcoming, completed, unpaid, cancelled & failed appointments |
+| 💬 **Community**         | Browse articles, ask questions, and get answers from real doctors  |
+| 🔔 **Notifications**     | Firebase push notifications for appointments & doctor replies      |
+| ⭐ **Favourites**        | Save preferred doctors and providers for quick access              |
+| 🚩 **Reports & Ratings** | Rate providers and report policy violations                        |
+
+### 👨‍⚕️ For Doctors
+
+| Feature                       | Description                                                         |
+| ----------------------------- | ------------------------------------------------------------------- |
+| 📝 **Community Publishing**   | Write medical articles and answer patient questions                 |
+| 👥 **Patients Under Care**    | View and manage profiles of patients who booked with you            |
+| 🤝 **Deals Dashboard**        | Accept, reject, or counter partnership deals from medical providers |
+| 🔬 **Lab Referrals**          | Send patient data to labs for discounted testing                    |
+| 📅 **Appointment Management** | View upcoming, completed & cancelled appointments                   |
+
+### 🏥 For Medical Providers (Labs & Scan Centers)
+
+| Feature                   | Description                                                      |
+| ------------------------- | ---------------------------------------------------------------- |
+| 🛠️ **Service Management** | List services with prices, descriptions & estimated duration     |
+| 🤝 **Deals System**       | Send, negotiate, accept or reject partnership deals with doctors |
+| 🕐 **Working Hours**      | Set and update availability schedule                             |
+| 🧪 **Patient Data**       | Receive referred patients from sponsored doctors with discounts  |
+
+### 🔐 For Admins
+
+| Feature                       | Description                                           |
+| ----------------------------- | ----------------------------------------------------- |
+| ✅ **User Approvals**         | Approve doctors & providers before they go live       |
+| 🚫 **User Blocking**          | Block policy-violating users                          |
+| 🗂️ **Static Data Management** | Manage specialties, allergies & chronic disease lists |
+| 📢 **Complaints Handling**    | Review and act on user complaints & suggestions       |
+
+---
+
+## 🛠 Tech Stack
 
 ```
-src/
-├── api/                        # All API requests
-│   ├── authAPI.jsx
-│   ├── appointmentAPI.jsx
-│   ├── CommunityAPI.jsx
-│   ├── sponsorshipAPI.jsx
-│   └── ...
-├── Components/
-│   ├── Admin/                  # Admin panel components
-│   ├── Auth/                   # Authentication components
-│   ├── ChatBot/                # Chatbot components
-│   ├── Common/                 # Shared components (Navbar, Footer...)
-│   ├── Community/              # Community components
-│   ├── Home/                   # Homepage components
-│   ├── Profile/                # Profile components
-│   └── Provider/               # Service provider components
-├── Context/
-│   └── AuthContext.jsx         # Global authentication state
-├── firebase/                   # Firebase configuration
-├── hooks/                      # Custom Hooks (50+ hooks)
-├── Layout/                     # Page layouts
-│   ├── Layout.jsx
-│   ├── AuthLayout.jsx
-│   ├── AdminLayout.jsx
-│   ├── DoctorDashboardLayout.jsx
-│   └── ProviderLayout.jsx
-├── Pages/
-│   ├── Admin/                  # Admin pages
-│   ├── Auth/                   # Authentication pages
-│   ├── Appointment/            # Appointment pages
-│   ├── Community/              # Community pages
-│   ├── DoctorDashboard/        # Doctor dashboard
-│   ├── Profile/                # Profile pages
-│   └── Provider/               # Provider pages
-├── services/
-│   └── signalR.jsx             # SignalR service
-├── utils/                      # Helper utilities
-├── Routes.jsx                  # All route definitions
-└── App.jsx                     # Main entry point
+Frontend       →   React.js + Vite + Tailwind CSS
+Authentication →   JWT (JSON Web Tokens)
+Notifications  →   Firebase Cloud Messaging (FCM)
+AI Chatbot     →   AI-powered medical assistant
+File Uploads   →   PDF & Image support for medical reports
+Routing        →   React Router v6
 ```
 
 ---
 
-## 👥 User Roles
+## 🚀 Getting Started
 
-| Role                         | Permissions                                        |
-| ---------------------------- | -------------------------------------------------- |
-| **Patient**                  | Booking, medical profile, chatbot, community       |
-| **Doctor**                   | Dashboard, patients, lab sponsorship, appointments |
-| **Provider** (Lab/Radiology) | Deals, referred patients, services                 |
-| **Admin**                    | Full platform management                           |
+### Prerequisites
 
----
+- Node.js `>= 18.x`
+- npm or yarn
 
-## 🚀 Running Locally
-
-### Requirements
-
-- [Node.js](https://nodejs.org/) v18 or newer
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-
-### Installation Steps
+### Installation
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Mohamedfadel555/dactra.git
+git clone https://github.com/your-username/dactra.git
 
-# 2. Navigate to the project folder
+# 2. Navigate to the project directory
 cd dactra
 
 # 3. Install dependencies
 npm install
 
-# 4. Create the environment file
+# 4. Create your environment variables file
 cp .env.example .env
-# Edit .env with the required values
+# Fill in your API base URL, Firebase config, etc.
 
 # 5. Start the development server
 npm run dev
 ```
 
-The project will run at `http://localhost:5173`
+The app will be available at `http://localhost:5173`
 
-### Production Build
+### Build for Production
 
 ```bash
 npm run build
 ```
 
-### Required Environment Variables (.env)
+---
 
-```env
-VITE_API_BASE_URL=your_api_url
-VITE_FIREBASE_API_KEY=your_firebase_key
-VITE_FIREBASE_AUTH_DOMAIN=your_firebase_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
+## 📁 Project Structure
+
+```
+dactra/
+├── public/                  # Static public assets
+├── src/
+│   ├── assets/              # Images, icons, fonts
+│   ├── components/          # Reusable UI components
+│   │   ├── Auth/            # Login, register, AuthLayout
+│   │   ├── Common/          # Buttons, cards, modals, loaders
+│   │   └── Charts/          # Health metric charts
+│   ├── pages/               # Route-level page components
+│   │   ├── Patient/         # Profile, Appointments, Community, Chatbot
+│   │   ├── Doctor/          # Dashboard, Deals, Patients Under Care
+│   │   ├── Provider/        # Services, Deals, Patient Data
+│   │   └── Admin/           # User management, static data, complaints
+│   ├── context/             # Auth context & role management
+│   ├── hooks/               # Custom React hooks
+│   ├── services/            # API call wrappers
+│   └── routes/              # Protected & role-based routes
+├── .env.example             # Environment variable template
+├── vite.config.js           # Vite configuration
+└── README.md
 ```
 
 ---
 
-## 🌐 Live Demo
+## 👤 User Roles
 
-**🔗 [https://dactrav1.vercel.app/](https://dactrav1.vercel.app/)**
+Dactra supports **4 roles**, each with a completely different experience:
 
----
-
-## 🤝 Contributing
-
-```bash
-# 1. Fork the repository
-# 2. Create a new branch
-git checkout -b feature/feature-name
-
-# 3. Commit your changes
-git commit -m "feat: describe your change"
-
-# 4. Push the branch
-git push origin feature/feature-name
-
-# 5. Open a Pull Request
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        DACTRA ROLES                         │
+├──────────────┬──────────────┬───────────────┬───────────────┤
+│   PATIENT    │    DOCTOR    │   PROVIDER    │    ADMIN      │
+│              │              │  (Lab/Scan)   │               │
+├──────────────┼──────────────┼───────────────┼───────────────┤
+│ Health track │ Publish posts│ Manage deals  │ Approve users │
+│ Book appts   │ Manage appts │ List services │ Block users   │
+│ AI chatbot   │ Deals panel  │ Working hours │ Manage data   │
+│ Community    │ Patient care │ Patient data  │ Handle reports│
+└──────────────┴──────────────┴───────────────┴───────────────┘
 ```
 
+The **home page and navigation dynamically adapt** based on the logged-in user's role.
+
 ---
+
+## 🔄 Key Flows
+
+<details>
+<summary><strong>🔐 Authentication Flow</strong></summary>
+
+1. User selects role on signup (Patient / Doctor / Lab / Scan Center)
+2. Fills out role-specific registration form
+3. Backend issues a **JWT token**
+4. Role in token controls accessible pages and features
+
+</details>
+
+<details>
+<summary><strong>📅 Booking Flow</strong></summary>
+
+1. Patient searches for a doctor or provider
+2. Views profile, ratings, and available slots
+3. Confirms booking (paid or unpaid)
+4. Firebase sends confirmation notification
+5. Booking appears in both patient's and doctor's "My Appointments"
+
+</details>
+
+<details>
+<summary><strong>🤖 AI Chatbot Flow</strong></summary>
+
+1. Patient opens chatbot and asks a question or uploads a file
+2. AI processes the lab result or scan and generates a plain-language summary
+3. Chatbot asks: _"Would you like to save this to your profile?"_
+4. If confirmed, summary is stored and accessible from the patient's profile
+
+</details>
+
+<details>
+<summary><strong>🤝 Deals Flow</strong></summary>
+
+1. Medical Provider sends a deal proposal to a Doctor
+2. Doctor reviews the proposal in their Deals Dashboard
+3. Doctor can Accept, Reject, or Counter the offer
+4. Accepted deals activate sponsorship and enable patient referral discounts
+
+</details>
+
+<details>
+<summary><strong>💬 Community Flow</strong></summary>
+
+1. Doctor publishes an article or patient posts a question
+2. Content appears in the community feed
+3. Users can like, save, or mark interest
+4. When a doctor replies, the patient receives a **Firebase push notification**
+
+</details>
+
+</div>
