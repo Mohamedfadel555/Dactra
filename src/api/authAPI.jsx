@@ -66,27 +66,10 @@ export const CompleteDoctorRegisterAPI = async (Data) => {
 
 /**
  * Must align with account/Register role: "Scan" | "Lap" (see Signup capitalizeFirstLetter).
- * Provider entity type: 0 = Lab, 1 = Scan (matches useMedicalProviderMe list filter).
  */
 export const CompleteMedicalProviderRegisterAPI = async (Data) => {
   const roleLower = String(Data?.role ?? "").toLowerCase();
   const roleStr = roleLower === "scan" ? "Scan" : "Lap";
-  const typeNum = roleStr === "Scan" ? 1 : 0;
-
-  const wh = Array.isArray(Data?.workingHours)
-    ? Data.workingHours
-    : Array.isArray(Data?.workinghours)
-      ? Data.workinghours
-      : [];
-
-  const workingHours = wh.map((w) => {
-    const day = Number(w.day ?? w.Day);
-    const from = String(w.from ?? w.From ?? "");
-    const to = String(w.to ?? w.To ?? "");
-    return { day, from, to };
-  });
-
-  // Single camelCase payload avoids duplicate JSON keys confusing ASP.NET model binding.
   const body = {
     email: Data.email,
     role: roleStr,
@@ -94,8 +77,6 @@ export const CompleteMedicalProviderRegisterAPI = async (Data) => {
     licenceNo: Data.licenceNo,
     address: Data.address,
     about: Data.about ?? "",
-    type: typeNum,
-    workingHours,
   };
 
   const res = await axios.post(
