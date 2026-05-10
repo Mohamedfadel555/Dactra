@@ -88,7 +88,6 @@ export default function PatientSection({
               title === "Allergies"
                 ? submitfn({ allergyIds: selected })
                 : submitfn({ chronicDiseaseIds: selected });
-              console.log(first);
             }}
             disabled={!isChanged()}
             className={`cursor-pointer p-2 w-1/2 rounded-[10px] mt-2 text-white ${

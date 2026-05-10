@@ -177,7 +177,6 @@ export default function MyProfile() {
   const { data: workingDetails } = useGetWorkingDetails();
   const { data: userImage } = useUserImage();
   const { data: apptData } = useGetWeeklyApp(role);
-  console.log(apptData);
 
   const createUserImageMutation = useCreateUserImage();
   const updateUserImageMutation = useUpdateUserImage();

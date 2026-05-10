@@ -24,7 +24,6 @@ export const useGeneralAPI = () => {
   };
 
   const sendReview = async (Data) => {
-    console.log(Data);
     const res = await axiosInstance.post("SiteReviews", Data);
     return res;
   };

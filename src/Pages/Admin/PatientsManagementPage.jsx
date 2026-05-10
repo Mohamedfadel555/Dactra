@@ -26,15 +26,13 @@ export default function PatientsManagementPage() {
       const res = await adminAPI.getAllPatientInfo(
         page,
         pageSize,
-        searchQuery || null
+        searchQuery || null,
       );
       return res.data; // Array of patient objects (paginated from backend, filtered by search if provided)
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 2,
   });
-
-  console.log(patientsData);
 
   // Backend pagination - accumulate all loaded patients for "show more"
   const [allLoadedPatients, setAllLoadedPatients] = useState([]);
@@ -135,7 +133,6 @@ export default function PatientsManagementPage() {
   ];
 
   const handleView = (patient) => {
-    console.log(patient);
     const patientId = patient.profileId;
     if (patientId) {
       navigate(`/patient/profile/${patientId}`);
@@ -170,7 +167,6 @@ export default function PatientsManagementPage() {
       refetch(); // Refresh the list
     } catch (error) {
       // Toast error يتغير حسب الحالة
-      console.log(error);
       if (isBlocked) {
         toast.error("Failed to unblock user");
       } else {

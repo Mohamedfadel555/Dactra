@@ -774,8 +774,6 @@ export default function MyAppointments() {
     page,
   });
 
-  console.log(apptData);
-
   const rawList = apptData?.items ?? [];
   const appointments = rawList.map(normaliseAppt);
   const totalPages = Math.ceil((apptData?.totalCount ?? 0) / PAGE_SIZE);

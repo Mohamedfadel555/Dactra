@@ -11,7 +11,6 @@ export default function ProtectedProvider({ children, allowedRoles = [] }) {
   const normalizedRole = (
     role && typeof role === "string" ? role : ""
   ).toLowerCase();
-  console.log(normalizedRole);
   const normalizedAllowed = allowedRoles.map((r) =>
     (r && typeof r === "string" ? r : "").toLowerCase(),
   );
@@ -21,7 +20,6 @@ export default function ProtectedProvider({ children, allowedRoles = [] }) {
     Boolean(accessToken) &&
     normalizedAllowed.length > 0 &&
     !normalizedAllowed.includes(normalizedRole);
-  console.log(isDenied);
 
   useEffect(() => {
     if (!isDenied || hasShownDeniedToast.current) return;
@@ -37,7 +35,6 @@ export default function ProtectedProvider({ children, allowedRoles = [] }) {
   }
 
   if (!accessToken) {
-    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     return <Navigate to="/auth/Login" replace />;
   }
 

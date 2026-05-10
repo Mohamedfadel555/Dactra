@@ -4,7 +4,6 @@ export const usePerceptionAPI = () => {
   const axiosInstance = useAxios();
 
   const savePerception = async (Data) => {
-    console.log(Data);
     const res = await axiosInstance.post("Prescriptions", Data);
     return res;
   };

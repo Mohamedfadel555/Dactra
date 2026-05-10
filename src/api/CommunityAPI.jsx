@@ -19,7 +19,6 @@ export const useCommunityAPI = () => {
   };
 
   const filterPosts = async (params) => {
-    console.log(params);
     const res = await axiosInstance.get("Posts/filterOn", { params });
     return res.data;
   };
@@ -77,7 +76,6 @@ export const useCommunityAPI = () => {
   };
 
   const getQuestionsAnswers = async (Id, params) => {
-    console.log(Id);
     const res = await axiosInstance.get(`Questions/${Id}/comments`, { params });
     return res.data;
   };
@@ -150,7 +148,6 @@ export const useCommunityAPI = () => {
     return res;
   };
   const editComment = (id, Data) => {
-    console.log(Data);
     const res = axiosInstance.put(`Questions/comments/${id}`, Data);
     return res;
   };

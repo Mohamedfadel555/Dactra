@@ -63,7 +63,6 @@ export default function PostDetailPage() {
   const queryClient = useQueryClient();
 
   const { data: post } = useGetQuestionById(param.id);
-  console.log(post);
   const { role, accessToken } = useAuth();
 
   const userEmail = useMemo(() => {
@@ -73,7 +72,7 @@ export default function PostDetailPage() {
     } catch {
       return null;
     }
-  }, [accessToken]); // بيتحسب بس لما accessToken يتغير
+  }, [accessToken]);
 
   const isOwner = post?.email === userEmail;
 

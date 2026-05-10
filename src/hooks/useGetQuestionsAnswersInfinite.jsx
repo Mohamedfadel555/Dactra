@@ -2,7 +2,6 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useCommunityAPI } from "../api/CommunityAPI";
 
 export const useGetQuestionsAnswersInfinite = (questionId) => {
-  console.log(questionId);
   const { getQuestionsAnswers } = useCommunityAPI();
   return useInfiniteQuery({
     queryKey: ["comments-infinite", Number(questionId)],

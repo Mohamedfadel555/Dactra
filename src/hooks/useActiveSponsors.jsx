@@ -12,12 +12,8 @@ export function useGetActiveSponsors() {
     staleTime: 0,
     retry: 2,
     retryDelay: 500,
-    throwOnError: false, // ← أضف ده
+    throwOnError: false,
   });
-
-  // ... باقي الكود زي ما هو
-
-  console.log("QUERY DATA:", query.data); // ← أضف ده
 
   useHubEvent("OfferAccepted", async () => {
     await new Promise((res) => setTimeout(res, 300));

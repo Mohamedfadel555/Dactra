@@ -80,7 +80,6 @@ export default function OTPPage() {
       email,
       otp: values.otp,
     };
-    console.log(FormData);
     //handle otp cases
     //case one if the user is patient or doctor the the user need to complete his data so navigate to complete
     if (userType) {

@@ -23,10 +23,7 @@ import { useEditComment } from "../../hooks/useEditComment";
 import EditModal from "./EditModal";
 import ReportModal from "../Common/ReportModal";
 import { toast } from "react-toastify";
-import {
-  REPORT_TYPE,
-  buildReportContent,
-} from "../../utils/reportConstants";
+import { REPORT_TYPE, buildReportContent } from "../../utils/reportConstants";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 import { avatarUserFromAuthor } from "../../utils/communityAvatars";
@@ -68,8 +65,6 @@ export default function ReplyItem({
   const answerMutation = usePostAnswer();
   const deleteReplyMutation = useDeleteComment(type);
   const editCommentMutation = useEditComment(reply.parentAnswerId, "reply");
-
-  console.log(reply);
 
   const {
     data: nestedData,
@@ -155,13 +150,10 @@ export default function ReplyItem({
   const handleSubmitReport = async ({ reason, details }) => {
     setReportSubmitting(true);
     try {
-      const text = buildReportContent(
-        (details || "").trim(),
-        {
-          questionId,
-          threadType: type === "Artical" ? "Artical" : "Question",
-        },
-      );
+      const text = buildReportContent((details || "").trim(), {
+        questionId,
+        threadType: type === "Artical" ? "Artical" : "Question",
+      });
       await createReport({
         type: REPORT_TYPE.COMMENT,
         title: reason,

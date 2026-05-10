@@ -12,7 +12,6 @@ export const useVerifyOTP_ForgetPassword = () => {
         closeOnClick: true,
         position: "top-center",
       });
-      console.log(data);
       localStorage.setItem("token", data.data.tokenEntity.token);
       navigate("../UpdatePassword");
     },

@@ -75,15 +75,11 @@ export default function CompleteSignupPage() {
     isError: majorsError,
   } = useMajors(userType);
 
-  const {
-    data: allergies = [],
-    isLoading: allergiesLoading,
-  } = useGetAllAllergiesForSignup();
+  const { data: allergies = [], isLoading: allergiesLoading } =
+    useGetAllAllergiesForSignup();
 
-  const {
-    data: chronicDiseases = [],
-    isLoading: chronicDiseasesLoading,
-  } = useGetAllChronicForSignup();
+  const { data: chronicDiseases = [], isLoading: chronicDiseasesLoading } =
+    useGetAllChronicForSignup();
 
   const userTypeNorm = String(userType || "").toLowerCase();
   const isProvider =
@@ -93,7 +89,9 @@ export default function CompleteSignupPage() {
     userTypeNorm === "medicaltestsprovider" ||
     userTypeNorm === "medicaltestprovider" ||
     userTypeNorm === "provider";
-  const [workingRows, setWorkingRows] = useState(() => buildWorkingRowsFromApi([]));
+  const [workingRows, setWorkingRows] = useState(() =>
+    buildWorkingRowsFromApi([]),
+  );
   const [quickFrom, setQuickFrom] = useState("09:00");
   const [quickTo, setQuickTo] = useState("17:00");
 
@@ -110,7 +108,6 @@ export default function CompleteSignupPage() {
       values,
       workingRows,
     });
-    console.log("Complete signup data being sent:", payload);
     try {
       await completeSignupMutation.mutateAsync(payload);
       localStorage.removeItem("pendingSignupUserType");
@@ -194,15 +191,21 @@ export default function CompleteSignupPage() {
                                 handleRowChange: (day, field, value) =>
                                   setWorkingRows((prev) =>
                                     prev.map((r) =>
-                                      r.day === day ? { ...r, [field]: value } : r,
+                                      r.day === day
+                                        ? { ...r, [field]: value }
+                                        : r,
                                     ),
                                   ),
                                 applyQuickToAllDays: () =>
                                   setWorkingRows((prev) =>
-                                    prev.map((r) => ({ ...r, from: quickFrom, to: quickTo })),
+                                    prev.map((r) => ({
+                                      ...r,
+                                      from: quickFrom,
+                                      to: quickTo,
+                                    })),
                                   ),
                               }
-                            : null
+                            : null,
                         )}
                       </div>
 
@@ -243,7 +246,7 @@ function renderFieldsByUserType(
   allergiesLoading = false,
   chronicDiseases = [],
   chronicDiseasesLoading = false,
-  providerHours
+  providerHours,
 ) {
   if (userType === "patient") {
     return (
@@ -341,7 +344,11 @@ function renderFieldsByUserType(
           name="chronicDisease"
           label="Chronic Diseases"
           type="select"
-          placeholder={chronicDiseasesLoading ? "Loading..." : "Select chronic disease (optional)"}
+          placeholder={
+            chronicDiseasesLoading
+              ? "Loading..."
+              : "Select chronic disease (optional)"
+          }
           options={[
             { value: "", label: "None" },
             ...chronicDiseases.map((disease) => ({
@@ -355,7 +362,9 @@ function renderFieldsByUserType(
           name="allergies"
           label="Allergies"
           type="select"
-          placeholder={allergiesLoading ? "Loading..." : "Select allergy (optional)"}
+          placeholder={
+            allergiesLoading ? "Loading..." : "Select allergy (optional)"
+          }
           options={[
             { value: "", label: "None" },
             ...allergies.map((allergy) => ({
@@ -380,8 +389,8 @@ function renderFieldsByUserType(
     const majorPlaceholder = majorsLoading
       ? "Loading majors..."
       : majorOptions.length === 0
-      ? "No majors available"
-      : "Select a major";
+        ? "No majors available"
+        : "Select a major";
 
     return (
       <>
@@ -491,7 +500,9 @@ function renderFieldsByUserType(
       {providerHours ? (
         <div className="mt-1 rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[13px] font-bold text-slate-800">Working hours</p>
+            <p className="text-[13px] font-bold text-slate-800">
+              Working hours
+            </p>
             <button
               type="button"
               onClick={providerHours.applyQuickToAllDays}
@@ -539,13 +550,17 @@ function renderFieldsByUserType(
                 <input
                   type="time"
                   value={r.from}
-                  onChange={(e) => providerHours.handleRowChange(r.day, "from", e.target.value)}
+                  onChange={(e) =>
+                    providerHours.handleRowChange(r.day, "from", e.target.value)
+                  }
                   className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-blue-200"
                 />
                 <input
                   type="time"
                   value={r.to}
-                  onChange={(e) => providerHours.handleRowChange(r.day, "to", e.target.value)}
+                  onChange={(e) =>
+                    providerHours.handleRowChange(r.day, "to", e.target.value)
+                  }
                   className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-blue-200"
                 />
               </div>

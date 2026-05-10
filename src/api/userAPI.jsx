@@ -216,7 +216,6 @@ export const useUserAPI = () => {
   };
 
   const rateProvider = async ({ providerId, payload }) => {
-    console.log(payload);
     const res = await axiosInstance.post(
       `Rating/patient/rate-provider/${providerId}`,
       payload,

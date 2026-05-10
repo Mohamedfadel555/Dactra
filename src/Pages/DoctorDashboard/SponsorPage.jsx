@@ -23,17 +23,6 @@ export default function SponsorsPage() {
   const { data, isLoading, isError, status, fetchStatus } =
     useGetActiveSponsors();
 
-  console.log(
-    "STATUS:",
-    status,
-    "FETCH:",
-    fetchStatus,
-    "isLoading:",
-    isLoading,
-  );
-  console.log("RAW DATA:", data);
-  console.log("IS ARRAY:", Array.isArray(data));
-  console.log("TYPE:", typeof data);
   const removeMutation = useRemoveSponsor();
 
   if (isLoading && !data)
@@ -50,8 +39,6 @@ export default function SponsorsPage() {
       </div>
     );
   const sponsorships = data?.sponsorships ?? [];
-  console.log("SPONSORSHIPS:", sponsorships);
-  console.log("SPONSORSHIPS LENGTH:", sponsorships.length);
   const avgDisc = data?.averageDiscountPercentage ?? 0;
   const patientCount = data?.patientBenefitsCount ?? 0;
   const activeCount = data?.activeSponsorsCount ?? 0;

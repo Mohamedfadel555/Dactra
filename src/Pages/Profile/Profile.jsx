@@ -122,8 +122,6 @@ export default function Profile({ role }) {
 
   const { data: apptData } = useGetWeeklyAppById(id, role);
 
-  console.log(userError);
-
   const navigate = useNavigate();
 
   useEffect(() => {

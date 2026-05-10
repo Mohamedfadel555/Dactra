@@ -15,16 +15,13 @@ export function useHubEvent(eventName, handler) {
 
     const conn = connRef.current;
     const stableHandler = (...args) => {
-      console.log(`[Hub] 📨 Event received: ${eventName}`, args);
       handlerRef.current(...args);
     };
 
     conn.on(eventName, stableHandler);
-    console.log(`[Hub] 👂 Subscribed to: ${eventName}`);
 
     return () => {
       conn.off(eventName, stableHandler);
-      console.log(`[Hub] 🔕 Unsubscribed from: ${eventName}`);
     };
   }, [eventName, connRef]);
 }

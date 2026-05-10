@@ -21,7 +21,6 @@ export const useSaveWorkDetails = () => {
         position: "top-center",
         closeOnClick: true,
       });
-      console.log(error);
     },
   });
 };

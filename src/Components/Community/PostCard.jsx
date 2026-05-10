@@ -63,7 +63,6 @@ const imageVariants = {
 };
 
 export default function PostCard({ post, type, onUpdate }) {
-  console.log(post);
   const [liked, setLiked] = useState(
     type === "Question"
       ? post.isInterestedByCurrentUser

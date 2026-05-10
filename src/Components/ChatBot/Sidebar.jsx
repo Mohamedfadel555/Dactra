@@ -72,7 +72,6 @@ export default function Sidebar({ activeNav, setActive, open, setOpen }) {
                 setActive(n.id);
                 setOpen(false);
                 setNav(n.id);
-                console.log(nav);
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium mb-0.5 cursor-pointer border-none text-left transition-colors `}
             >

@@ -460,7 +460,7 @@ export const route = createBrowserRouter([
     ],
   },
 
-  /* ── Lab Provider ─────────────────────────────────────────── */
+  /* ── medcial Provider ─────────────────────────────────────────── */
   {
     path: "/medicalprovider",
     element: (
@@ -497,38 +497,6 @@ export const route = createBrowserRouter([
       { path: "referredpatients", element: <ReferredPatients /> },
     ],
   },
-
-  // /* ── Scan Provider ────────────────────────────────────────── */
-  // {
-  //   path: "/scan",
-  //   element: (
-  //     <Suspense fallback={<Loader />}>
-  //       <ProtectedProvider allowedRoles={["lab"]}>
-  //         <ProviderLayout type="Scan" />
-  //       </ProtectedProvider>
-  //     </Suspense>
-  //   ),
-  //   children: [
-  //     { index: true, element: <Navigate to="/scan/profile" replace /> },
-  //     {
-  //       path: "profile",
-  //       element: (
-  //         <Suspense fallback={<Loader />}>
-  //           <ProviderProfilePage type="Scan" />
-  //         </Suspense>
-  //       ),
-  //     },
-  //     {
-  //       path: "services",
-  //       element: (
-  //         <Suspense fallback={<Loader />}>
-  //           <ProviderServicesPage type="Scan" />
-  //         </Suspense>
-  //       ),
-  //     },
-  //     { path: "searchdoctors", element: <Doctors /> },
-  //   ],
-  // },
 
   /* ── Errors ───────────────────────────────────────────────── */
   {

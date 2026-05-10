@@ -9,7 +9,6 @@ export const useSaveAVSlots = () => {
   return useMutation({
     mutationFn: saveAVSlots,
     onSuccess: (s) => {
-      console.log(s);
       queryClient.refetchQueries({
         queryKey: ["Slots"],
       });

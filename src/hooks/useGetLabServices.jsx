@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useSponsorshipAPI } from "../api/sponsorshipAPI";
 
 export const useGetLabServices = (id) => {
-  console.log(id);
   const { getLabServices } = useSponsorshipAPI();
   return useQuery({
     queryKey: ["labservices", id],

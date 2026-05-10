@@ -11,7 +11,6 @@ export const useRefresh = () => {
     onSuccess: (data) => {
       const newAccessToken = data.data.accessToken;
       const tokenPayload = JSON.parse(atob(newAccessToken.split(".")[1]));
-      console.log(newAccessToken);
       login(newAccessToken, tokenPayload.role);
     },
     onError: () => {

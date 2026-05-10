@@ -71,7 +71,6 @@ export default function ProviderProfilePage({ type }) {
 
   const updateMutation = useMutation({
     mutationFn: (payload) => {
-      console.log(payload);
       portal.updateMedicalProvider(payload);
     },
     onSuccess: async (_, variables) => {
