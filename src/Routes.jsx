@@ -189,14 +189,6 @@ export const route = createBrowserRouter([
         ),
       },
       {
-        path: "google-callback",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <CallBack />
-          </Suspense>
-        ),
-      },
-      {
         path: "myprofile",
         element: (
           <Suspense fallback={<Loader />}>
