@@ -14,7 +14,6 @@ export const useAppointmentAPI = () => {
   };
 
   const saveAVSlots = async (Data) => {
-    console.log(Data);
     const res = await axiosInstance.post("DoctorSlots/save-slots", Data);
     return res;
   };
@@ -30,7 +29,6 @@ export const useAppointmentAPI = () => {
   };
 
   const Book = async (id) => {
-    console.log(id);
     const res = await axiosInstance.post(
       `Appointment/Book?scheduleTableId=${id}`,
     );
@@ -38,7 +36,6 @@ export const useAppointmentAPI = () => {
   };
 
   const saveInPersonSlots = async (slots) => {
-    console.log(slots);
     const res = await axiosInstance.post(
       "DoctorSlots/save-slots/inperson",
       slots,

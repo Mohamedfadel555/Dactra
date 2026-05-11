@@ -104,7 +104,6 @@ export default function RatingSection({ providerId, canRate }) {
     ? useGetProviderRating(providerId)
     : useGetMyRating(canRate);
   const { mutate, isPending, isSuccess, isError } = useRateProvider(providerId);
-  console.log(data);
 
   const [showForm, setShowForm] = useState(false);
   const [score, setScore] = useState(0);

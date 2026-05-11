@@ -12,6 +12,15 @@ export const useGetMyReports = () => {
   });
 };
 
+export const useGetPatientReports = (patientId) => {
+  const { getPatientReports } = useUserAPI();
+  return useQuery({
+    queryKey: ["medicalReports", "patient", patientId],
+    queryFn: () => getPatientReports(patientId),
+    enabled: !!patientId,
+  });
+};
+
 export const useAddReport = () => {
   const { addReport } = useUserAPI();
   const queryClient = useQueryClient();

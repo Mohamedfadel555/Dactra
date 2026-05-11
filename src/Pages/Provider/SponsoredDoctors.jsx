@@ -221,7 +221,6 @@ function CancelModal({ doctor, onClose }) {
 
 // ─── DoctorCard ───────────────────────────────────────────────────────────────
 function DoctorCard({ doctor, index, onCancel }) {
-  console.log(doctor);
   const { firstName, lastName } = splitName(doctor.doctorName);
 
   return (

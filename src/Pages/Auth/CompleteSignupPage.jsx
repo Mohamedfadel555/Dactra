@@ -70,15 +70,12 @@ export default function CompleteSignupPage() {
     isError: majorsError,
   } = useMajors(userType);
 
-  const {
-    data: allergies = [],
-    isLoading: allergiesLoading,
-  } = useGetAllAllergiesForSignup();
+  const { data: allergies = [], isLoading: allergiesLoading } =
+    useGetAllAllergiesForSignup();
 
-  const {
-    data: chronicDiseases = [],
-    isLoading: chronicDiseasesLoading,
-  } = useGetAllChronicForSignup();
+  const { data: chronicDiseases = [], isLoading: chronicDiseasesLoading } =
+    useGetAllChronicForSignup();
+
 
 
   useEffect(() => {
@@ -93,7 +90,6 @@ export default function CompleteSignupPage() {
       userType,
       values,
     });
-    console.log("Complete signup data being sent:", payload);
     try {
       await completeSignupMutation.mutateAsync(payload);
       localStorage.removeItem("pendingSignupUserType");
@@ -167,6 +163,8 @@ export default function CompleteSignupPage() {
                           allergiesLoading,
                           chronicDiseases,
                           chronicDiseasesLoading,
+
+
                         )}
                       </div>
 
@@ -207,6 +205,7 @@ function renderFieldsByUserType(
   allergiesLoading = false,
   chronicDiseases = [],
   chronicDiseasesLoading = false,
+
 ) {
   if (userType === "patient") {
     return (
@@ -304,7 +303,11 @@ function renderFieldsByUserType(
           name="chronicDisease"
           label="Chronic Diseases"
           type="select"
-          placeholder={chronicDiseasesLoading ? "Loading..." : "Select chronic disease (optional)"}
+          placeholder={
+            chronicDiseasesLoading
+              ? "Loading..."
+              : "Select chronic disease (optional)"
+          }
           options={[
             { value: "", label: "None" },
             ...chronicDiseases.map((disease) => ({
@@ -318,7 +321,9 @@ function renderFieldsByUserType(
           name="allergies"
           label="Allergies"
           type="select"
-          placeholder={allergiesLoading ? "Loading..." : "Select allergy (optional)"}
+          placeholder={
+            allergiesLoading ? "Loading..." : "Select allergy (optional)"
+          }
           options={[
             { value: "", label: "None" },
             ...allergies.map((allergy) => ({
@@ -343,8 +348,8 @@ function renderFieldsByUserType(
     const majorPlaceholder = majorsLoading
       ? "Loading majors..."
       : majorOptions.length === 0
-      ? "No majors available"
-      : "Select a major";
+        ? "No majors available"
+        : "Select a major";
 
     return (
       <>
@@ -450,6 +455,8 @@ function renderFieldsByUserType(
         placeholder="Describe your services"
         icon={MdInfoOutline}
       />
+
+
     </>
   );
 }

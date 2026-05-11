@@ -10,7 +10,6 @@ export const useQuestionHub = (questionId) => {
   const { accessToken } = useAuth();
 
   questionId = Number(questionId);
-  console.log(questionId);
 
   useEffect(() => {
     if (!questionId || !accessToken) return;

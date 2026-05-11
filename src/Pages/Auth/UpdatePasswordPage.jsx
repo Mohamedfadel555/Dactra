@@ -33,7 +33,6 @@ export default function UpdatePasswordPage() {
       newPassword: values.password,
       confirmPassword: values.confirm_password,
     };
-    console.log(FormData);
 
     try {
       await resetPasswordMutation.mutateAsync(FormData);
@@ -42,8 +41,6 @@ export default function UpdatePasswordPage() {
     } finally {
       setSubmitting(false);
     }
-
-    console.log(values);
   };
 
   return (

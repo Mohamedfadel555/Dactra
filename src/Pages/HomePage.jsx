@@ -229,8 +229,6 @@ export default function HomePage() {
     queryFn: () => providerAPI.getMedicalTestsProviders(),
   });
 
-  console.log(providers);
-
   const { data: siteReviews = [] } = useSiteReviews();
   const { data: siteReviewsStats } = useSiteReviewsStats();
   const { data: siteReviewsDistribution } = useSiteReviewsDistribution();
@@ -238,8 +236,6 @@ export default function HomePage() {
   const { data: topDoctors = [] } = useTopRatedDoctors(10);
   const labs = (providers || []).filter((p) => p.type === 0);
   const scans = (providers || []).filter((p) => p.type === 1);
-
-  console.log(topDoctors);
 
   const effectiveReviews =
     Array.isArray(siteReviews) && siteReviews.length > 0
@@ -295,12 +291,11 @@ export default function HomePage() {
         { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       );
   const doctorsToRender = topDoctors.length > 0 ? topDoctors : doctorsFallback;
-  console.log(doctorsToRender);
 
   return (
     <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
       {/* Section1 */}
-      {(role === "Patient" || role === "Doctor") && <DactraFloatButton />}
+      {role === "Patient" && <DactraFloatButton />}
       <HeroSection Role={role} />
 
       {/* Section2 - Services */}

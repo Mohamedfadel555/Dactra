@@ -11,22 +11,9 @@ export function SponsorshipHubProvider({ getToken, children }) {
     const conn = getSponsorshipConnection(getToken);
     connectionRef.current = conn;
 
-    console.log("[Hub] 🚀 Starting connection...");
-    console.log("[Hub] Token:", getToken());
-
-    startConnection(conn)
-      .then(() => {
-        console.log("[Hub] ✅ Connected! State:", conn.state);
-        console.log("[Hub] Connection ID:", conn.connectionId);
-      })
-      .catch((err) => {
-        console.error("[Hub] ❌ Connection failed:", err);
-      });
-
-    conn.onreconnecting((err) => console.warn("[Hub] 🔄 Reconnecting...", err));
-    conn.onreconnected((id) =>
-      console.log("[Hub] ✅ Reconnected, new ID:", id),
-    );
+    startConnection(conn).catch((err) => {
+      console.error("[Hub] ❌ Connection failed:", err);
+    });
     conn.onclose((err) => console.error("[Hub] ❌ Connection closed:", err));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

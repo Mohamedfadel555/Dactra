@@ -102,7 +102,6 @@ const cardVariants = {
 function DoctorCard({ doctor, index, onDeal }) {
   const spec = getSpec(doctor.specialization);
   const rating = doctor.averageRating ?? 0;
-  console.log(doctor);
 
   return (
     <motion.div

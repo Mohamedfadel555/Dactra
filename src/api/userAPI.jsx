@@ -216,7 +216,6 @@ export const useUserAPI = () => {
   };
 
   const rateProvider = async ({ providerId, payload }) => {
-    console.log(payload);
     const res = await axiosInstance.post(
       `Rating/patient/rate-provider/${providerId}`,
       payload,
@@ -244,6 +243,16 @@ export const useUserAPI = () => {
   /* ─── Medical Reports ─── */
   const getMyReports = async () => {
     const res = await axiosInstance.get("MedicalReport/my-reports");
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.$values)) return data.$values;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
+  };
+
+  // ← الجديد: جلب تقارير مريض معين (للدكتور)
+  const getPatientReports = async (patientId) => {
+    const res = await axiosInstance.get(`MedicalReport/patient/${patientId}`);
     const data = res.data;
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.$values)) return data.$values;
@@ -306,8 +315,8 @@ export const useUserAPI = () => {
     getMyRating,
     getFavorites,
     favourite,
-    // Medical Reports
     getMyReports,
+    getPatientReports,
     addReport,
     deleteReport,
   };

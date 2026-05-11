@@ -169,6 +169,7 @@ function ReportDetailModal({ report, onClose }) {
     </motion.div>
   );
 }
+
 function UploadModal({ onClose }) {
   const [name, setName] = useState("");
   const [files, setFiles] = useState([]);
@@ -332,6 +333,7 @@ function UploadModal({ onClose }) {
     </motion.div>
   );
 }
+
 function DeleteModal({ report, onClose }) {
   const { mutate: deleteReport, isPending } = useDeleteReport();
 
@@ -401,9 +403,16 @@ function SkeletonRow() {
   );
 }
 
-/* ─── Main component ─── */
-export default function MedicalReports() {
-  const { data: reports = [], isLoading } = useGetMyReports();
+export default function MedicalReports({
+  readOnly = false,
+  reports: externalReports,
+  isLoading: externalLoading,
+}) {
+  const myReports = useGetMyReports();
+
+  const reports = externalReports ?? myReports.data ?? [];
+  const isLoading = externalLoading ?? myReports.isLoading;
+
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailReport, setDetailReport] = useState(null);
@@ -439,16 +448,18 @@ export default function MedicalReports() {
               </p>
             )}
           </div>
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
-          >
-            <FaCloudUploadAlt className="text-sm" />
-            Upload
-          </motion.button>
+          {!readOnly && (
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setUploadOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
+            >
+              <FaCloudUploadAlt className="text-sm" />
+              Upload
+            </motion.button>
+          )}
         </div>
 
         {/* List */}
@@ -467,9 +478,11 @@ export default function MedicalReports() {
               <p className="text-sm font-medium text-gray-600 mb-0.5">
                 No reports yet
               </p>
-              <p className="text-xs text-gray-400">
-                Upload your first medical report
-              </p>
+              {!readOnly && (
+                <p className="text-xs text-gray-400">
+                  Upload your first medical report
+                </p>
+              )}
             </div>
           ) : (
             <motion.div
@@ -507,19 +520,21 @@ export default function MedicalReports() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                      <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteTarget(report);
-                        }}
-                        className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
-                        title="Delete report"
-                      >
-                        <IoTrashOutline className="text-red-400 text-sm" />
-                      </motion.button>
+                      {!readOnly && (
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(report);
+                          }}
+                          className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete report"
+                        >
+                          <IoTrashOutline className="text-red-400 text-sm" />
+                        </motion.button>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -531,8 +546,10 @@ export default function MedicalReports() {
 
       {/* Modals */}
       <AnimatePresence>
-        {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
-        {deleteTarget && (
+        {!readOnly && uploadOpen && (
+          <UploadModal onClose={() => setUploadOpen(false)} />
+        )}
+        {!readOnly && deleteTarget && (
           <DeleteModal
             report={deleteTarget}
             onClose={() => setDeleteTarget(null)}

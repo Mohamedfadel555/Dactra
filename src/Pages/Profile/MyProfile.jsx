@@ -177,7 +177,6 @@ export default function MyProfile() {
   const { data: workingDetails } = useGetWorkingDetails();
   const { data: userImage } = useUserImage();
   const { data: apptData } = useGetWeeklyApp(role);
-  console.log(apptData);
 
   const createUserImageMutation = useCreateUserImage();
   const updateUserImageMutation = useUpdateUserImage();
@@ -919,10 +918,6 @@ export default function MyProfile() {
 
                   <motion.div variants={itemFade}>
                     <DoctorSection title="Qualifications" info={quals} />
-                  </motion.div>
-
-                  <motion.div variants={itemFade}>
-                    <DoctorSection title="Experience" />
                   </motion.div>
 
                   <motion.div variants={itemFade}>

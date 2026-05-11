@@ -26,7 +26,6 @@ import PatientsPage from "./Pages/DoctorDashboard/PatientsPage";
 
 const Layout = lazy(() => import("./Layout/Layout"));
 const AuthLayout = lazy(() => import("./Layout/AuthLayout"));
-const CallBack = lazy(() => import("./Pages/Auth/CallBack"));
 const LoginPage = lazy(() => import("./Pages/Auth/LoginPage"));
 const SignupPage = lazy(() => import("./Pages/Auth/SignupPage"));
 const ForgotPasswordPage = lazy(
@@ -186,14 +185,6 @@ export const route = createBrowserRouter([
         element: (
           <Suspense fallback={<Loader />}>
             <DoctorsListPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "google-callback",
-        element: (
-          <Suspense fallback={<Loader />}>
-            <CallBack />
           </Suspense>
         ),
       },
@@ -460,7 +451,7 @@ export const route = createBrowserRouter([
     ],
   },
 
-  /* ── Lab Provider ─────────────────────────────────────────── */
+  /* ── medcial Provider ─────────────────────────────────────────── */
   {
     path: "/medicalprovider",
     element: (
@@ -497,38 +488,6 @@ export const route = createBrowserRouter([
       { path: "referredpatients", element: <ReferredPatients /> },
     ],
   },
-
-  // /* ── Scan Provider ────────────────────────────────────────── */
-  // {
-  //   path: "/scan",
-  //   element: (
-  //     <Suspense fallback={<Loader />}>
-  //       <ProtectedProvider allowedRoles={["lab"]}>
-  //         <ProviderLayout type="Scan" />
-  //       </ProtectedProvider>
-  //     </Suspense>
-  //   ),
-  //   children: [
-  //     { index: true, element: <Navigate to="/scan/profile" replace /> },
-  //     {
-  //       path: "profile",
-  //       element: (
-  //         <Suspense fallback={<Loader />}>
-  //           <ProviderProfilePage type="Scan" />
-  //         </Suspense>
-  //       ),
-  //     },
-  //     {
-  //       path: "services",
-  //       element: (
-  //         <Suspense fallback={<Loader />}>
-  //           <ProviderServicesPage type="Scan" />
-  //         </Suspense>
-  //       ),
-  //     },
-  //     { path: "searchdoctors", element: <Doctors /> },
-  //   ],
-  // },
 
   /* ── Errors ───────────────────────────────────────────────── */
   {

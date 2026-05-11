@@ -95,7 +95,6 @@ function FavoriteCard({ item, activeType, onSelect, onToggle, isFav }) {
   const ProviderIcon = providerMeta?.icon;
   const navigate = useNavigate();
   const profileImage = item.profileImageUrl || item.imageUrl;
-  console.log(item);
 
   return (
     <motion.div

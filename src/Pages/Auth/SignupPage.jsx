@@ -39,7 +39,6 @@ export default function SignupPage() {
         phoneNumber: values.phone,
         role: capitalizeFirstLetter(userType),
       };
-      console.log("Signup data being sent:", signupData);
 
       await registerMutation.mutateAsync(signupData);
       localStorage.setItem("pendingSignupUserType", String(userType || ""));

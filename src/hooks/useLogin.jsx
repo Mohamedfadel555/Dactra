@@ -27,7 +27,6 @@ export const useLogin = () => {
     },
 
     onError: async (data) => {
-      console.log(data);
       if (data.status === 401) {
         toast.error("Email or password is invalid!", {
           position: "top-center",
@@ -39,7 +38,6 @@ export const useLogin = () => {
           closeOnClick: true,
         });
       } else if (data.status === 400) {
-        console.log(data);
         if (data.response.data.massage === "Registration not Completed") {
           toast.warning("Registration not complete!", {
             position: "top-center",
