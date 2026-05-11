@@ -921,10 +921,6 @@ export default function MyProfile() {
                   </motion.div>
 
                   <motion.div variants={itemFade}>
-                    <DoctorSection title="Experience" />
-                  </motion.div>
-
-                  <motion.div variants={itemFade}>
                     <WorkDetailsCard
                       workingDetails={workingDetails}
                       isWorkingDetailsEmpty={isWorkingDetailsEmpty}

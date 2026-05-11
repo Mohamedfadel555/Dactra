@@ -26,6 +26,8 @@ import { MdOutlineScience } from "react-icons/md";
 import { HiOutlineBeaker } from "react-icons/hi2";
 import { useGetWeeklyAppById } from "../../hooks/useGetWeeklyAppById";
 import RatingSection from "./../../Components/Profile/RatingSection";
+import MedicalReports from "../../Components/Profile/MedicalReports";
+import { useGetPatientReports } from "../../hooks/useMedicalReports";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -114,7 +116,7 @@ export default function Profile({ role }) {
   const { accessToken, role: authRole } = useAuth();
   const { email: viewerEmail } = viewerIdentityFromToken(accessToken);
   const { data: me } = useGetUser();
-
+  const { data: patientReports, isLoading } = useGetPatientReports(id);
   const { data: inPersonSlotsToBook } = useGetSlotsById("inPerson", id, role);
   const { data: onlineSlotsToBook } = useGetSlotsById("online", id, role);
   const { data: user, error: userError } =
@@ -418,48 +420,12 @@ export default function Profile({ role }) {
                 </Card>
               </motion.div>
 
-              {/* Medical reports (patient only) */}
               {role === "Patient" && (
-                <motion.div variants={itemFade}>
-                  <Card className="p-5">
-                    <p
-                      className="text-[11px] font-semibold text-gray-400 uppercase
-                                   tracking-wider mb-4"
-                    >
-                      Medical reports
-                    </p>
-                    <div className="flex flex-col gap-2.5">
-                      {[
-                        "Complete Blood Count",
-                        "Liver Function",
-                        "Kidney Function",
-                        "Blood Sugar",
-                      ].map((r, i) => (
-                        <motion.div
-                          key={i}
-                          whileHover={{ x: 4 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 20,
-                          }}
-                          className="flex items-center gap-2.5 p-2.5 rounded-xl
-                                     hover:bg-blue-50 transition-colors cursor-pointer group"
-                        >
-                          <div
-                            className="size-8 rounded-lg bg-blue-50 group-hover:bg-blue-100
-                                          flex items-center justify-center transition-colors flex-shrink-0"
-                          >
-                            <FaFileMedicalAlt className="text-blue-500 size-[14px]" />
-                          </div>
-                          <span className="text-[13px] text-gray-700 font-medium">
-                            {r} Report
-                          </span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </Card>
-                </motion.div>
+                <MedicalReports
+                  readOnly={true}
+                  reports={patientReports}
+                  isLoading={isLoading}
+                />
               )}
 
               {/* Allergies + Chronics (patient only, sidebar on desktop) */}
@@ -513,10 +479,6 @@ export default function Profile({ role }) {
                       info={user?.qualifications}
                       editFlag={false}
                     />
-                  </motion.div>
-
-                  <motion.div variants={itemFade}>
-                    <DoctorSection title="Experience" editFlag={false} />
                   </motion.div>
 
                   <motion.div variants={itemFade}>

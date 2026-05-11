@@ -250,6 +250,16 @@ export const useUserAPI = () => {
     return [];
   };
 
+  // ← الجديد: جلب تقارير مريض معين (للدكتور)
+  const getPatientReports = async (patientId) => {
+    const res = await axiosInstance.get(`MedicalReport/patient/${patientId}`);
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.$values)) return data.$values;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
+  };
+
   const addReport = async (data) => {
     const form = new FormData();
     form.append("Name", data.name);
@@ -305,8 +315,8 @@ export const useUserAPI = () => {
     getMyRating,
     getFavorites,
     favourite,
-    // Medical Reports
     getMyReports,
+    getPatientReports,
     addReport,
     deleteReport,
   };
