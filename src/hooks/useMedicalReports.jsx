@@ -12,12 +12,12 @@ export const useGetMyReports = () => {
   });
 };
 
-export const useGetPatientReports = (patientId) => {
+export const useGetPatientReports = (patientId, role) => {
   const { getPatientReports } = useUserAPI();
   return useQuery({
     queryKey: ["medicalReports", "patient", patientId],
     queryFn: () => getPatientReports(patientId),
-    enabled: !!patientId,
+    enabled: !!patientId && role !== "Doctor",
   });
 };
 

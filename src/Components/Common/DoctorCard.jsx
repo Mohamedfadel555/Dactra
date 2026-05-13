@@ -67,9 +67,7 @@ export default function DoctorCard({
       <div className="flex justify-between items-center mt-2">
         <div className="flex justify-center items-center gap-[5px]">
           <FaStar className="text-[#EAB308] text-[20px]" />
-          <p className="text-[#64748B] text-[18px]">
-            {rating + "(" + ratingNo + ")"}
-          </p>
+          <p className="text-[#64748B] text-[18px]">{rating}</p>
         </div>
 
         <button

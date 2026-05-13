@@ -116,7 +116,7 @@ export default function Profile({ role }) {
   const { accessToken, role: authRole } = useAuth();
   const { email: viewerEmail } = viewerIdentityFromToken(accessToken);
   const { data: me } = useGetUser();
-  const { data: patientReports, isLoading } = useGetPatientReports(id);
+  const { data: patientReports, isLoading } = useGetPatientReports(id, role);
   const { data: inPersonSlotsToBook } = useGetSlotsById("inPerson", id, role);
   const { data: onlineSlotsToBook } = useGetSlotsById("online", id, role);
   const { data: user, error: userError } =
@@ -339,21 +339,34 @@ export default function Profile({ role }) {
 
                   <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3">
                     {[
-                      { Icon: FaPhone, val: user?.phoneNumber },
-                      { Icon: FaEnvelope, val: user?.email },
+                      {
+                        Icon: FaPhone,
+                        val: user?.phoneNumber,
+                        href: `tel:${user?.phoneNumber}`,
+                      },
+                      {
+                        Icon: FaEnvelope,
+                        val: user?.email,
+                        href: `mailto:${user?.email}`,
+                      },
                       {
                         Icon: FaMapMarkerAlt,
                         val: user?.address || "Not specified",
+                        href: null,
                       },
-                    ].map(({ Icon, val }) => (
-                      <span
-                        key={val}
-                        className="flex items-center gap-1.5 text-[13px] text-gray-500"
-                      >
-                        <Icon className="text-gray-400 size-[13px]" />
-                        {val}
-                      </span>
-                    ))}
+                    ].map(({ Icon, val, href }) => {
+                      const Wrapper = href ? "a" : "span";
+                      return (
+                        <Wrapper
+                          key={val}
+                          href={href}
+                          className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          <Icon className="text-gray-400 size-[13px]" />
+                          {val}
+                        </Wrapper>
+                      );
+                    })}
                   </div>
                 </div>
 

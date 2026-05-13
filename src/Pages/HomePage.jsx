@@ -291,6 +291,7 @@ export default function HomePage() {
         { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       );
   const doctorsToRender = topDoctors.length > 0 ? topDoctors : doctorsFallback;
+  console.log(doctorsToRender);
 
   return (
     <div className="w-full overflow-hidden flex flex-col gap-[100px] lg:gap-[200px] pt-[100px] md:pt-[70px] font-english bg-[linear-gradient(145deg,#aec0ff_-50%,transparent_17%)]">
@@ -464,7 +465,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                         rating={
                           doc.averageRating != null
                             ? Number(doc.averageRating).toFixed(1)
-                            : doc.rating || "0.0"
+                            : doc.rate || "0.0"
                         }
                         ratingNo={
                           doc.totalRatings != null
@@ -546,7 +547,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 {labs.length > 0 && (
                   <div className="w-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-                      {labs.slice(0, 6).map((p) => (
+                      {labs.slice(0, 3).map((p) => (
                         <motion.div
                           key={p.id}
                           className="h-full"
@@ -574,7 +575,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                 {scans.length > 0 && (
                   <div className="w-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-                      {scans.slice(0, 6).map((p) => (
+                      {scans.slice(0, 3).map((p) => (
                         <motion.div
                           key={p.id}
                           className="h-full"

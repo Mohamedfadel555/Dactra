@@ -9,6 +9,7 @@ import {
   RiArrowRightSLine,
 } from "react-icons/ri";
 import { useGetCarePatients } from "../../hooks/useGetCarePatients";
+import AvatarIcon from "./../../Components/Common/AvatarIcon1";
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const fadeUp = {
@@ -160,27 +161,41 @@ export default function PatientsPage() {
                     onClick={() => navigate(`/patient/profile/${p.patientId}`)}
                     className="flex items-center gap-3 group text-left w-full"
                   >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-transform group-hover:scale-110"
-                      style={{ background: color + "22", color }}
-                    >
-                      {ini(p.patientName)}
-                    </div>
+                    <AvatarIcon user={{ imageUrl: p.profilePictureUrl }} />
                     <span className="text-[13px] text-slate-800 font-medium truncate group-hover:text-blue-600 transition-colors">
                       {p.patientName}
                     </span>
                     <RiArrowRightSLine className="text-slate-300 group-hover:text-blue-400 shrink-0 transition-all -translate-x-1 group-hover:translate-x-0 opacity-0 group-hover:opacity-100" />
                   </button>
 
-                  <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500">
-                    <RiPhoneLine className="text-slate-300 shrink-0" />
-                    {p.phoneNumber || "—"}
-                  </div>
+                  {p.phoneNumber ? (
+                    <a
+                      href={`tel:${p.phoneNumber}`}
+                      className="flex items-center gap-1.5 text-[12.5px] text-slate-500 hover:text-blue-600 transition-colors"
+                    >
+                      <RiPhoneLine className="text-slate-300 shrink-0" />
+                      {p.phoneNumber}
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500">
+                      <RiPhoneLine className="text-slate-300 shrink-0" />—
+                    </div>
+                  )}
 
-                  <div className="flex items-center gap-1.5 text-[12px] text-slate-400 truncate">
-                    <RiMailLine className="text-slate-300 shrink-0" />
-                    <span className="truncate">{p.email || "—"}</span>
-                  </div>
+                  {p.email ? (
+                    <a
+                      href={`mailto:${p.email}`}
+                      className="flex items-center gap-1.5 text-[12px] text-slate-400 truncate hover:text-blue-600 transition-colors"
+                    >
+                      <RiMailLine className="text-slate-300 shrink-0" />
+                      <span className="truncate">{p.email}</span>
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-[12px] text-slate-400 truncate">
+                      <RiMailLine className="text-slate-300 shrink-0" />
+                      <span>—</span>
+                    </div>
+                  )}
                 </motion.div>
               );
             })

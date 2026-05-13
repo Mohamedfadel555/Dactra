@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import AvatarIcon from "../Common/AvatarIcon1";
 import {
+  FiExternalLink,
   FiHeart,
   FiMessageCircle,
   FiMoreHorizontal,
@@ -257,11 +258,34 @@ export default function PostCard({ post, type, onUpdate }) {
           <div className="flex items-center gap-3">
             <AvatarIcon user={avatarUser} showLabel={false} />
             <div>
-              <p className="font-bold text-slate-800 text-sm leading-tight">
-                {type === "Question"
-                  ? post.patient?.fullName
-                  : `Dr.${post.doctor?.fullName}`}
-              </p>
+              {type === "Artical" && !isOwner ? (
+                <Link
+                  to={`/doctor/profile/${post.doctor.id}`}
+                  className="group inline-flex items-center gap-1 font-black text-slate-800 text-sm leading-tight hover:text-blue-600 transition-colors"
+                >
+                  <span className="truncate">{post.doctor.fullName}</span>
+                  <FiExternalLink
+                    size={11}
+                    className="opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0"
+                  />
+                </Link>
+              ) : type === "Artical" && isOwner ? (
+                <Link
+                  to={`/myprofile`}
+                  className="group inline-flex items-center gap-1 font-black text-slate-800 text-sm leading-tight hover:text-blue-600 transition-colors"
+                >
+                  <span className="truncate">{post.doctor.fullName}</span>
+                  <FiExternalLink
+                    size={11}
+                    className="opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0"
+                  />
+                </Link>
+              ) : (
+                <p className="font-black text-slate-800 text-sm truncate leading-tight">
+                  {name}
+                </p>
+              )}
+
               <p className="text-xs text-slate-400">
                 {type === "Artical" && post.doctor?.specialty + " · "}
                 {timeAgo}

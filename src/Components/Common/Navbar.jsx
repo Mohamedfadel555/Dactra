@@ -22,6 +22,7 @@ export default function Navbar() {
   const [popup, setPopup] = useState(false);
 
   const { data: user } = useGetUser();
+  console.log(user);
   const { role, accessToken } = useAuth();
   const location = useLocation();
   const logoutMutation = useLogout();
@@ -382,6 +383,9 @@ export default function Navbar() {
           {accessToken ? (
             <div className="hidden md:block relative">
               <AvatarIcon
+                user={user}
+                showLabel={false}
+                // user={{ imageUrl: user?.profileImageUrl }}
                 ref={avatarRef}
                 handle={() => {
                   setPopup((p) => !p);

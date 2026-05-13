@@ -11,6 +11,7 @@ import {
   RiCloseLine,
 } from "react-icons/ri";
 import { useGetDoctorOffersSummary } from "../hooks/useGetDoctorOffersSummary";
+import { useScrollToTop } from "../hooks/useScrollToTop";
 
 const NAV_ITEMS = [
   { to: "deals", label: "Deals", icon: <RiFileListLine /> },
@@ -63,6 +64,8 @@ export default function DoctorDashboardLayout() {
 
   const receivedCount =
     (summary?.receivedCount ?? 0) + (summary?.counterCount ?? 0);
+
+  useScrollToTop();
 
   const sidebarContent = (collapsed = false) => (
     <>
@@ -222,61 +225,6 @@ export default function DoctorDashboardLayout() {
             </motion.div>
           </AnimatePresence>
         </main>
-
-        {/* ── MOBILE BOTTOM NAV ────────────────────── */}
-        <nav className="md:hidden flex-shrink-0 bg-[#06172E] border-t border-white/[0.06] flex items-center justify-around px-2 py-2 safe-area-bottom">
-          {NAV_ITEMS.map(({ to, label, icon }) => {
-            const badge =
-              to === "deals" && receivedCount > 0 ? receivedCount : null;
-            return (
-              <NavLink key={to} to={to} end={false} className="flex-1">
-                {({ isActive }) => (
-                  <motion.div
-                    whileTap={{ scale: 0.9 }}
-                    className="flex flex-col items-center gap-1 py-1.5 px-2 rounded-xl relative"
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="mobile-active-bg"
-                        className="absolute inset-0 rounded-xl bg-blue-600"
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 30,
-                        }}
-                      />
-                    )}
-                    <span
-                      className={`relative text-[20px] ${isActive ? "text-white" : "text-white/40"}`}
-                    >
-                      {icon}
-                      {badge && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                          {badge}
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      className={`relative text-[10px] font-semibold ${isActive ? "text-white" : "text-white/40"}`}
-                    >
-                      {label}
-                    </span>
-                  </motion.div>
-                )}
-              </NavLink>
-            );
-          })}
-
-          {/* Home button in bottom nav */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate("/")}
-            className="flex-1 flex flex-col items-center gap-1 py-1.5 px-2 rounded-xl text-white/40"
-          >
-            <RiArrowLeftLine className="text-[20px]" />
-            <span className="text-[10px] font-semibold">Home</span>
-          </motion.button>
-        </nav>
       </div>
     </div>
   );

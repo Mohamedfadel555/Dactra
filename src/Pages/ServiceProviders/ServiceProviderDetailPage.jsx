@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useProviderAPI } from "../../api/providerAPI";
 import { useProviderPortalAPI } from "../../api/providerPortalAPI";
@@ -30,6 +30,8 @@ import {
   MdCheckCircle,
 } from "react-icons/md";
 import Loader from "../../Components/Common/loader";
+import { motion } from "framer-motion";
+import { HiArrowLeft } from "react-icons/hi2";
 
 function normOffering(o) {
   return {
@@ -135,6 +137,7 @@ export default function ServiceProviderDetailPage() {
   const portal = useProviderPortalAPI();
   const numericId = id != null ? Number(id) : NaN;
   const [headerReady, setHeaderReady] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const t = setTimeout(() => setHeaderReady(true), 60);
@@ -294,22 +297,35 @@ export default function ServiceProviderDetailPage() {
     >
       <div className="max-w-4xl mx-auto">
         {/* Back link */}
-        <div
-          style={{
-            opacity: headerReady ? 1 : 0,
-            transform: headerReady ? "translateX(0)" : "translateX(-12px)",
-            transition: "opacity 0.4s ease, transform 0.4s ease",
-          }}
-          className="mb-6"
-        >
-          <Link
-            to="/service-providers"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#316BE8] transition-colors duration-200"
+        {role !== "Doctor" ? (
+          <div
+            style={{
+              opacity: headerReady ? 1 : 0,
+              transform: headerReady ? "translateX(0)" : "translateX(-12px)",
+              transition: "opacity 0.4s ease, transform 0.4s ease",
+            }}
+            className="mb-6"
           >
-            <MdArrowBack className="w-4 h-4" />
-            Labs &amp; Scan Centers
-          </Link>
-        </div>
+            <Link
+              to="/service-providers"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#316BE8] transition-colors duration-200"
+            >
+              <MdArrowBack className="w-4 h-4" />
+              Labs &amp; Scan Centers
+            </Link>
+          </div>
+        ) : (
+          <motion.button
+            whileHover={{ scale: 1.06, x: -2 }}
+            whileTap={{ scale: 0.93 }}
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 my-3 rounded-xl text-slate-500 bg-slate-50 border border-slate-200 text-[12px] font-semibold cursor-pointer hover:bg-slate-100 transition-colors"
+            title="Go back"
+          >
+            <HiArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Back</span>
+          </motion.button>
+        )}
 
         {/* ── HERO CARD ── */}
         <div

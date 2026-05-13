@@ -9,6 +9,7 @@ import {
   useGetActiveSponsors,
   useRemoveSponsor,
 } from "../../hooks/useActiveSponsors";
+import { useNavigate } from "react-router-dom";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -22,6 +23,10 @@ const fmt = (d) =>
 export default function SponsorsPage() {
   const { data, isLoading, isError, status, fetchStatus } =
     useGetActiveSponsors();
+
+  const navigate = useNavigate();
+
+  console.log(data);
 
   const removeMutation = useRemoveSponsor();
 
@@ -77,7 +82,7 @@ export default function SponsorsPage() {
           No active sponsors yet
         </motion.p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
           {sponsorships.map((sp) => {
             const isLab = sp.providerType === 0;
             return (
@@ -89,16 +94,29 @@ export default function SponsorsPage() {
                 <div className="flex items-center gap-4">
                   <div
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0
-                      ${isLab ? "bg-emerald-50 border border-emerald-200" : "bg-sky-50 border border-sky-200"}`}
+  ${isLab ? "bg-emerald-50 border border-emerald-200" : "bg-sky-50 border border-sky-200"}`}
                   >
-                    {isLab ? (
+                    {sp.providerImageUrl ? (
+                      <img
+                        src={sp.providerImageUrl}
+                        alt={sp.providerName}
+                        className="w-full h-full object-cover rounded-2xl"
+                      />
+                    ) : isLab ? (
                       <RiFlaskLine className="text-emerald-600" />
                     ) : (
                       <RiScanLine className="text-sky-600" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-bold text-slate-900 truncate">
+                    <p
+                      onClick={() =>
+                        navigate(
+                          `/service-providers/${sp.medicalTestProviderId}`,
+                        )
+                      }
+                      className="text-[15px] font-bold text-slate-900 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                    >
                       {sp.providerName}
                     </p>
                     <span

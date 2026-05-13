@@ -147,7 +147,7 @@ function ServiceProviderCard({
 
   return (
     <article
-      onClick={() => id && navigate(`/provider/${id}`)}
+      onClick={() => id && navigate(`/service-providers/${id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

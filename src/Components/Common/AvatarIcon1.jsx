@@ -22,7 +22,7 @@ export default function AvatarIcon({
     user == null
       ? sessionUserImage?.imageUrl1 || sessionUserImage?.imageUrl || ""
       : "";
-  const imageUrl = fromProfile || fromSession || "";
+  const imageUrl = fromProfile || "";
   return (
     <div className={`${className && className}  flex items-center gap-3`}>
       <div

@@ -15,6 +15,7 @@ import {
 } from "react-icons/md";
 import Icon from "../assets/images/icons/dactraIcon.webp";
 import { useLogout } from "../hooks/useLogout";
+import { useScrollToTop } from "../hooks/useScrollToTop";
 
 export default function AdminLayout() {
   const { role, accessToken } = useAuth();
@@ -104,6 +105,8 @@ export default function AdminLayout() {
     }
   };
 
+  useScrollToTop();
+
   return (
     <div className="flex h-screen bg-[#F5F6FA] overflow-hidden">
       {/* Mobile Overlay */}
@@ -166,7 +169,7 @@ export default function AdminLayout() {
             }
 
             const isParentActive = item.children.some((child) =>
-              location.pathname.startsWith(child.path)
+              location.pathname.startsWith(child.path),
             );
             const isOpen = openMenu === item.label || isParentActive;
 
@@ -175,7 +178,9 @@ export default function AdminLayout() {
                 <button
                   type="button"
                   onClick={() =>
-                    setOpenMenu((prev) => (prev === item.label ? null : item.label))
+                    setOpenMenu((prev) =>
+                      prev === item.label ? null : item.label,
+                    )
                   }
                   className={`flex items-center justify-between gap-3 lg:gap-4 w-full h-12 px-3 lg:px-4 rounded-lg transition-all duration-200 ${
                     isParentActive

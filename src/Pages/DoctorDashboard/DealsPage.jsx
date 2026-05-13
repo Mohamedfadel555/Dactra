@@ -6,6 +6,7 @@ import { TbCancel } from "react-icons/tb";
 import { useGetDoctorOffersByStatus } from "./../../hooks/useGetDoctorOffers";
 import { useDealMutations } from "./../../hooks/useDealMutation";
 import { useGetDoctorOffersSummary } from "./../../hooks/useGetDoctorOffersSummary";
+import { useNavigate } from "react-router-dom";
 
 /* ─── helpers ─── */
 const fmt = (d) =>
@@ -23,7 +24,6 @@ const ini = (n = "") =>
     .slice(0, 2)
     .toUpperCase();
 
-/* ─── status enum from API: 0=Pending, 1=Accepted, 2=Rejected ─── */
 const STATUS_META = {
   received: {
     label: "Received",
@@ -54,8 +54,6 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.25 } },
 };
 
-/* ─── status meta — tab key maps directly from API now ─── */
-
 /* ══════════════════════════════════
    DEAL CARD
 ══════════════════════════════════ */
@@ -70,6 +68,7 @@ function DealCard({
   isLoading,
 }) {
   const meta = STATUS_META[tab];
+  const navigate = useNavigate();
 
   const daysLeft = deal.respondedAtUtc
     ? Math.max(
@@ -110,14 +109,28 @@ function DealCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-2 relative">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {/* Provider avatar */}
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0
+            className={`w-10 h-10 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0 overflow-hidden
               ${isLab ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-sky-50 border border-sky-200 text-sky-700"}`}
           >
-            {ini(deal.providerName)}
+            {deal.providerImageUrl ? (
+              <img
+                src={deal.providerImageUrl}
+                alt={deal.providerName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              ini(deal.providerName)
+            )}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
+            <p
+              onClick={() =>
+                navigate(`/service-providers/${deal.medicalTestProviderId}`)
+              }
+              className="text-sm font-semibold text-gray-900 leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors"
+            >
               {deal.providerName || "—"}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -154,15 +167,27 @@ function DealCard({
           className="rounded-xl border border-violet-200 bg-white p-3 relative"
         >
           <div className="flex items-start sm:items-center gap-2.5">
-            <div className="w-10 h-10 rounded-lg bg-violet-50 border border-violet-200 flex flex-col items-center justify-center shrink-0">
-              <span className="text-base font-black text-violet-600 leading-none">
-                {deal.counterOffers[0].discountPercentage}
-              </span>
-              <span className="text-[9px] text-violet-400">% OFF</span>
+            {/* Doctor avatar in counter offer */}
+            <div className="w-10 h-10 rounded-lg overflow-hidden bg-violet-50 border border-violet-200 flex items-center justify-center shrink-0">
+              {deal.doctorImageUrl ? (
+                <img
+                  src={deal.doctorImageUrl}
+                  alt="Doctor"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-violet-50 border border-violet-200 flex flex-col items-center justify-center shrink-0">
+                  <span className="text-base font-black text-violet-600 leading-none">
+                    {deal.counterOffers[0].discountPercentage}
+                  </span>
+                  <span className="text-[9px] text-violet-400">% OFF</span>
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-violet-500 font-medium mb-0.5">
-                Your Counter Offer
+                Your Counter Offer · {deal.counterOffers[0].discountPercentage}%
+                OFF
               </p>
               <p className="text-xs text-violet-700 leading-relaxed line-clamp-2">
                 {deal.counterOffers[0].offerContent}
@@ -265,13 +290,27 @@ function CounterModal({ deal, onClose, onSubmit, isLoading }) {
         className="bg-white rounded-2xl w-full max-w-md border border-slate-200 shadow-2xl overflow-hidden"
       >
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-[15px] font-bold text-slate-900">
-              Send Counter Offer
-            </p>
-            <p className="text-[12px] text-slate-400 mt-0.5">
-              Responding to {deal.providerName}
-            </p>
+          <div className="flex items-center gap-3">
+            {/* Provider image in modal header */}
+            <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-[11px] font-bold text-slate-500 shrink-0">
+              {deal.providerImageUrl ? (
+                <img
+                  src={deal.providerImageUrl}
+                  alt={deal.providerName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                ini(deal.providerName)
+              )}
+            </div>
+            <div>
+              <p className="text-[15px] font-bold text-slate-900">
+                Send Counter Offer
+              </p>
+              <p className="text-[12px] text-slate-400 mt-0.5">
+                Responding to {deal.providerName}
+              </p>
+            </div>
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}

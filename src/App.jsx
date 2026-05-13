@@ -7,7 +7,6 @@ import Loader from "./Components/Common/loader";
 import { useRefresh } from "./hooks/useRefresh";
 import { useAuth } from "./Context/AuthContext";
 import { SponsorshipHubProvider } from "./hooks/SponsorshipHubProvider";
-// import { SponsorshipHubProvider } from "./sponsorship";
 
 function App() {
   const refreshMutation = useRefresh();
@@ -26,7 +25,6 @@ function App() {
 
   return (
     <>
-      {/* ✅ بنستنى لحد ما الـ token يجي */}
       {isAuthReady && accessToken ? (
         <SponsorshipHubProvider getToken={() => accessToken}>
           <Suspense fallback={<Loader />}>
@@ -34,7 +32,6 @@ function App() {
           </Suspense>
         </SponsorshipHubProvider>
       ) : (
-        // لو مفيش token (مش logged in) بنرندر من غير hub
         <Suspense fallback={<Loader />}>
           <RouterProvider router={route} />
         </Suspense>

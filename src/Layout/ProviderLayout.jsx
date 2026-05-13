@@ -22,6 +22,7 @@ import { useLogout } from "../hooks/useLogout";
 import { TbContract } from "react-icons/tb";
 import { useMedicalProviderMe, pick } from "../hooks/useMedicalProviderMe";
 import BrandLogo from "../Components/Common/BrandLogo";
+import { useScrollToTop } from "../hooks/useScrollToTop";
 
 export default function ProviderLayout({ type }) {
   const { role, accessToken } = useAuth();
@@ -55,6 +56,8 @@ export default function ProviderLayout({ type }) {
       setSidebarOpen(false);
     }
   };
+
+  useScrollToTop();
 
   return (
     <div className="flex h-screen bg-[#F5F6FA] overflow-hidden">
