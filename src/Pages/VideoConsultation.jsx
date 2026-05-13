@@ -860,6 +860,8 @@ export default function VideoConsultation() {
         startWithVideoMuted: false,
         disableDeepLinking: true,
         prejoinPageEnabled: false,
+        disableSelfView: false,        // ← تأكد إنها false
+  disableSelfViewSettings: false,
         prejoinConfig: { enabled: false },
         skipPrejoin: true,
         disableInviteFunctions: true,
@@ -871,7 +873,7 @@ export default function VideoConsultation() {
         toolbarButtons: [
           "microphone",
           "camera",
-          "hangup",
+          // "hangup",
           "tileview",
           "fullscreen",
           ...(isModerator ? ["mute-everyone", "security"] : []),

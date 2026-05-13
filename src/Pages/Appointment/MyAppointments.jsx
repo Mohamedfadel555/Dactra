@@ -21,6 +21,7 @@ import {
   FiCalendar,
   FiExternalLink,
   FiLock,
+  FiAlertOctagon,
 } from "react-icons/fi";
 
 import { useAuth } from "../../Context/AuthContext";
@@ -66,13 +67,30 @@ const STATUS = {
     border: "#fcd34d",
     glow: "rgba(217,119,6,0.16)",
   },
+  // ✅ NEW: Failed status
+  failed: {
+    label: "Failed",
+    Icon: FiAlertOctagon,
+    color: "#7c3aed",
+    light: "#f5f3ff",
+    border: "#c4b5fd",
+    glow: "rgba(124,58,237,0.14)",
+  },
 };
 
 // Tab label → API status enum
-const TAB_TO_CODE = { upcoming: 0, completed: 1, cancelled: 2, unpaid: 3 };
+// ✅ UPDATED: Added failed: 4
+const TAB_TO_CODE = {
+  upcoming: 0,
+  completed: 1,
+  cancelled: 2,
+  unpaid: 3,
+  failed: 4,
+};
 
-const PATIENT_TABS = ["completed", "upcoming", "cancelled", "unpaid"];
-const DOCTOR_TABS = ["completed", "upcoming", "cancelled"];
+// ✅ UPDATED: Added "failed" to PATIENT_TABS
+const PATIENT_TABS = ["completed", "upcoming", "cancelled", "unpaid", "failed"];
+const DOCTOR_TABS = ["completed", "upcoming", "cancelled", "failed"];
 
 const PAGE_SIZE = 10;
 
@@ -215,7 +233,6 @@ function JoinSessionButton({ appt, onJoin }) {
   const [, setTick] = useState(0);
 
   useEffect(() => {
-    // كل ثانية لما الزرار يكون قريب من الميعاد
     const interval = isSessionNear(appt.slotDateTime)
       ? setInterval(() => setTick((n) => n + 1), 1_000)
       : setInterval(() => setTick((n) => n + 1), 30_000);
@@ -223,12 +240,11 @@ function JoinSessionButton({ appt, onJoin }) {
   }, [appt.slotDateTime]);
 
   const mins = diffMins(appt.slotDateTime);
-  const isVisible = mins <= 10 && mins >= -30; // يظهر من 10 دقايق قبل
-  const isLive = mins <= 0; // يشتغل لما الميعاد يجي
+  const isVisible = mins <= 10 && mins >= -30;
+  const isLive = mins <= 0;
 
   if (!isVisible) return null;
 
-  // Countdown بالدقايق والثواني
   const totalSecs = Math.max(0, Math.ceil(mins * 60));
   const mm = String(Math.floor(totalSecs / 60)).padStart(2, "0");
   const ss = String(totalSecs % 60).padStart(2, "0");
@@ -261,7 +277,7 @@ function JoinSessionButton({ appt, onJoin }) {
             ? { scale: 1.02, boxShadow: "0 8px 28px rgba(5,150,105,0.35)" }
             : {}
         }
-        onClick={() => isLive && onJoin(appt)} // ← مش بيعمل حاجة لو مش live
+        onClick={() => isLive && onJoin(appt)}
         disabled={!isLive}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-white"
         style={{
@@ -445,6 +461,18 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
 
   const { mutate } = useResumePay();
 
+  // ✅ Track time reactively so cancel button hides when session goes live
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (appt.status !== "upcoming") return;
+    const interval = setInterval(() => setTick((n) => n + 1), 15_000);
+    return () => clearInterval(interval);
+  }, [appt.status]);
+
+  // ✅ Cancel button is hidden when the session is live (mins <= 0)
+  const sessionIsLive =
+    appt.status === "upcoming" && diffMins(appt.slotDateTime) <= 0;
+
   return (
     <motion.div
       variants={cardV}
@@ -475,7 +503,6 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
             {/* Name + status */}
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
-                {/* Patient can tap doctor name → profile page */}
                 {(role === "Patient" && appt.doctorId) ||
                 (role === "Doctor" &&
                   (appt.status === "upcoming" ||
@@ -499,9 +526,11 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
                     {name}
                   </p>
                 )}
-                <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1 font-medium">
-                  <SubIcon size={11} /> {sub}
-                </p>
+                {role === "Patient" && (
+                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1 font-medium">
+                    <SubIcon size={11} /> {sub}
+                  </p>
+                )}
               </div>
               <StatusPill status={appt.status} />
             </div>
@@ -533,8 +562,8 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
               <JoinSessionButton appt={appt} onJoin={onJoinSession} />
             )}
 
-            {/* Cancel button */}
-            {appt.status === "upcoming" && (
+            {/* ✅ Cancel button — hidden when session is live (diffMins <= 0) */}
+            {appt.status === "upcoming" && !sessionIsLive && (
               <div className="mt-3">
                 <motion.button
                   whileTap={{ scale: 0.96 }}
@@ -669,6 +698,8 @@ function Empty({ tab, role }) {
     unpaid: "You're all caught up with payments!",
     completed: "No completed appointments yet.",
     upcoming: "No upcoming appointments scheduled.",
+    // ✅ NEW: Failed empty message
+    failed: "No failed appointments on record.",
   };
 
   return (
@@ -784,7 +815,6 @@ export default function MyAppointments() {
   }, [validTab]);
 
   const isDoctor = role === "Doctor";
-  const accentGlow = isDoctor ? "#34d399" : "#60a5fa";
   const cancelMutation = useCancelAppointment();
 
   const handleCancelConfirm = useCallback(
@@ -794,7 +824,7 @@ export default function MyAppointments() {
         {
           onSuccess: () => {
             queryClient.setQueryData(
-              ["appointments", TAB_TO_CODE[validTab], page], // ← التغيير هنا
+              ["appointments", TAB_TO_CODE[validTab], page],
               (old) => {
                 if (!old) return old;
                 const patch = (arr) =>
@@ -818,6 +848,7 @@ export default function MyAppointments() {
     },
     [queryClient, validTab, page, cancelMutation],
   );
+
   const handleJoinSession = (appt) =>
     navigate(`/consultation/${appt.id}?role=${role.toLowerCase()}`);
 

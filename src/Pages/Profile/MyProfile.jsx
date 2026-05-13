@@ -314,7 +314,7 @@ export default function MyProfile() {
 
   const charts = [
     {
-      title: "Blood pressure",
+      title: "Blood Pressure",
       data: grouped[1] ?? [],
       domain: [40, 200],
       fields: [
@@ -335,7 +335,7 @@ export default function MyProfile() {
       ],
     },
     {
-      title: "Heart rate",
+      title: "Heart Rate",
       data: grouped[2] ?? [],
       domain: [40, 180],
       fields: [
