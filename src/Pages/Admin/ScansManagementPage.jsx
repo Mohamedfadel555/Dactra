@@ -14,20 +14,22 @@ export default function ScansManagementPage() {
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState(
-    isNewRoute ? "0" : ""
-  ); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
+  const [statusFilter, setStatusFilter] = useState(isNewRoute ? "0" : ""); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
   const pageSize = 100;
 
   // Fetch all scans info مع search + status
-  const { data: scansData, isLoading, refetch } = useQuery({
+  const {
+    data: scansData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-scans", pageSize, searchQuery, statusFilter],
     queryFn: async () => {
       const res = await adminAPI.getAllScansInfo(
         1,
         pageSize,
         searchQuery || null,
-        statusFilter === "" ? null : Number(statusFilter)
+        statusFilter === "" ? null : Number(statusFilter),
       );
       const raw = res.data;
 
@@ -46,8 +48,7 @@ export default function ScansManagementPage() {
   }, [isNewRoute]);
 
   // Reset pagination when search or status filter changes
-  useEffect(() => {
-  }, [searchQuery, statusFilter]);
+  useEffect(() => {}, [searchQuery, statusFilter]);
 
   const allScans = (scansData || []).map((scan) => {
     const approvalStatus =
@@ -146,16 +147,14 @@ export default function ScansManagementPage() {
   const handleView = (scan) => {
     const scanId = scan.profileId || scan.id || scan.userId || scan.appUserId;
     if (scanId) {
-      navigate(`/scan/profile/${scanId}`);
+      navigate(`/service-providers/${scanId}`);
     } else {
       toast.error("Scan center ID not found");
     }
   };
 
   const handleApprove = async (scan) => {
-    const providerId =
-      
-      scan.id ;
+    const providerId = scan.id;
 
     if (!providerId) {
       toast.error("Scan center ID not found for approve/disapprove");
@@ -185,11 +184,7 @@ export default function ScansManagementPage() {
   };
 
   const handleBlock = async (scan) => {
-    const userId =
-      scan.id ||
-      scan.userId ||
-      scan.appUserId ||
-      scan.profileId;
+    const userId = scan.id || scan.userId || scan.appUserId || scan.profileId;
 
     if (!userId) {
       toast.error("Scan center ID not found for block/unblock");
@@ -200,7 +195,8 @@ export default function ScansManagementPage() {
     const action = isBlocked ? "unblock" : "block";
     const actionText = isBlocked ? "Unblock" : "Block";
 
-    if (!window.confirm(`Are you sure you want to ${actionText} this user?`)) return;
+    if (!window.confirm(`Are you sure you want to ${actionText} this user?`))
+      return;
 
     try {
       await adminAPI.deleteAppUser(userId);
@@ -242,9 +238,7 @@ export default function ScansManagementPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">
-              Status:
-            </label>
+            <label className="text-xs sm:text-sm text-gray-600">Status:</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -272,4 +266,3 @@ export default function ScansManagementPage() {
     </div>
   );
 }
-

@@ -2,6 +2,7 @@ import { IoPersonSharp } from "react-icons/io5";
 import { useUserImage } from "../../hooks/useUserImage";
 export default function AvatarIcon({
   user,
+  url,
   showLabel = true,
   handle,
   ref,
@@ -10,6 +11,7 @@ export default function AvatarIcon({
 }) {
   const { data: sessionUserImage } = useUserImage();
   const fromProfile =
+    url ||
     user?.imageUrl ||
     user?.profileImageUrl ||
     user?.imageUrl1 ||
@@ -61,7 +63,9 @@ export default function AvatarIcon({
       </div>
       {user && showLabel && (
         <p className="font-semibold truncate">
-          {user?.firstName} {user?.lastName}
+          {user?.firstName
+            ? `${user?.firstName} ${user?.lastName}`
+            : user?.name}
         </p>
       )}
     </div>

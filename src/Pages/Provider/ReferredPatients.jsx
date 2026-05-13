@@ -378,6 +378,7 @@ function PatientCard({ referral, index, onConfirm }) {
       {/* top row */}
       <div className="flex items-start justify-between gap-2 shrink-0">
         <AvatarIcon
+          url={referral.patientImageUrl}
           user={{ firstName, lastName }}
           size="40"
           className="gap-2.5 min-w-0 flex-1"
@@ -532,6 +533,7 @@ export default function ReferredPatients() {
   });
 
   const items = data?.items ?? [];
+  console.log(items);
   const totalCount = data?.totalCount ?? 0;
   const hasNext = data?.hasNextPage ?? false;
   const hasPrev = data?.hasPreviousPage ?? false;

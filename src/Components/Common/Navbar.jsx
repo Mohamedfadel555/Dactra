@@ -14,6 +14,7 @@ import NotificationBell from "./NotificationBell";
 import { PiCalendarDots } from "react-icons/pi";
 import NotificationsWidget from "./../NotificationButton";
 import { FaUserDoctor } from "react-icons/fa6";
+import { useMedicalProviderMe } from "./../../hooks/useMedicalProviderMe";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -21,9 +22,10 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [popup, setPopup] = useState(false);
 
-  const { data: user } = useGetUser();
-  console.log(user);
   const { role, accessToken } = useAuth();
+  const { data: user } =
+    role === "MedicalTestProvider" ? useMedicalProviderMe() : useGetUser();
+  console.log(user);
   const location = useLocation();
   const logoutMutation = useLogout();
 

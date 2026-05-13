@@ -12,6 +12,7 @@ import { TbPlugConnectedX } from "react-icons/tb";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
 import { useSponsoredDoctors } from "../../hooks/useSponsoredDoctors";
 import { useProviderCancelDeal } from "../../hooks/useProviderCancelDeal";
+import { useNavigate } from "react-router-dom";
 
 const BLUE = "#316BE8";
 
@@ -39,7 +40,6 @@ function Spinner() {
   );
 }
 
-// ─── LoadMore Button ──────────────────────────────────────────────────────────
 function LoadMoreButton({ onClick, loading }) {
   return (
     <motion.button
@@ -67,6 +67,7 @@ function CancelModal({ doctor, onClose }) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const { firstName, lastName } = splitName(doctor.doctorName);
+  const navigate = useNavigate();
 
   const cancelMutation = useProviderCancelDeal();
 
@@ -138,11 +139,24 @@ function CancelModal({ doctor, onClose }) {
             </div>
 
             <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 shrink-0">
-              <AvatarIcon
-                user={{ firstName, lastName }}
-                size="38"
-                className="gap-2.5 min-w-0"
-              />
+              <div
+                className="flex items-center gap-2.5 min-w-0 cursor-pointer"
+                onClick={() => navigate(`/doctor/profile/${doctor.doctorId}`)}
+              >
+                <AvatarIcon
+                  user={{ firstName, lastName, imageUrl: doctor.imageUrl }}
+                  size="38"
+                  showLabel={false}
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 leading-tight truncate hover:text-blue-600 transition-colors">
+                    {doctor.doctorName}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">
+                    {doctor.doctorSpeciality}
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => onClose(null)}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors cursor-pointer shrink-0 ml-2"
@@ -222,6 +236,7 @@ function CancelModal({ doctor, onClose }) {
 // ─── DoctorCard ───────────────────────────────────────────────────────────────
 function DoctorCard({ doctor, index, onCancel }) {
   const { firstName, lastName } = splitName(doctor.doctorName);
+  const navigate = useNavigate();
 
   return (
     <motion.div
@@ -233,12 +248,23 @@ function DoctorCard({ doctor, index, onCancel }) {
       className="bg-white rounded-2xl border border-gray-200 p-3.5 sm:p-4 flex flex-col gap-2.5 overflow-hidden hover:shadow-md transition-shadow duration-200"
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 min-w-0 flex-1 cursor-pointer">
+        <div
+          className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer"
+          onClick={() => navigate(`/doctor/profile/${doctor.doctorId}`)}
+        >
           <AvatarIcon
-            user={{ firstName, lastName }}
+            user={{ firstName, lastName, imageUrl: doctor.imageUrl }}
             size="40"
-            className="gap-2 min-w-0 flex-1"
+            showLabel={false}
           />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 leading-tight truncate hover:text-blue-600 transition-colors">
+              {doctor.doctorName}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5 truncate">
+              {doctor.doctorSpeciality}
+            </p>
+          </div>
         </div>
         <div
           className="shrink-0 flex flex-col items-center justify-center w-10 h-10 rounded-xl"
@@ -251,16 +277,11 @@ function DoctorCard({ doctor, index, onCancel }) {
         </div>
       </div>
 
-      <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 cursor-pointer">
+      <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
         {doctor.description}
       </p>
 
-      {/* <div>
-        <MdPhone/>
-        <p>doctor.phone</p>
-      </div> */}
-
-      <div className="flex items-center justify-between gap-2 cursor-pointer">
+      <div className="flex items-center justify-between gap-2">
         <div
           className="flex items-center gap-1 text-xs font-medium"
           style={{ color: BLUE }}
@@ -293,7 +314,6 @@ export default function SponsoredDoctors() {
   const [search, setSearch] = useState("");
   const [cancelDoc, setCancelDoc] = useState(null);
 
-  // FIX: useOffersByStat بيرجع infinite query
   const {
     data: sponsoredData,
     fetchNextPage,
@@ -301,10 +321,8 @@ export default function SponsoredDoctors() {
     isFetchingNextPage,
   } = useSponsoredDoctors();
 
-  // FIX: flatten كل الـ pages في array واحدة
   const allDoctors = sponsoredData?.pages.flatMap((page) => page.items) ?? [];
 
-  // FIX: السيرش كان بيستخدم d.name و d.specialization بس الـ API بيرجع doctorName و doctorSpeciality
   const filtered = allDoctors.filter((d) =>
     `${d.doctorName} ${d.doctorSpeciality}`
       .toLowerCase()
@@ -314,15 +332,9 @@ export default function SponsoredDoctors() {
   const totalPatients = sponsoredData?.pages[0]?.totalPatientsSent ?? 0;
   const averageDiscount = sponsoredData?.pages[0]?.averageDiscount ?? "—";
 
-  const handleCancelClose = (result) => {
-    setCancelDoc(null);
-    // الـ query هتعمل refetch تلقائي بعد الـ mutation
-  };
-
   return (
     <>
       <div className="w-full flex flex-col gap-4 sm:gap-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -344,7 +356,6 @@ export default function SponsoredDoctors() {
           </div>
         </motion.div>
 
-        {/* Summary pills */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -378,7 +389,6 @@ export default function SponsoredDoctors() {
           ))}
         </motion.div>
 
-        {/* Search */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -412,7 +422,6 @@ export default function SponsoredDoctors() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
           <AnimatePresence mode="popLayout">
             {filtered.length === 0 ? (
@@ -442,7 +451,6 @@ export default function SponsoredDoctors() {
             )}
           </AnimatePresence>
 
-          {/* FIX: Pagination — Load More */}
           {hasNextPage && !search && (
             <LoadMoreButton
               onClick={() => fetchNextPage()}
@@ -454,7 +462,7 @@ export default function SponsoredDoctors() {
 
       <AnimatePresence>
         {cancelDoc && (
-          <CancelModal doctor={cancelDoc} onClose={handleCancelClose} />
+          <CancelModal doctor={cancelDoc} onClose={() => setCancelDoc(null)} />
         )}
       </AnimatePresence>
     </>

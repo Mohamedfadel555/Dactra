@@ -14,20 +14,22 @@ export default function LabsManagementPage() {
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState(
-    isNewRoute ? "0" : ""
-  ); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
+  const [statusFilter, setStatusFilter] = useState(isNewRoute ? "0" : ""); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
   const pageSize = 100;
 
   // Fetch all labs info مع search + status
-  const { data: labsData, isLoading, refetch } = useQuery({
+  const {
+    data: labsData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-labs", pageSize, searchQuery, statusFilter],
     queryFn: async () => {
       const res = await adminAPI.getAllLabsInfo(
         1,
         pageSize,
         searchQuery || null,
-        statusFilter === "" ? null : Number(statusFilter)
+        statusFilter === "" ? null : Number(statusFilter),
       );
       const raw = res.data;
 
@@ -147,18 +149,14 @@ export default function LabsManagementPage() {
   const handleView = (lab) => {
     const labId = lab.profileId || lab.id || lab.userId || lab.appUserId;
     if (labId) {
-      navigate(`/lab/profile/${labId}`);
+      navigate(`/service-providers/${labId}`);
     } else {
       toast.error("Lab ID not found");
     }
   };
 
   const handleApprove = async (lab) => {
-    const providerId =
-      lab.profileId ||
-      lab.id ||
-      lab.userId ||
-      lab.appUserId;
+    const providerId = lab.profileId || lab.id || lab.userId || lab.appUserId;
 
     if (!providerId) {
       toast.error("Lab ID not found for approve/disapprove");
@@ -189,8 +187,7 @@ export default function LabsManagementPage() {
   };
 
   const handleBlock = async (lab) => {
-    const userId =
-      lab.id ;
+    const userId = lab.id;
 
     if (!userId) {
       toast.error("Lab ID not found for block/unblock");
@@ -201,7 +198,8 @@ export default function LabsManagementPage() {
     const action = isBlocked ? "unblock" : "block";
     const actionText = isBlocked ? "Unblock" : "Block";
 
-    if (!window.confirm(`Are you sure you want to ${actionText} this user?`)) return;
+    if (!window.confirm(`Are you sure you want to ${actionText} this user?`))
+      return;
 
     try {
       await adminAPI.deleteAppUser(userId);
@@ -246,9 +244,7 @@ export default function LabsManagementPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">
-              Status:
-            </label>
+            <label className="text-xs sm:text-sm text-gray-600">Status:</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -257,7 +253,7 @@ export default function LabsManagementPage() {
               <option value="">All</option>
               <option value="0">New / Pending</option>
               <option value="1">Approved</option>
-                <option value="2">Disapproved</option>
+              <option value="2">Disapproved</option>
             </select>
           </div>
         </div>
@@ -276,4 +272,3 @@ export default function LabsManagementPage() {
     </div>
   );
 }
-

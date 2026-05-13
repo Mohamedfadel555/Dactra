@@ -14,10 +14,10 @@ import {
 } from "react-icons/md";
 import { useOffersSummary } from "../../hooks/useOffersSummary";
 import { useOffersByStat } from "../../hooks/useOffersByStat";
-import AvatarIcon from "../../Components/Common/AvatarIcon1";
 import { useProviderAcceptCounter } from "../../hooks/useProviderAcceptCounter";
 import { useProviderRejectCounter } from "../../hooks/useProviderRejectCounter";
 import { useProviderCancelOffer } from "../../hooks/useProviderCancelOffer";
+import { useNavigate } from "react-router-dom";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -82,6 +82,31 @@ const fmt = (d) =>
       })
     : null;
 
+// ─── DoctorAvatar ─────────────────────────────────────────────────────────────
+function DoctorAvatar({ imageUrl, name, size = "w-10 h-10", onClick }) {
+  const initials = name
+    ? name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "DR";
+
+  return (
+    <div
+      onClick={onClick}
+      className={`${size} rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0 ${onClick ? "cursor-pointer" : ""}`}
+    >
+      {imageUrl ? (
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-xs font-bold text-gray-500">{initials}</span>
+      )}
+    </div>
+  );
+}
+
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 function Spinner({ cls = "border-white/30 border-t-white" }) {
   return (
@@ -97,6 +122,7 @@ function Spinner({ cls = "border-white/30 border-t-white" }) {
 function CounterModal({ deal, onClose }) {
   const [loading, setLoading] = useState(null);
   const [done, setDone] = useState(null);
+  const navigate = useNavigate();
 
   const acceptMutation = useProviderAcceptCounter();
   const rejectMutation = useProviderRejectCounter();
@@ -182,9 +208,16 @@ function CounterModal({ deal, onClose }) {
 
             <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
-                <AvatarIcon />
+                <DoctorAvatar
+                  imageUrl={newDeal.doctorImageUrl}
+                  name={newDeal.doctorName}
+                  onClick={() => navigate(`/doctor/profile/${deal.doctorId}`)}
+                />
                 <div className="min-w-0">
-                  <p className="text-sm sm:text-[15px] font-semibold text-gray-900 leading-tight truncate">
+                  <p
+                    onClick={() => navigate(`/doctor/profile/${deal.doctorId}`)}
+                    className="text-sm sm:text-[15px] font-semibold text-gray-900 leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors"
+                  >
                     Counter Offer
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">
@@ -288,6 +321,7 @@ function CounterModal({ deal, onClose }) {
 
 // ─── DealCard ─────────────────────────────────────────────────────────────────
 function DealCard({ deal, index, onCounter, onCancel }) {
+  const navigate = useNavigate();
   const statusKey =
     deal.status === 0 ? "pending" : deal.status === 1 ? "rejected" : "counter";
   const meta = STATUS_META[statusKey];
@@ -315,11 +349,16 @@ function DealCard({ deal, index, onCounter, onCancel }) {
 
       <div className="flex items-start justify-between gap-2 relative">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-xs sm:text-sm font-bold text-gray-600 shrink-0">
-            <AvatarIcon />
-          </div>
+          <DoctorAvatar
+            imageUrl={deal.doctorImageUrl}
+            name={deal.doctorName}
+            onClick={() => navigate(`/doctor/profile/${deal.doctorId}`)}
+          />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
+            <p
+              onClick={() => navigate(`/doctor/profile/${deal.doctorId}`)}
+              className="text-sm font-semibold text-gray-900 leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors"
+            >
               {deal.doctorName}
             </p>
             <p className="text-xs text-gray-400 mt-0.5 truncate">
@@ -357,15 +396,16 @@ function DealCard({ deal, index, onCounter, onCancel }) {
           className="rounded-xl border border-violet-200 bg-white p-3 relative"
         >
           <div className="flex items-start sm:items-center gap-2.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-violet-50 border border-violet-200 flex flex-col items-center justify-center shrink-0">
-              <span className="text-sm sm:text-base font-black text-violet-600 leading-none">
-                {deal.counterOffers?.[0]?.discountPercentage ?? "—"}
-              </span>
-              <span className="text-[9px] text-violet-400">% OFF</span>
-            </div>
+            <DoctorAvatar
+              imageUrl={deal.counterOffers?.[0]?.doctorImageUrl}
+              name={deal.doctorName}
+              size="w-9 h-9 sm:w-10 sm:h-10"
+              onClick={() => navigate(`/doctor/profile/${deal.doctorId}`)}
+            />
             <div className="flex-1 min-w-0">
               <p className="text-[10px] sm:text-[11px] text-violet-500 font-medium mb-0.5">
-                Doctor's Counter
+                Doctor's Counter ·{" "}
+                {deal.counterOffers?.[0]?.discountPercentage ?? "—"}% OFF
               </p>
               <p className="text-xs text-violet-700 leading-relaxed line-clamp-2">
                 {deal.counterOffers?.[0]?.offerContent}
@@ -387,7 +427,6 @@ function DealCard({ deal, index, onCounter, onCancel }) {
         Sent {fmt(deal.requestedAtUtc)}
       </p>
 
-      {/* زرار كانسل للـ pending */}
       {deal.status === 0 && (
         <motion.button
           whileHover={{ y: -1 }}
@@ -399,7 +438,6 @@ function DealCard({ deal, index, onCounter, onCancel }) {
         </motion.button>
       )}
 
-      {/* نوت الحذف التلقائي للـ rejected */}
       {deal.status === 1 && (
         <motion.div
           initial={{ opacity: 0, y: 4 }}
@@ -438,6 +476,7 @@ function LoadMoreButton({ onClick, loading }) {
 function CancelPendingModal({ deal, onClose }) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const navigate = useNavigate();
 
   const cancelMutation = useProviderCancelOffer();
 
@@ -505,12 +544,18 @@ function CancelPendingModal({ deal, onClose }) {
               <div className="w-10 h-1 rounded-full bg-gray-200" />
             </div>
 
-            {/* header */}
             <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
-                <AvatarIcon />
+                <DoctorAvatar
+                  imageUrl={deal.doctorImageUrl}
+                  name={deal.doctorName}
+                  onClick={() => navigate(`/doctor/profile/${deal.doctorId}`)}
+                />
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
+                  <p
+                    onClick={() => navigate(`/doctor/profile/${deal.doctorId}`)}
+                    className="text-sm font-semibold text-gray-900 leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors"
+                  >
                     Cancel Offer
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">
@@ -526,9 +571,7 @@ function CancelPendingModal({ deal, onClose }) {
               </button>
             </div>
 
-            {/* body */}
             <div className="px-4 sm:px-5 py-4 flex flex-col gap-3 overflow-y-auto flex-1">
-              {/* offer summary */}
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
                 <p className="text-[10px] sm:text-[11px] text-amber-500 uppercase tracking-wider mb-2">
                   Pending Offer
@@ -548,7 +591,6 @@ function CancelPendingModal({ deal, onClose }) {
                 </div>
               </div>
 
-              {/* warning */}
               <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 bg-rose-50 border border-rose-200">
                 <MdBlock size={15} className="text-rose-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-rose-800 leading-relaxed">
@@ -559,7 +601,6 @@ function CancelPendingModal({ deal, onClose }) {
               </div>
             </div>
 
-            {/* footer */}
             <div className="flex gap-2 px-4 sm:px-5 py-3 sm:py-4 border-t border-gray-100 shrink-0">
               <button
                 onClick={() => onClose(null)}
