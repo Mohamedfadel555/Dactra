@@ -8,10 +8,19 @@ export const useFavourite = (type) => {
   return useMutation({
     mutationFn: favourite,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["favorites", type] }),
-    onError: () =>
-      toast.error("something went wrong ,try again later", {
-        position: "top-center",
-        closeOnClick: true,
-      }),
+    onError: (err) => {
+      console.log(err);
+      if (err.status === 401)
+        toast.error("you must login first", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+      else {
+        toast.error("something went wrong ,try again later", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+      }
+    },
   });
 };

@@ -4,12 +4,13 @@ import { useAppointmentAPI } from "../api/appointmentAPI";
 import { useNotificationsApi } from "./useNotificationsApi";
 
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 export const useBook = (type, id) => {
-
   const { Book } = useAppointmentAPI();
   const { notifyBookAppointment } = useNotificationsApi();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: Book,
@@ -26,7 +27,6 @@ export const useBook = (type, id) => {
         })
         .catch(() => {});
 
-
       if (type === "cash") {
         toast.success("Appointment booked! Pay at the clinic.", {
           position: "top-center",
@@ -38,11 +38,18 @@ export const useBook = (type, id) => {
       window.location.href = res.data.appointmentId;
     },
     onError: (err) => {
-      console.log(err);
-      toast.error("Failed to book appointment, try again later!", {
-        position: "top-center",
-        closeOnClick: true,
-      });
+      if (err.status === 401) {
+        navigate("/auth/Login");
+        toast.error("you must login first", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+      } else {
+        toast.error("Failed to book appointment, try again later!", {
+          position: "top-center",
+          closeOnClick: true,
+        });
+      }
     },
   });
 };
