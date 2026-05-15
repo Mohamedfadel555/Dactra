@@ -133,7 +133,6 @@ export default function PatientsManagementPage() {
   ];
 
   const handleView = (patient) => {
-    console.log(patient);
     const patientId = patient.profileId;
     if (patientId) {
       navigate(`/patient/profile/${patientId}`);

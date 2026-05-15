@@ -37,6 +37,7 @@ import { useNotificationsApi } from "../../hooks/useNotificationsApi";
 import { avatarUserFromAuthor } from "../../utils/communityAvatars";
 import { FiZoomIn, FiX } from "react-icons/fi";
 import { useQuestionHub } from "../../hooks/useQuestionHub";
+import { useDeletePost } from "../../hooks/useDeletePost";
 
 function handleTime(create) {
   const diff = Date.now() - new Date(create).getTime();
@@ -61,6 +62,7 @@ export default function PostDetailPage() {
   const location = useLocation();
   const type = location.state?.type ?? "Question";
   const queryClient = useQueryClient();
+  const deletePostMutation = useDeletePost("Question");
 
   const { data: post } = useGetQuestionById(param.id);
   const { role, accessToken } = useAuth();
@@ -321,7 +323,10 @@ export default function PostDetailPage() {
                             setPostMenuOpen(false);
                             setEditOpen(true);
                           }}
-                          onDelete={() => console.log("delete post", post?.id)}
+                          onDelete={() => {
+                            deletePostMutation.mutate(param.id);
+                            navigate(-1);
+                          }}
                           onReport={() => setReportOpen(true)}
                           onClose={() => setPostMenuOpen(false)}
                         />

@@ -1,235 +1,539 @@
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import {
-  FaUserMd,
-  FaComments,
-  FaBookMedical,
-  FaHeartbeat,
-  FaPills,
-  FaShieldAlt,
-} from "react-icons/fa";
-import { HiChevronRight } from "react-icons/hi";
+  RiHeartPulseLine,
+  RiEyeLine,
+  RiHandHeartLine,
+  RiLockLine,
+  RiSpeedLine,
+  RiLightbulbLine,
+  RiUserHeartLine,
+  RiStethoscopeLine,
+  RiHospitalLine,
+  RiShieldCheckLine,
+  RiShieldLine,
+  RiCodeSSlashLine,
+  RiBrushLine,
+  RiBellLine,
+  RiRobot2Line,
+  RiFileTextLine,
+  RiMapPinLine,
+  RiUserAddLine,
+  RiCompassLine,
+} from "react-icons/ri";
 
-const fade = {
+// ── Animation Variants ──────────────────────────────────────────────
+const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  show: {
+  visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
-  },
+    transition: { duration: 0.55, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] },
+  }),
 };
 
 const stagger = {
-  show: { transition: { staggerChildren: 0.08 } },
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09 } },
 };
 
-export default function AboutUsPage() {
+// ── Data ─────────────────────────────────────────────────────────────
+const stats = [
+  { n: "4", l: "User roles" },
+  { n: "20+", l: "Platform features" },
+  { n: "3", l: "Provider types supported" },
+  { n: "1", l: "Connected ecosystem" },
+];
+
+const storyBlocks = [
+  {
+    n: "1",
+    title: "The problem was clear",
+    body: "Finding a trusted doctor, tracking health data, and navigating labs was fragmented and frustrating for patients everywhere.",
+  },
+  {
+    n: "2",
+    title: "We designed around real needs",
+    body: "Every feature — from health charts to the AI chatbot — was shaped by what patients and doctors actually needed day-to-day.",
+  },
+  {
+    n: "3",
+    title: "Built with modern technology",
+    body: "React, Firebase, JWT auth, and an AI-powered medical assistant — all working together in one seamless experience.",
+  },
+];
+
+const glanceRows = [
+  {
+    icon: <RiUserHeartLine />,
+    label: "Patients",
+    value: "Profiles, booking, AI chatbot",
+  },
+  {
+    icon: <RiStethoscopeLine />,
+    label: "Doctors",
+    value: "Dashboard, deals, articles",
+  },
+  {
+    icon: <RiHospitalLine />,
+    label: "Labs & scans",
+    value: "Services, deals, referrals",
+  },
+  {
+    icon: <RiShieldLine />,
+    label: "Admins",
+    value: "Approvals, data, moderation",
+  },
+];
+
+const values = [
+  {
+    icon: <RiEyeLine />,
+    title: "Transparency",
+    body: "Patients see real ratings, credentials, and prices before they ever book. No surprises.",
+  },
+  {
+    icon: <RiUserHeartLine />,
+    title: "Accessibility",
+    body: "Good healthcare guidance should be available to everyone — regardless of background or location.",
+  },
+  {
+    icon: <RiHandHeartLine />,
+    title: "Empathy",
+    body: "Every feature is shaped by how real patients and doctors think and feel during their healthcare journey.",
+  },
+  {
+    icon: <RiLockLine />,
+    title: "Privacy",
+    body: "Medical data is sacred. JWT auth, role-based access, and strict controls keep it safe.",
+  },
+  {
+    icon: <RiSpeedLine />,
+    title: "Efficiency",
+    body: "Less waiting, less friction. Smarter scheduling, instant referrals, and AI-powered summaries.",
+  },
+  {
+    icon: <RiLightbulbLine />,
+    title: "Innovation",
+    body: "AI chatbot, push notifications, deal systems — we build what others haven't thought of yet.",
+  },
+];
+
+const howCards = [
+  {
+    icon: <RiUserHeartLine />,
+    color: "blue",
+    title: "For patients",
+    body: "Track vitals, upload medical reports, book appointments, get AI-powered scan summaries, and engage with a real medical community.",
+  },
+  {
+    icon: <RiStethoscopeLine />,
+    color: "green",
+    title: "For doctors",
+    body: "Manage your schedule, publish articles, answer patient questions, and negotiate deals with labs and scan centers — all in one dashboard.",
+  },
+  {
+    icon: <RiHospitalLine />,
+    color: "blue",
+    title: "For medical providers",
+    body: "List your services with prices and hours, receive patient referrals from partner doctors, and manage sponsorship deals efficiently.",
+  },
+  {
+    icon: <RiShieldCheckLine />,
+    color: "green",
+    title: "For admins",
+    body: "Approve new professionals, manage platform data, handle complaints, and keep the entire ecosystem safe and trustworthy.",
+  },
+];
+
+const techChips = [
+  { icon: <RiCodeSSlashLine />, label: "React.js + Vite" },
+  { icon: <RiBrushLine />, label: "Tailwind CSS" },
+  { icon: <RiLockLine />, label: "JWT authentication" },
+  { icon: <RiBellLine />, label: "Firebase push notifications" },
+  { icon: <RiRobot2Line />, label: "AI medical chatbot" },
+  { icon: <RiFileTextLine />, label: "PDF & image uploads" },
+  { icon: <RiMapPinLine />, label: "React Router v6" },
+];
+
+// ── Sub-components ────────────────────────────────────────────────────
+
+function Eyebrow({ children }) {
   return (
-    <div className="min-h-screen bg-[#050816] text-white font-english overflow-x-hidden">
-      {/* Hero */}
-      <section className="relative pt-[88px] pb-20 md:pb-28 px-4 md:px-10">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-90"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 55% at 50% -10%, rgba(49,107,232,0.45), transparent 55%), radial-gradient(ellipse 60% 40% at 100% 0%, rgba(34,211,238,0.12), transparent 50%)",
-          }}
-        />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M60%200H0v60%22%20fill%3D%22none%22%20stroke%3D%22rgba(255%2C255%2C255%2C0.04)%22%2F%3E%3C%2Fsvg%3E')] opacity-40" />
+    <p className="text-[11px] font-semibold tracking-widest uppercase text-[#185FA5] mb-2.5">
+      {children}
+    </p>
+  );
+}
 
-        <motion.div
-          className="relative max-w-4xl mx-auto text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <p className="inline-flex items-center gap-2 text-[11px] md:text-xs font-bold tracking-[0.28em] text-cyan-300/90 uppercase mb-5">
-            <FaShieldAlt className="w-3.5 h-3.5" />
-            Medical Consultation Platform
-          </p>
-          <h1 className="text-[2.1rem] sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extrabold leading-[1.08] tracking-tight text-white">
-            One platform for{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-blue-300">
-              consultations, data & care continuity
-            </span>
-          </h1>
-          <p className="mt-6 text-slate-300 text-[15px] md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Dactra bridges patients, doctors, and pharmacy context—so follow-up,
-            education, and access are not limited by location or waiting-room
-            logistics.
-          </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <Link
-              to="/doctors"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#316BE8] text-white text-sm font-bold shadow-[0_0_40px_rgba(49,107,232,0.45)] hover:bg-[#4a7ef0] transition-colors"
-            >
-              Explore doctors
-              <HiChevronRight className="w-4 h-4" />
-            </Link>
-            <Link
-              to="/Community/Posts"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/15 bg-white/5 text-white text-sm font-semibold hover:bg-white/10 backdrop-blur-sm transition-colors"
-            >
-              Community
-            </Link>
-          </div>
-        </motion.div>
+function SectionTitle({ children }) {
+  return (
+    <h2 className="text-[24px] font-medium text-gray-900 mb-3 tracking-tight leading-snug">
+      {children}
+    </h2>
+  );
+}
 
-        <motion.div
-          className="relative max-w-5xl mx-auto mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
-          variants={stagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-40px" }}
-        >
-          {[
-            ["Online visits", "Video-ready workflows"],
-            ["Health profile", "History & vitals in one place"],
-            ["Knowledge hub", "Articles & Q&A"],
-            ["Pharmacy aware", "Prescription + availability"],
-          ].map(([t, s], i) => (
-            <motion.div
-              key={t}
-              variants={fade}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 md:px-5 md:py-5 backdrop-blur-md"
-            >
-              <p className="text-sm md:text-base font-bold text-white">{t}</p>
-              <p className="text-[11px] md:text-xs text-slate-400 mt-1 leading-snug">
-                {s}
-              </p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
+function SectionBody({ children }) {
+  return (
+    <p className="text-[14px] text-gray-500 leading-relaxed max-w-[520px]">
+      {children}
+    </p>
+  );
+}
 
-      {/* Light content band */}
-      <section className="relative bg-slate-50 text-slate-900 rounded-t-[2.5rem] -mt-8 shadow-[0_-24px_80px_rgba(0,0,0,0.35)]">
-        <div className="max-w-6xl mx-auto px-4 md:px-10 py-16 md:py-24">
+// ── Main Component ─────────────────────────────────────────────────────
+export default function AboutUsPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="font-['DM_Sans',sans-serif] overflow-hidden bg-white text-gray-900 antialiased">
+      {/* ── HERO ── */}
+      <section className="relative overflow-hidden border-b border-gray-100 text-center px-10 py-[88px]">
+        {/* Radial glow */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,#deedfb,transparent_70%)]" />
+
+        <div className="relative z-10 flex flex-col items-center">
           <motion.div
-            className="max-w-3xl mb-14 md:mb-20"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={0}
+            className="inline-flex items-center gap-1.5 bg-[#E6F1FB] text-[#0C447C] border border-[#B5D4F4] rounded-full px-3.5 py-1.5 text-xs font-medium mb-6"
           >
-            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Why this project exists
-            </h2>
-            <p className="mt-4 text-slate-600 text-[15px] md:text-base leading-relaxed">
-              Traditional care is often constrained by geography, schedules, and
-              fragmented information. We built a digital layer that keeps the
-              human relationship at the center while making records, questions,
-              and prescriptions easier to use together—not as a replacement for
-              in-person care when it is needed, but as a continuous companion.
-            </p>
+            <RiHeartPulseLine className="text-sm" />
+            Healthcare, reimagined
           </motion.div>
 
-          <div className="grid lg:grid-cols-3 gap-5 md:gap-6">
-            {[
-              {
-                icon: FaUserMd,
-                title: "Online consultation",
-                body: "Schedule and conduct video visits. Doctors can reference the patient profile during the conversation.",
-              },
-              {
-                icon: FaComments,
-                title: "Medical Q&A forum",
-                body: "Patients post questions; doctors respond with multiple perspectives so decisions feel better informed.",
-              },
-              {
-                icon: FaBookMedical,
-                title: "Articles & knowledge",
-                body: "Verified doctors publish updates, research notes, and prevention tips the whole community can trust.",
-              },
-              {
-                icon: FaHeartbeat,
-                title: "Health tracking",
-                body: "Log vitals like blood pressure, glucose, heart rate, and weight. Trends support better follow-up and future device sync.",
-              },
-              {
-                icon: FaPills,
-                title: "Prescriptions & pharmacies",
-                body: "Digital prescriptions with search across online pharmacies—aiming to reduce friction when medicine is hard to find.",
-              },
-              {
-                icon: FaShieldAlt,
-                title: "Built to grow",
-                body: "Designed for integrations: labs, insurers, devices, and pharmacy chains as partnerships mature.",
-              },
-            ].map((item, i) => (
-              <motion.article
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-30px" }}
-                transition={{ delay: i * 0.05, duration: 0.45 }}
-                whileHover={{ y: -6 }}
-                className="group rounded-2xl bg-white border border-slate-200/80 p-6 md:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.06)] hover:shadow-[0_20px_50px_rgba(49,107,232,0.12)] hover:border-blue-200/60 transition-all duration-300"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#316BE8] to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 mb-4 group-hover:scale-105 transition-transform">
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                  {item.body}
-                </p>
-              </motion.article>
-            ))}
-          </div>
+          <motion.h1
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={1}
+            className="text-[42px] font-medium leading-[1.18] tracking-tight max-w-[580px] mb-5"
+          >
+            We're building the future of{" "}
+            <em className="not-italic text-[#185FA5]">connected healthcare</em>
+          </motion.h1>
+
+          <motion.p
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={2}
+            className="text-[15px] text-gray-500 leading-[1.75] max-w-[500px] mb-9"
+          >
+            Dactra brings patients, doctors, and medical providers together on
+            one intelligent platform — making quality care easier to find, book,
+            and manage.
+          </motion.p>
 
           <motion.div
-            className="mt-16 md:mt-24 rounded-3xl bg-slate-900 text-white p-8 md:p-12 lg:p-14 relative overflow-hidden"
-            initial={{ opacity: 0, scale: 0.98 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={3}
+            className="flex gap-3"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#316BE8]/30 blur-[80px] rounded-full pointer-events-none" />
-            <div className="relative grid md:grid-cols-2 gap-10 md:gap-14 items-start">
-              <div>
-                <h3 className="text-xl md:text-2xl font-bold">Who benefits</h3>
-                <ul className="mt-5 space-y-4 text-slate-300 text-sm md:text-[15px] leading-relaxed">
-                  <li>
-                    <span className="font-semibold text-white">Patients</span> —
-                    easier access, clearer context for visits, and smoother paths
-                    to medication information.
-                  </li>
-                  <li>
-                    <span className="font-semibold text-white">Doctors</span> —
-                    richer profiles, simpler follow-up, and a wider responsible
-                    reach.
-                  </li>
-                  <li>
-                    <span className="font-semibold text-white">The ecosystem</span>{" "}
-                    — efficiency, shared learning, and less friction around drug
-                    availability over time.
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-xl md:text-2xl font-bold">On the roadmap</h3>
-                <ul className="mt-5 space-y-3 text-slate-300 text-sm md:text-[15px] leading-relaxed list-disc list-inside marker:text-cyan-400">
-                  <li>Insurance verification workflows</li>
-                  <li>AI-assisted symptom guidance before consults</li>
-                  <li>Native apps with push for appointments & prescriptions</li>
-                  <li>Deeper pharmacy partnerships for live stock</li>
-                </ul>
-              </div>
+            <motion.button
+              whileHover={{ opacity: 0.88, scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/auth/Signup")}
+              className="bg-[#185FA5] text-[#E6F1FB] rounded-lg px-6 py-[10px] text-[13px] font-medium cursor-pointer"
+            >
+              Get started free
+            </motion.button>
+            <motion.button
+              whileHover={{ backgroundColor: "#F4F7FA", scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/")}
+              className="bg-transparent text-gray-800 border border-gray-300 rounded-lg px-6 py-[10px] text-[13px] cursor-pointer"
+            >
+              Learn more
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── STATS ── */}
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        className="grid grid-cols-4 border-b border-gray-100"
+      >
+        {stats.map((s, i) => (
+          <motion.div
+            key={i}
+            variants={fadeUp}
+            custom={i}
+            className={`py-7 px-5 text-center ${i < 3 ? "border-r border-gray-100" : ""}`}
+          >
+            <div className="text-[28px] font-medium text-[#185FA5]">{s.n}</div>
+            <div className="text-xs text-gray-400 mt-1">{s.l}</div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* ── STORY ── */}
+      <section className="px-10 py-16 border-b border-gray-100">
+        <div className="grid grid-cols-2 gap-12 items-start">
+          {/* Left */}
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+          >
+            <motion.div variants={fadeUp}>
+              <Eyebrow>Our story</Eyebrow>
+            </motion.div>
+            <motion.div variants={fadeUp}>
+              <SectionTitle>Why we built Dactra</SectionTitle>
+            </motion.div>
+            <motion.div variants={fadeUp}>
+              <SectionBody>
+                We saw a healthcare system where patients struggled to find the
+                right doctor, doctors drowned in paperwork, and labs had no easy
+                way to connect with referrals. Dactra was built to fix all of
+                that.
+              </SectionBody>
+            </motion.div>
+
+            <div className="flex flex-col gap-5 mt-8">
+              {storyBlocks.map((b, i) => (
+                <motion.div
+                  key={i}
+                  variants={fadeUp}
+                  custom={i}
+                  className="flex gap-3.5"
+                >
+                  <div className="min-w-[28px] h-7 rounded-full bg-[#E6F1FB] flex items-center justify-center text-xs font-medium text-[#0C447C] mt-0.5 shrink-0">
+                    {b.n}
+                  </div>
+                  <div>
+                    <h4 className="text-[14px] font-medium text-gray-900 mb-1">
+                      {b.title}
+                    </h4>
+                    <p className="text-[13px] text-gray-500 leading-[1.65]">
+                      {b.body}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
 
-          <motion.p
-            className="mt-14 text-center text-slate-500 text-sm max-w-2xl mx-auto leading-relaxed"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+          {/* Right */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-8"
           >
-            Dactra is a thesis on better-connected healthcare: telemedicine,
-            structured data, and thoughtful integrations—so quality and access can
-            move in the same direction.
-          </motion.p>
+            {/* Quote */}
+            <div className="bg-gray-50 border border-gray-100 rounded-xl p-7">
+              <div className="text-[36px] text-[#B5D4F4] leading-none mb-3">
+                "
+              </div>
+              <p className="text-[15px] text-gray-800 leading-[1.7] italic mb-4">
+                Healthcare shouldn't feel like navigating a maze. Every patient
+                deserves clarity, every doctor deserves efficiency, and every
+                interaction should build trust.
+              </p>
+              <p className="text-xs text-gray-400">— The Dactra team</p>
+            </div>
+
+            {/* Glance */}
+            <div className="mt-4 bg-gray-50 border border-gray-100 rounded-xl p-5">
+              <p className="text-xs font-medium text-gray-800 mb-3.5">
+                Platform at a glance
+              </p>
+              <div className="flex flex-col gap-2.5">
+                {glanceRows.map((r, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                        <span className="text-[14px] text-[#185FA5]">
+                          {r.icon}
+                        </span>
+                        {r.label}
+                      </span>
+                      <span className="text-xs font-medium text-gray-800">
+                        {r.value}
+                      </span>
+                    </div>
+                    {i < glanceRows.length - 1 && (
+                      <div className="h-px bg-gray-100" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
+
+      {/* ── VALUES ── */}
+      <section className="px-10 py-16 border-b border-gray-100">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Eyebrow>What we stand for</Eyebrow>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <SectionTitle>Our values</SectionTitle>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <SectionBody>
+              Everything we build goes back to six core principles that guide
+              every decision.
+            </SectionBody>
+          </motion.div>
+
+          <div className="grid grid-cols-3 gap-4 mt-9">
+            {values.map((v, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                custom={i}
+                whileHover={{
+                  y: -3,
+                  boxShadow: "0 8px 24px rgba(24,95,165,0.09)",
+                }}
+                className="bg-white border border-gray-100 rounded-xl p-5 cursor-default transition-colors hover:border-[#B5D4F4]"
+              >
+                <div className="w-9 h-9 rounded-lg bg-[#E6F1FB] flex items-center justify-center text-[17px] text-[#185FA5] mb-3.5">
+                  {v.icon}
+                </div>
+                <h4 className="text-[13px] font-medium text-gray-900 mb-1.5">
+                  {v.title}
+                </h4>
+                <p className="text-xs text-gray-500 leading-[1.65]">{v.body}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section className="px-10 py-16 border-b border-gray-100">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Eyebrow>How it works</Eyebrow>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <SectionTitle>One platform, four experiences</SectionTitle>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <SectionBody>
+              Dactra adapts to who you are. The same platform delivers a
+              completely tailored experience for each role.
+            </SectionBody>
+          </motion.div>
+
+          <div className="grid grid-cols-2 gap-4 mt-9">
+            {howCards.map((c, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                custom={i}
+                whileHover={{
+                  y: -3,
+                  boxShadow: "0 8px 24px rgba(24,95,165,0.08)",
+                }}
+                className="flex gap-3.5 p-5 border border-gray-100 rounded-xl bg-white cursor-default transition-colors hover:border-[#B5D4F4]"
+              >
+                <div
+                  className={`min-w-[38px] h-[38px] rounded-lg flex items-center justify-center text-[18px] shrink-0 ${
+                    c.color === "blue"
+                      ? "bg-[#E6F1FB] text-[#185FA5]"
+                      : "bg-[#E1F5EE] text-[#0F6E56]"
+                  }`}
+                >
+                  {c.icon}
+                </div>
+                <div>
+                  <h4 className="text-[13px] font-medium text-gray-900 mb-1.5">
+                    {c.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 leading-[1.6]">
+                    {c.body}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── TECH STACK ── */}
+      <section className="px-10 py-16 border-b border-gray-100">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+        >
+          <motion.div variants={fadeUp}>
+            <Eyebrow>Under the hood</Eyebrow>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <SectionTitle>Built with the right tools</SectionTitle>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <SectionBody>
+              A modern, reliable stack chosen to deliver speed, security, and a
+              great developer experience.
+            </SectionBody>
+          </motion.div>
+
+          <motion.div variants={stagger} className="flex flex-wrap gap-2 mt-6">
+            {techChips.map((c, i) => (
+              <motion.span
+                key={i}
+                variants={fadeUp}
+                custom={i}
+                whileHover={{ scale: 1.04, borderColor: "#B5D4F4" }}
+                className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-full px-3.5 py-1.5 text-xs text-gray-500 cursor-default"
+              >
+                <span className="text-[14px] text-[#185FA5]">{c.icon}</span>
+                {c.label}
+              </motion.span>
+            ))}
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* ── CTA ── */}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="px-10 py-16 bg-[#E6F1FB] border-t border-[#B5D4F4] text-center"
+      >
+        <h2 className="text-[28px] font-medium text-[#0C447C] tracking-tight mb-3">
+          Ready to experience smarter healthcare?
+        </h2>
+        <p className="text-[14px] text-[#185FA5] leading-[1.7] mb-7">
+          Join Dactra today — whether you're a patient looking for the right
+          doctor,
+          <br />
+          or a doctor ready to streamline your practice.
+        </p>
+      </motion.section>
     </div>
   );
 }

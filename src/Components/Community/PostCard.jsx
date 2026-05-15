@@ -81,10 +81,11 @@ export default function PostCard({ post, type, onUpdate }) {
   const [imageOpen, setImageOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // optimistic content update
+  // optimistic content + image updates
   const [displayContent, setDisplayContent] = useState(
     post.content ?? post.text ?? "",
   );
+  const [displayImage, setDisplayImage] = useState(post.imageUrl ?? null);
 
   const { role, accessToken } = useAuth();
   const userEmail = accessToken
@@ -203,12 +204,23 @@ export default function PostCard({ post, type, onUpdate }) {
     }
   };
 
-  const handleEditSave = (newContent) => {
+  const handleEditSave = (newContent, newImage, removeImage) => {
     editMutation.mutate(
-      { id: post.id, content: newContent },
+      { id: post.id, content: newContent, image: newImage, removeImage },
       {
         onSuccess: () => {
+          // optimistic text update
           setDisplayContent(newContent);
+
+          // optimistic image update
+          if (newImage) {
+            // show local blob preview instantly; real URL comes after refetch
+            const blobUrl = URL.createObjectURL(newImage);
+            setDisplayImage(blobUrl);
+          } else if (removeImage) {
+            setDisplayImage(null);
+          }
+
           setEditOpen(false);
         },
       },
@@ -282,7 +294,7 @@ export default function PostCard({ post, type, onUpdate }) {
                 </Link>
               ) : (
                 <p className="font-black text-slate-800 text-sm truncate leading-tight">
-                  {name}
+                  {post.patient.fullName}
                 </p>
               )}
 
@@ -338,8 +350,8 @@ export default function PostCard({ post, type, onUpdate }) {
           )}
         </p>
 
-        {/* Post Image */}
-        {post.imageUrl && (
+        {/* Post Image — uses displayImage for optimistic updates */}
+        {displayImage && (
           <motion.div
             whileHover="hover"
             onClick={() => {
@@ -349,7 +361,7 @@ export default function PostCard({ post, type, onUpdate }) {
             className="relative mb-3 rounded-xl overflow-hidden border border-blue-50 cursor-zoom-in group"
           >
             <img
-              src={post.imageUrl}
+              src={displayImage}
               alt="post"
               className="w-full object-cover max-h-80 transition-transform duration-500 group-hover:scale-[1.02]"
             />
@@ -429,7 +441,7 @@ export default function PostCard({ post, type, onUpdate }) {
         </div>
       </motion.article>
 
-      {/* Image Lightbox */}
+      {/* Image Lightbox — uses displayImage for optimistic updates */}
       <AnimatePresence>
         {imageOpen && (
           <motion.div
@@ -470,7 +482,7 @@ export default function PostCard({ post, type, onUpdate }) {
               )}
 
               <img
-                src={post.imageUrl}
+                src={displayImage}
                 alt="post full"
                 onLoad={() => setImageLoaded(true)}
                 className={`w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl transition-opacity duration-300 ${
@@ -515,10 +527,12 @@ export default function PostCard({ post, type, onUpdate }) {
         isOpen={editOpen}
         onClose={() => setEditOpen(false)}
         initialText={displayContent}
+        initialImage={displayImage}
         onSave={handleEditSave}
         isPending={editMutation.isPending}
         title={type === "Question" ? "Edit Question" : "Edit Article"}
       />
+
       <ReportModal
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}

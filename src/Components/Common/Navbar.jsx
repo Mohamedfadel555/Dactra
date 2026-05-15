@@ -25,7 +25,6 @@ export default function Navbar() {
   const { role, accessToken } = useAuth();
   const { data: user } =
     role === "MedicalTestProvider" ? useMedicalProviderMe() : useGetUser();
-  console.log(user);
   const location = useLocation();
   const logoutMutation = useLogout();
 
