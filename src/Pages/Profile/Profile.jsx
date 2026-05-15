@@ -494,20 +494,22 @@ export default function Profile({ role }) {
                     />
                   </motion.div>
 
-                  <motion.div variants={itemFade}>
-                    <Card className="p-5">
-                      <Schedule
-                        title="Appointment booking"
-                        subtitle="Select appointment"
-                        role="NOt a doctor"
-                        timeSlots={{
-                          inPerson: inPersonSlotsToBook ?? [],
-                          online: onlineSlotsToBook ?? [],
-                        }}
-                        id={id}
-                      />
-                    </Card>
-                  </motion.div>
+                  {authRole === "Patient" && (
+                    <motion.div variants={itemFade}>
+                      <Card className="p-5">
+                        <Schedule
+                          title="Appointment booking"
+                          subtitle="Select appointment"
+                          role="NOt a doctor"
+                          timeSlots={{
+                            inPerson: inPersonSlotsToBook ?? [],
+                            online: onlineSlotsToBook ?? [],
+                          }}
+                          id={id}
+                        />
+                      </Card>
+                    </motion.div>
+                  )}
                   <motion.div variants={itemFade}>
                     <BarComp
                       title="Appointments"
