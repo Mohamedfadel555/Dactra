@@ -4,6 +4,7 @@ export const usePerceptionAPI = () => {
   const axiosInstance = useAxios();
 
   const savePerception = async (Data) => {
+    console.log(Data);
     const res = await axiosInstance.post("Prescriptions", Data);
     return res;
   };
@@ -15,5 +16,13 @@ export const usePerceptionAPI = () => {
     return res.data;
   };
 
-  return { savePerception, getPrescriptionByAppointment };
+  const searchMedicines = async (query) => {
+    if (!query || query.trim().length < 2) return [];
+    const res = await axiosInstance.get("Medicines/search", {
+      params: { query: query.trim() },
+    });
+    return res.data; // string[]
+  };
+
+  return { savePerception, getPrescriptionByAppointment, searchMedicines };
 };

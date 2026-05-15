@@ -6,6 +6,7 @@ import { useAxios } from "../hooks/useAxios";
 import { useAuth } from "../Context/AuthContext";
 import BrandLogo from "../Components/Common/BrandLogo";
 import { useSavePrescription } from "../hooks/useSavePrescription";
+import { useMedicineSearch } from "../hooks/useMedicineSearch";
 
 // ─── UTILS ────────────────────────────────────────────────────────
 function sanitizeDomain(raw = "") {
@@ -199,6 +200,149 @@ const LeftIcon = () => (
   </div>
 );
 
+// ─── MEDICINE NAME INPUT (Autocomplete) ───────────────────────────
+function MedicineNameInput({ value, onChange, placeholder }) {
+  const { query, updateQuery, clearQuery, suggestions, isFetching } =
+    useMedicineSearch();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  // Sync external value → local query on mount / when value changes from outside
+  useEffect(() => {
+    // Only update query if it doesn't already match (avoids re-open on select)
+    if (value !== query) updateQuery(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleInput = (e) => {
+    const val = e.target.value;
+    updateQuery(val);
+    onChange(val);
+    setOpen(true);
+  };
+
+  const handleSelect = (name) => {
+    onChange(name);
+    updateQuery(name);
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    onChange("");
+    clearQuery();
+    setOpen(false);
+  };
+
+  const showDropdown = open && query.trim().length >= 2;
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <div className="relative">
+        <input
+          value={value}
+          onChange={handleInput}
+          onFocus={() => query.trim().length >= 2 && setOpen(true)}
+          placeholder={placeholder}
+          autoComplete="off"
+          className="w-full px-3 py-2 pr-8 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white mb-2"
+        />
+        {/* Clear or loading indicator */}
+        <div className="absolute right-2.5 top-[9px]">
+          {isFetching ? (
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-200 border-t-blue-500 animate-spin" />
+          ) : value ? (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-gray-300 hover:text-gray-500 transition"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M18 6L6 18M6 6l12 12"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          ) : (
+            <svg
+              className="w-3.5 h-3.5 text-gray-300"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="8"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M21 21l-4.35-4.35"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          )}
+        </div>
+      </div>
+
+      {/* Dropdown */}
+      {showDropdown && (
+        <ul className="absolute z-50 left-0 right-0 -mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-gray-50">
+          {suggestions.length === 0 && !isFetching && (
+            <li className="px-3 py-3 text-xs text-gray-400 text-center">
+              No medicines found
+            </li>
+          )}
+          {suggestions.map((name) => (
+            <li key={name}>
+              <button
+                type="button"
+                onMouseDown={() => handleSelect(name)} // mousedown fires before blur
+                className="w-full text-left px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition flex items-center gap-2"
+              >
+                <svg
+                  className="w-3.5 h-3.5 text-blue-300 flex-shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9l-6-6z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M9 3v6h6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                {name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // ─── TREATMENT SCHEDULE BUILDER ───────────────────────────────────
 const MEAL_OPTIONS = [
   { label: "Before meals", value: 1 },
@@ -268,6 +412,7 @@ function MedicineSchedule({ medicine, index, onChange, initialSchedule }) {
     initialSchedule?.mealRelation,
     initialSchedule?.firstDoseTime,
   ]);
+
   const notify = (f, m, localT) =>
     onChange(index, {
       frequency: f.value,
@@ -404,9 +549,7 @@ function PrescriptionSidebar({
 }) {
   const [activeTab, setActiveTab] = useState("rx");
   const [diagnosis, setDiagnosis] = useState("");
-  const [medicines, setMedicines] = useState([
-    { name: "", dose: "", duration: 1 },
-  ]);
+  const [medicines, setMedicines] = useState([{ name: "", duration: 1 }]);
   const [schedules, setSchedules] = useState([{}]);
 
   useEffect(() => {
@@ -415,22 +558,21 @@ function PrescriptionSidebar({
     if (initialData) {
       setDiagnosis(initialData.diagnosis);
       setMedicines(
-        initialData.medicines.map(({ name, dose, duration }) => ({
+        initialData.medicines.map(({ name, duration }) => ({
           name,
-          dose: dose ?? "",
           duration,
         })),
       );
       setSchedules(initialData.medicines.map((m) => m.schedule ?? {}));
     } else {
       setDiagnosis("");
-      setMedicines([{ name: "", dose: "", duration: 1 }]);
+      setMedicines([{ name: "", duration: 1 }]);
       setSchedules([{}]);
     }
   }, [open, initialData]);
 
   const addMedicine = () => {
-    setMedicines([...medicines, { name: "", dose: "", duration: 1 }]);
+    setMedicines([...medicines, { name: "", duration: 1 }]);
     setSchedules([...schedules, {}]);
   };
 
@@ -457,6 +599,7 @@ function PrescriptionSidebar({
       diagnosis,
       medicines: medicines.map((med, i) => ({
         ...med,
+        dose: null,
         schedule: schedules[i] || {},
       })),
     };
@@ -468,7 +611,6 @@ function PrescriptionSidebar({
       {open && (
         <div className="fixed inset-0 z-20 bg-black/20" onClick={onClose} />
       )}
-      {/* Sidebar: full-width on mobile, 440px on sm+ */}
       <div
         className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-white shadow-2xl z-30 flex flex-col transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
@@ -522,7 +664,6 @@ function PrescriptionSidebar({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-          {/* Loading state */}
           {isLoading && (
             <div className="flex items-center justify-center h-32">
               <div className="w-8 h-8 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin" />
@@ -603,49 +744,31 @@ function PrescriptionSidebar({
                       )}
                     </div>
 
-                    {/* Medicine name */}
-                    <input
+                    <MedicineNameInput
                       value={med.name}
-                      onChange={(e) =>
-                        updateMedicine(i, "name", e.target.value)
-                      }
+                      onChange={(val) => updateMedicine(i, "name", val)}
                       placeholder="Medicine name *"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white mb-2"
                     />
 
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Dose — optional */}
-                      <div className="relative">
-                        <input
-                          value={med.dose}
-                          onChange={(e) =>
-                            updateMedicine(i, "dose", e.target.value)
-                          }
-                          placeholder="Dose (optional)"
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-                        />
-                      </div>
-
-                      {/* Duration — number input (days) */}
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min={1}
-                          value={med.duration}
-                          onChange={(e) =>
-                            updateMedicine(
-                              i,
-                              "duration",
-                              Math.max(1, parseInt(e.target.value) || 1),
-                            )
-                          }
-                          placeholder="Days"
-                          className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
-                          days
-                        </span>
-                      </div>
+                    {/* Duration */}
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={1}
+                        value={med.duration}
+                        onChange={(e) =>
+                          updateMedicine(
+                            i,
+                            "duration",
+                            Math.max(1, parseInt(e.target.value) || 1),
+                          )
+                        }
+                        placeholder="Days"
+                        className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition bg-white"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                        days
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -778,7 +901,6 @@ export default function VideoConsultation() {
   const [prescriptionSaved, setPrescriptionSaved] = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
 
-  // Keep ref in sync
   useEffect(() => {
     sessionEndedRef.current = sessionEnded;
   }, [sessionEnded]);
@@ -860,8 +982,8 @@ export default function VideoConsultation() {
         startWithVideoMuted: false,
         disableDeepLinking: true,
         prejoinPageEnabled: false,
-        disableSelfView: false,        // ← تأكد إنها false
-  disableSelfViewSettings: false,
+        disableSelfView: false,
+        disableSelfViewSettings: false,
         prejoinConfig: { enabled: false },
         skipPrejoin: true,
         disableInviteFunctions: true,
@@ -873,7 +995,6 @@ export default function VideoConsultation() {
         toolbarButtons: [
           "microphone",
           "camera",
-          // "hangup",
           "tileview",
           "fullscreen",
           ...(isModerator ? ["mute-everyone", "security"] : []),
@@ -1087,7 +1208,6 @@ export default function VideoConsultation() {
       <header className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-6 bg-white border-b border-gray-100 shadow-sm flex-shrink-0 z-30 gap-2">
         <BrandLogo />
 
-        {/* Status badge — hidden on very small screens, shown from xs+ */}
         <div className="flex items-center min-w-0">
           {callStatus === "connected" ? (
             <div className="flex items-center gap-1.5 sm:gap-2 bg-green-50 border border-green-200 text-green-600 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap">
@@ -1114,7 +1234,6 @@ export default function VideoConsultation() {
           )}
         </div>
 
-        {/* Action buttons */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {isDoctor && !sessionEnded && (
             <button
@@ -1138,7 +1257,6 @@ export default function VideoConsultation() {
                   strokeLinejoin="round"
                 />
               </svg>
-              {/* Label hidden on mobile, shown on sm+ */}
               <span className="hidden sm:inline">
                 {prescriptionSaved ? "Saved" : "Prescription"}
               </span>

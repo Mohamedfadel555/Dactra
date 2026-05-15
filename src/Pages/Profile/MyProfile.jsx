@@ -69,6 +69,7 @@ import { useLocation } from "react-router-dom";
 import RatingSection from "../../Components/Profile/RatingSection";
 import MedicalReports from "../../Components/Profile/MedicalReports";
 import NotificationsCard from "../../Components/NotificationsCard";
+import MyPrescriptions from "../../Components/Profile/MyPrescriptions";
 
 // ─── static data ─────────────────────────────────────────────────────────────
 
@@ -127,21 +128,62 @@ const itemFade = {
 };
 
 const popupVariants = {
-  hidden: { opacity: 0, scale: 0.92, y: 20 },
+  hidden: { opacity: 0, scale: 0.94, y: 24 },
   show: {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 120, damping: 22, mass: 0.9 },
+    transition: { type: "spring", stiffness: 130, damping: 20, mass: 0.85 },
   },
-  exit: { opacity: 0, scale: 0.92, y: 20, transition: { duration: 0.2 } },
+  exit: { opacity: 0, scale: 0.94, y: 24, transition: { duration: 0.18 } },
 };
 
 const overlayVariants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.25 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
+  show: { opacity: 1, transition: { duration: 0.22 } },
+  exit: { opacity: 0, transition: { duration: 0.18 } },
 };
+
+// ─── Modal header component ───────────────────────────────────────────────────
+
+function ModalHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  iconBg = "bg-blue-50",
+  iconColor = "text-blue-600",
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <div
+        className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}
+      >
+        <Icon className={`text-xl ${iconColor}`} />
+      </div>
+      <div>
+        <p className="text-[16px] font-semibold text-gray-900 leading-tight">
+          {title}
+        </p>
+        {subtitle && (
+          <p className="text-[12px] text-gray-400 mt-0.5">{subtitle}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal close button ───────────────────────────────────────────────────────
+
+function ModalClose({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="absolute top-4 right-4 w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+    >
+      <IoCloseSharp className="text-base" />
+    </button>
+  );
+}
 
 // ─── component ───────────────────────────────────────────────────────────────
 
@@ -158,7 +200,6 @@ export default function MyProfile() {
     if (location.hash) {
       const id = location.hash.replace("#", "");
       const el = document.getElementById(id);
-
       if (el) {
         el.scrollIntoView({ behavior: "smooth" });
       }
@@ -372,7 +413,7 @@ export default function MyProfile() {
         {deleteAcc && (
           <>
             <motion.div
-              className="w-full h-screen fixed top-0 left-0 z-50 bg-black/55 flex justify-center items-center"
+              className="w-full h-screen fixed top-0 left-0 z-50 bg-black/50 flex justify-center items-center"
               variants={overlayVariants}
               initial="hidden"
               animate="show"
@@ -380,37 +421,60 @@ export default function MyProfile() {
               onClick={() => setDeleteAcc(false)}
             />
             <motion.div
-              className="w-full md:w-[60%] lg:w-2/5 p-6 bg-white flex flex-col gap-6 max-h-screen overflow-auto
-                         fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] rounded-2xl shadow-xl"
+              className="w-full md:w-[60%] lg:w-[420px] p-6 bg-white flex flex-col max-h-screen overflow-auto
+                         fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] rounded-2xl shadow-2xl border border-gray-100"
               variants={popupVariants}
               initial="hidden"
               animate="show"
               exit="exit"
               onClick={(e) => e.stopPropagation()}
             >
-              <IoCloseSharp
-                className="absolute top-4 right-4 text-2xl cursor-pointer text-gray-400 hover:text-gray-700"
-                onClick={() => setDeleteAcc(false)}
+              <ModalClose onClick={() => setDeleteAcc(false)} />
+
+              <ModalHeader
+                icon={IoTrashOutline}
+                title="Delete account"
+                subtitle="This action cannot be undone"
+                iconBg="bg-red-50"
+                iconColor="text-red-500"
               />
-              <p className="text-3xl font-bold text-red-500">Delete Account</p>
+
+              {/* Warning box */}
+              <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-3.5 mb-5">
+                <IoWarningOutline className="text-red-400 text-[18px] flex-shrink-0 mt-0.5" />
+                <p className="text-[12.5px] text-red-700 leading-relaxed">
+                  All your data, appointments, and medical records will be
+                  permanently deleted and cannot be recovered.
+                </p>
+              </div>
+
               <Formik
                 initialValues={{ confirm: "" }}
                 validationSchema={deleteAccValidationSchema}
                 onSubmit={deleteAccountHandle}
               >
                 {({ isValid, dirty, isSubmitting }) => (
-                  <Form className="flex flex-col gap-6">
+                  <Form className="flex flex-col gap-4">
                     <FormInputField
                       name="confirm"
-                      label='Enter "Delete my account"'
+                      label='Type "Delete my account" to confirm'
                       className="pl-3!"
                     />
-                    <SubmitButton
-                      text="Delete"
-                      isLoading={isSubmitting}
-                      disabled={!isValid || !dirty}
-                      className="bg-red-500!"
-                    />
+                    <div className="flex gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteAcc(false)}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-[13px] font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <SubmitButton
+                        text="Delete account"
+                        isLoading={isSubmitting}
+                        disabled={!isValid || !dirty}
+                        className="flex-1 bg-red-500! hover:bg-red-600! rounded-xl! text-[13px]! py-2.5!"
+                      />
+                    </div>
                   </Form>
                 )}
               </Formik>
@@ -424,7 +488,7 @@ export default function MyProfile() {
         {changePass && (
           <>
             <motion.div
-              className="w-full h-screen fixed top-0 left-0 z-50 bg-black/55"
+              className="w-full h-screen fixed top-0 left-0 z-50 bg-black/50"
               variants={overlayVariants}
               initial="hidden"
               animate="show"
@@ -432,53 +496,65 @@ export default function MyProfile() {
               onClick={() => setchangePass(false)}
             />
             <motion.div
-              className="w-full md:w-[60%] lg:w-2/5 p-6 bg-white flex flex-col gap-6 max-h-screen overflow-auto
-                         fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] rounded-2xl shadow-xl"
+              className="w-full md:w-[60%] lg:w-[420px] p-6 bg-white flex flex-col max-h-screen overflow-auto
+                         fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] rounded-2xl shadow-2xl border border-gray-100"
               variants={popupVariants}
               initial="hidden"
               animate="show"
               exit="exit"
               onClick={(e) => e.stopPropagation()}
             >
-              <IoCloseSharp
-                className="absolute top-4 right-4 text-2xl cursor-pointer text-gray-400 hover:text-gray-700"
-                onClick={() => setchangePass(false)}
+              <ModalClose onClick={() => setchangePass(false)} />
+
+              <ModalHeader
+                icon={MdOutlinePassword}
+                title="Change password"
+                subtitle="Choose a strong new password"
+                iconBg="bg-blue-50"
+                iconColor="text-blue-600"
               />
-              <p className="text-3xl font-bold text-gray-900">
-                Change Password
-              </p>
+
               <Formik
                 onSubmit={changePasswordSubmitting}
                 initialValues={changePasswordInitialValues}
                 validationSchema={changePasswordValidationSchema}
               >
                 {({ isValid, dirty, isSubmitting }) => (
-                  <Form className="flex flex-col gap-3 w-full px-1">
+                  <Form className="flex flex-col gap-3 w-full">
                     <FormInputField
                       type="password"
                       name="oldPassword"
-                      label="Old Password"
+                      label="Current password"
                       className="pl-3!"
                     />
                     <FormInputField
                       type="password"
                       name="newPassword"
-                      label="New Password"
+                      label="New password"
                       className="pl-3!"
                     />
                     <FormInputField
                       type="password"
                       name="confirmNewPassword"
-                      label="Confirm Password"
+                      label="Confirm new password"
                       className="pl-3!"
                     />
-                    <SubmitButton
-                      text="Change"
-                      disabled={!isValid || !dirty}
-                      isLoading={isSubmitting}
-                      loadingText="Changing"
-                      className="mt-5!"
-                    />
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setchangePass(false)}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-[13px] font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <SubmitButton
+                        text="Update password"
+                        disabled={!isValid || !dirty}
+                        isLoading={isSubmitting}
+                        loadingText="Updating..."
+                        className="flex-1 rounded-xl! text-[13px]! py-2.5!"
+                      />
+                    </div>
                   </Form>
                 )}
               </Formik>
@@ -492,7 +568,7 @@ export default function MyProfile() {
         {edit && (
           <>
             <motion.div
-              className="w-full h-screen fixed top-0 left-0 z-50 bg-black/55"
+              className="w-full h-screen fixed top-0 left-0 z-50 bg-black/50"
               variants={overlayVariants}
               initial="hidden"
               animate="show"
@@ -500,34 +576,72 @@ export default function MyProfile() {
               onClick={() => setEdit(false)}
             />
             <motion.div
-              className="w-full md:w-[60%] lg:w-2/5 p-6 bg-white flex flex-col gap-6 max-h-screen overflow-auto
-                         fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] rounded-2xl shadow-xl"
+              className="w-full md:w-[60%] lg:w-[460px] p-6 bg-white flex flex-col gap-4 max-h-screen overflow-auto
+                         fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] rounded-2xl shadow-2xl border border-gray-100"
               variants={popupVariants}
               initial="hidden"
               animate="show"
               exit="exit"
               onClick={(e) => e.stopPropagation()}
             >
-              <IoCloseSharp
-                className="absolute top-4 right-4 text-2xl cursor-pointer text-gray-400 hover:text-gray-700"
-                onClick={() => setEdit(false)}
+              <ModalClose onClick={() => setEdit(false)} />
+
+              <ModalHeader
+                icon={FaRegEdit}
+                title="Edit profile"
+                subtitle="Update your personal information"
+                iconBg="bg-blue-50"
+                iconColor="text-blue-600"
               />
 
-              <div className="flex justify-between items-center gap-3">
+              {/* Avatar + image actions */}
+              <div className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-100">
                 <motion.div
-                  whileHover={{ scale: 1.03 }}
-                  transition={{ type: "spring", stiffness: 260 }}
+                  whileHover={{ scale: 1.04 }}
+                  transition={{ type: "spring", stiffness: 280 }}
                 >
-                  <AvatarIcon size={90} />
+                  <AvatarIcon user={user} showLabel={false} size={72} />
                 </motion.div>
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="py-2 font-semibold cursor-pointer border-blue-600 border-2 rounded-xl text-blue-600 px-4"
-                >
-                  Upload image
-                </motion.button>
+                <div className="flex flex-col gap-2 flex-1">
+                  <p className="text-[12px] text-gray-500 font-medium">
+                    Profile photo
+                  </p>
+                  <div className="flex gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-[12px] font-semibold cursor-pointer border-blue-600 border rounded-lg text-blue-600 px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                    >
+                      Upload image
+                    </motion.button>
+                    {profileImageUrl && (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await deleteUserImageMutation.mutateAsync();
+                            toast.success("Profile image removed.", {
+                              position: "top-center",
+                            });
+                          } catch (err) {
+                            const msg =
+                              err?.response?.data?.message ||
+                              err?.response?.data?.title ||
+                              "Could not delete image.";
+                            toast.error(msg, { position: "top-center" });
+                          }
+                        }}
+                        className="text-[12px] font-semibold cursor-pointer border-red-400 border rounded-lg text-red-500 px-3 py-1.5 hover:bg-red-50 transition-colors"
+                      >
+                        Remove
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -539,28 +653,6 @@ export default function MyProfile() {
                     e.target.value = "";
                   }}
                 />
-                {profileImageUrl && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await deleteUserImageMutation.mutateAsync();
-                        toast.success("Profile image removed.", {
-                          position: "top-center",
-                        });
-                      } catch (err) {
-                        const msg =
-                          err?.response?.data?.message ||
-                          err?.response?.data?.title ||
-                          "Could not delete image.";
-                        toast.error(msg, { position: "top-center" });
-                      }
-                    }}
-                    className="py-2 font-semibold cursor-pointer border-red-500 border-2 rounded-xl text-red-500 px-4"
-                  >
-                    Delete image
-                  </button>
-                )}
               </div>
 
               <Formik
@@ -594,16 +686,16 @@ export default function MyProfile() {
                 enableReinitialize
               >
                 {({ isValid, dirty, isSubmitting }) => (
-                  <Form className="flex flex-col gap-3 w-full px-1">
+                  <Form className="flex flex-col gap-3 w-full">
                     <div className="flex gap-2 items-center w-full">
                       <FormInputField
                         name="firstName"
-                        label="First Name*"
+                        label="First name*"
                         className="!pl-2"
                       />
                       <FormInputField
                         name="lastName"
-                        label="Last Name*"
+                        label="Last name*"
                         className="!pl-2"
                       />
                     </div>
@@ -616,7 +708,7 @@ export default function MyProfile() {
                         />
                         <FormInputField
                           name="phoneNumber"
-                          label="Phone Number*"
+                          label="Phone number*"
                           className="pl-3!"
                         />
                         <FormInputField
@@ -631,13 +723,13 @@ export default function MyProfile() {
                       <>
                         <FormInputField
                           name="phoneNamber"
-                          label="Phone Number"
+                          label="Phone number"
                           className="pl-3!"
                         />
                         <FormInputField
                           name="addressId"
-                          label="Address"
-                          placeholder="Select City"
+                          label="City"
+                          placeholder="Select city"
                           className="pl-3!"
                           options={cities?.map(({ id, name }) => ({
                             value: id,
@@ -647,13 +739,13 @@ export default function MyProfile() {
                         <div className="flex gap-2 items-center w-full">
                           <FormInputField
                             name="height"
-                            label="Height"
+                            label="Height (cm)"
                             type="number"
                             className="pl-3!"
                           />
                           <FormInputField
                             name="weight"
-                            label="Weight"
+                            label="Weight (kg)"
                             type="number"
                             className="pl-3!"
                           />
@@ -681,7 +773,7 @@ export default function MyProfile() {
                         </div>
                         <FormInputField
                           name="bloodType"
-                          label="Blood Type"
+                          label="Blood type"
                           options={[
                             { value: 0, label: "A+" },
                             { value: 1, label: "A-" },
@@ -695,13 +787,22 @@ export default function MyProfile() {
                         />
                       </>
                     )}
-                    <SubmitButton
-                      text="Save changes"
-                      disabled={!isValid || !dirty}
-                      isLoading={isSubmitting}
-                      loadingText="Saving"
-                      className="mt-5!"
-                    />
+                    <div className="flex gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEdit(false)}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-[13px] font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <SubmitButton
+                        text="Save changes"
+                        disabled={!isValid || !dirty}
+                        isLoading={isSubmitting}
+                        loadingText="Saving..."
+                        className="flex-1 rounded-xl! text-[13px]! py-2.5!"
+                      />
+                    </div>
                   </Form>
                 )}
               </Formik>
@@ -759,7 +860,7 @@ export default function MyProfile() {
                       backgroundRepeat: "no-repeat",
                       backgroundPosition: "top",
                     }}
-                    className="w-full h-full"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-end justify-center overflow-hidden">
@@ -795,37 +896,49 @@ export default function MyProfile() {
                   </div>
                 </div>
 
-                {/* action buttons */}
+                {/* ── Action buttons (redesigned) ───────────────────────── */}
                 <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+                  {/* Edit profile — solid blue with gradient */}
                   <motion.button
                     onClick={() => setEdit(true)}
                     whileHover={{
                       y: -2,
-                      boxShadow: "0 8px 24px rgba(24,95,165,.25)",
+                      boxShadow: "0 8px 22px rgba(24,95,165,.30)",
                     }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-[13px] font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200/60"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-all"
+                    style={{
+                      background: "linear-gradient(135deg,#185FA5,#0ea5e9)",
+                      boxShadow: "0 2px 12px rgba(14,165,233,.22)",
+                    }}
                   >
-                    <FaRegEdit size={14} /> Edit profile
+                    <FaRegEdit size={13} />
+                    Edit profile
                   </motion.button>
+
+                  {/* Change password — outlined blue */}
                   <motion.button
                     onClick={() => setchangePass(true)}
-                    whileHover={{ y: -2 }}
+                    whileHover={{ y: -2, backgroundColor: "#eff6ff" }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-blue-600 text-blue-600 text-[13px] font-semibold hover:bg-blue-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-[1.5px] border-blue-500 text-blue-600 text-[13px] font-semibold transition-all"
                   >
-                    <MdOutlinePassword size={15} /> Password
+                    <MdOutlinePassword size={15} />
+                    Password
                   </motion.button>
+
+                  {/* Delete — outlined red */}
                   <motion.button
                     onClick={() => setDeleteAcc(true)}
-                    whileHover={{ y: -2 }}
+                    whileHover={{ y: -2, backgroundColor: "#fff5f5" }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-red-400 text-red-500 text-[13px] font-semibold hover:bg-red-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-[1.5px] border-red-400 text-red-500 text-[13px] font-semibold transition-all"
                   >
-                    <IoTrashOutline size={15} /> Delete
+                    <IoTrashOutline size={15} />
+                    Delete
                   </motion.button>
                 </div>
               </div>
@@ -860,6 +973,7 @@ export default function MyProfile() {
                   </div>
                 </Card>
               </motion.div>
+
               {role === "Patient" && (
                 <motion.div variants={itemFade}>
                   <NotificationsCard />
@@ -867,7 +981,14 @@ export default function MyProfile() {
               )}
 
               {/* Medical reports (patient only) */}
-              {role === "Patient" && <MedicalReports />}
+              {role === "Patient" && (
+                <>
+                  <MedicalReports />
+                  <motion.div variants={itemFade}>
+                    <MyPrescriptions />
+                  </motion.div>
+                </>
+              )}
 
               {/* Allergies + Chronics (patient only) */}
               {role === "Patient" && (
@@ -952,12 +1073,10 @@ export default function MyProfile() {
                       title="Appointments"
                       data={
                         apptData
-                          ? apptData.map((i) => {
-                              return {
-                                date: i.date.split("T")[0],
-                                count: i.appointmentCount,
-                              };
-                            })
+                          ? apptData.map((i) => ({
+                              date: i.date.split("T")[0],
+                              count: i.appointmentCount,
+                            }))
                           : []
                       }
                     />
