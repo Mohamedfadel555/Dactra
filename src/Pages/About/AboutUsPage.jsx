@@ -478,44 +478,6 @@ export default function AboutUsPage() {
         </motion.div>
       </section>
 
-      {/* ── TECH STACK ── */}
-      <section className="px-10 py-16 border-b border-gray-100">
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
-        >
-          <motion.div variants={fadeUp}>
-            <Eyebrow>Under the hood</Eyebrow>
-          </motion.div>
-          <motion.div variants={fadeUp}>
-            <SectionTitle>Built with the right tools</SectionTitle>
-          </motion.div>
-          <motion.div variants={fadeUp}>
-            <SectionBody>
-              A modern, reliable stack chosen to deliver speed, security, and a
-              great developer experience.
-            </SectionBody>
-          </motion.div>
-
-          <motion.div variants={stagger} className="flex flex-wrap gap-2 mt-6">
-            {techChips.map((c, i) => (
-              <motion.span
-                key={i}
-                variants={fadeUp}
-                custom={i}
-                whileHover={{ scale: 1.04, borderColor: "#B5D4F4" }}
-                className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-full px-3.5 py-1.5 text-xs text-gray-500 cursor-default"
-              >
-                <span className="text-[14px] text-[#185FA5]">{c.icon}</span>
-                {c.label}
-              </motion.span>
-            ))}
-          </motion.div>
-        </motion.div>
-      </section>
-
       {/* ── CTA ── */}
       <motion.section
         initial={{ opacity: 0, y: 30 }}
