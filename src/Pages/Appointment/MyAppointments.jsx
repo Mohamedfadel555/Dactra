@@ -67,7 +67,6 @@ const STATUS = {
     border: "#fcd34d",
     glow: "rgba(217,119,6,0.16)",
   },
-  // ✅ NEW: Failed status
   failed: {
     label: "Failed",
     Icon: FiAlertOctagon,
@@ -78,8 +77,6 @@ const STATUS = {
   },
 };
 
-// Tab label → API status enum
-// ✅ UPDATED: Added failed: 4
 const TAB_TO_CODE = {
   upcoming: 0,
   completed: 1,
@@ -88,11 +85,20 @@ const TAB_TO_CODE = {
   failed: 4,
 };
 
-// ✅ UPDATED: Added "failed" to PATIENT_TABS
 const PATIENT_TABS = ["completed", "upcoming", "cancelled", "unpaid", "failed"];
 const DOCTOR_TABS = ["completed", "upcoming", "cancelled", "failed"];
 
 const PAGE_SIZE = 10;
+
+// ─── Tab icons map ─────────────────────────────────────────────────────────────
+
+const TAB_ICONS = {
+  upcoming: <BsClockHistory size={15} />,
+  completed: <BsCheckCircle size={15} />,
+  cancelled: <BsXCircle size={15} />,
+  unpaid: <PiWarningCircleBold size={15} />,
+  failed: <FiAlertOctagon size={15} />,
+};
 
 // ─── Normalise API object → internal shape ────────────────────────────────────
 
@@ -107,7 +113,6 @@ function normaliseAppt(a) {
     imageUrl: a.doctorImageUrl || a.patientImageUrl,
     slotDateTime: a.slotDateTime,
     type: a.appointmentType === "Online" ? "online" : "inperson",
-    // "Pending" from the backend = unpaid in the UI
     status: raw === "pending" ? "unpaid" : raw,
     cancelReason: a.cancelledReason ?? null,
     bookedAt: a.bookedAt,
@@ -229,6 +234,7 @@ function CancelReasonBadge({ reason }) {
 }
 
 // ─── JoinSessionButton ────────────────────────────────────────────────────────
+
 function JoinSessionButton({ appt, onJoin }) {
   const [, setTick] = useState(0);
 
@@ -461,7 +467,6 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
 
   const { mutate } = useResumePay();
 
-  // ✅ Track time reactively so cancel button hides when session goes live
   const [, setTick] = useState(0);
   useEffect(() => {
     if (appt.status !== "upcoming") return;
@@ -469,7 +474,6 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
     return () => clearInterval(interval);
   }, [appt.status]);
 
-  // ✅ Cancel button is hidden when the session is live (mins <= 0)
   const sessionIsLive =
     appt.status === "upcoming" && diffMins(appt.slotDateTime) <= 0;
 
@@ -562,7 +566,7 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
               <JoinSessionButton appt={appt} onJoin={onJoinSession} />
             )}
 
-            {/* ✅ Cancel button — hidden when session is live (diffMins <= 0) */}
+            {/* Cancel button — hidden when session is live */}
             {appt.status === "upcoming" && !sessionIsLive && (
               <div className="mt-3">
                 <motion.button
@@ -587,43 +591,38 @@ function AppointmentCard({ appt, role, onCancelClick, onJoinSession }) {
   );
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
+// ─── Tabs (Grid — Responsive) ─────────────────────────────────────────────────
 
 function Tabs({ tabs, active, onChange, stats }) {
   return (
     <div
-      className="flex gap-2 justify-center items-center overflow-x-auto pb-1 mb-6"
-      style={{ scrollbarWidth: "none" }}
+      className="grid gap-2 mb-6"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))" }}
     >
       {tabs.map((key) => {
-        const { label, Icon, color, light } = STATUS[key];
+        const { label, color, light } = STATUS[key];
         const count = stats?.[key] ?? 0;
         const isActive = active === key;
+
         return (
           <motion.button
             key={key}
             onClick={() => onChange(key)}
-            whileTap={{ scale: 0.95 }}
-            className="relative flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap border transition-all duration-200"
+            whileTap={{ scale: 0.96 }}
+            className="relative flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl border-[1.5px] transition-all duration-200 min-h-[68px]"
             style={
               isActive
-                ? {
-                    background: color,
-                    color: "#fff",
-                    borderColor: color,
-                    boxShadow: `0 4px 18px ${color}55`,
-                  }
+                ? { background: color, borderColor: color, color: "#fff" }
                 : {
                     background: "#fff",
-                    color: "#64748b",
                     borderColor: "#e2e8f0",
+                    color: "#64748b",
                   }
             }
           >
-            <Icon size={13} />
-            {label}
+            {/* Badge */}
             <span
-              className="text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+              className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] rounded-full text-[9px] font-black flex items-center justify-center px-1"
               style={
                 isActive
                   ? { background: "rgba(255,255,255,0.25)", color: "#fff" }
@@ -632,19 +631,44 @@ function Tabs({ tabs, active, onChange, stats }) {
             >
               {count}
             </span>
-            {isActive && (
-              <motion.div
-                layoutId="tab-highlight"
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                style={{
-                  background:
-                    "radial-gradient(circle at 50% 0%,rgba(255,255,255,0.25) 0%,transparent 70%)",
-                }}
-              />
-            )}
+
+            {/* Icon */}
+            <span
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+              style={
+                isActive
+                  ? { background: "rgba(255,255,255,0.2)", color: "#fff" }
+                  : { background: light, color }
+              }
+            >
+              {TAB_ICONS[key]}
+            </span>
+
+            {/* Label */}
+            <span className="text-[10px] font-black text-center leading-tight">
+              {label}
+            </span>
           </motion.button>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Tabs Skeleton ────────────────────────────────────────────────────────────
+
+function TabsSkeleton({ tabs }) {
+  return (
+    <div
+      className="grid gap-2 mb-6"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))" }}
+    >
+      {tabs.map((k) => (
+        <div
+          key={k}
+          className="h-[68px] rounded-2xl bg-white border border-slate-100 animate-pulse"
+        />
+      ))}
     </div>
   );
 }
@@ -698,7 +722,6 @@ function Empty({ tab, role }) {
     unpaid: "You're all caught up with payments!",
     completed: "No completed appointments yet.",
     upcoming: "No upcoming appointments scheduled.",
-    // ✅ NEW: Failed empty message
     failed: "No failed appointments on record.",
   };
 
@@ -792,10 +815,8 @@ export default function MyAppointments() {
   const tabs = role === "Patient" ? PATIENT_TABS : DOCTOR_TABS;
   const validTab = tabs.includes(activeTab) ? activeTab : tabs[0];
 
-  // 1 ─ Counts for tab badges
   const { data: stats, isLoading: statsLoading } = useGetAppointmentsStat();
 
-  // 2 ─ Paginated list for the active tab
   const {
     data: apptData,
     isLoading: apptLoading,
@@ -809,7 +830,6 @@ export default function MyAppointments() {
   const appointments = rawList.map(normaliseAppt);
   const totalPages = Math.ceil((apptData?.totalCount ?? 0) / PAGE_SIZE);
 
-  // Reset page on tab switch
   useEffect(() => {
     setPage(1);
   }, [validTab]);
@@ -895,16 +915,9 @@ export default function MyAppointments() {
 
       {/* ── Content ── */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-6 pb-14">
-        {/* Tabs skeleton → real tabs */}
+        {/* Tabs */}
         {statsLoading ? (
-          <div className="flex gap-2 mb-6">
-            {tabs.map((k) => (
-              <div
-                key={k}
-                className="h-10 w-28 rounded-2xl bg-white border border-slate-100 animate-pulse"
-              />
-            ))}
-          </div>
+          <TabsSkeleton tabs={tabs} />
         ) : (
           <Tabs
             tabs={tabs}
