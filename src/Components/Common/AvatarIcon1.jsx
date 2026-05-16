@@ -61,12 +61,14 @@ export default function AvatarIcon({
           />
         )}
       </div>
-      {user && showLabel && (
+      {user && showLabel ? (
         <p className="font-semibold truncate">
           {user?.firstName
             ? `${user?.firstName} ${user?.lastName}`
             : user?.name}
         </p>
+      ) : (
+        showLabel && "Admin"
       )}
     </div>
   );

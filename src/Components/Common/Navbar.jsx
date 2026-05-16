@@ -15,6 +15,13 @@ import { PiCalendarDots } from "react-icons/pi";
 import NotificationsWidget from "./../NotificationButton";
 import { FaUserDoctor } from "react-icons/fa6";
 import { useMedicalProviderMe } from "./../../hooks/useMedicalProviderMe";
+import {
+  MdDashboard,
+  MdLocalHospital,
+  MdScience,
+  MdReport,
+  MdSettings,
+} from "react-icons/md";
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -25,6 +32,7 @@ export default function Navbar() {
   const { role, accessToken } = useAuth();
   const { data: user } =
     role === "MedicalTestProvider" ? useMedicalProviderMe() : useGetUser();
+  console.log(user);
   const location = useLocation();
   const logoutMutation = useLogout();
 
@@ -153,12 +161,35 @@ export default function Navbar() {
             { to: "/dashboard", label: "Dashboard" },
             { to: "/aboutus", label: "About Us" },
           ]
-        : [
-            { to: "/", label: "Home" },
-            { to: "/medicalprovider/services", label: "Services" },
-            { to: "/medicalprovider/searchdoctors", label: "Doctors" },
-            { to: "/aboutus", label: "About Us" },
-          ];
+        : role === "Admin"
+          ? [
+              { to: "/admin/dashboard", label: "Dashboard" },
+              {
+                label: "Management",
+                Links: [
+                  { to: "/admin/doctors", label: "Doctors" },
+                  { to: "/admin/patients", label: "Patients" },
+                  { to: "/admin/labs", label: "Labs" },
+                  { to: "/admin/scans", label: "Scans" },
+                ],
+              },
+              {
+                label: "Settings",
+                Links: [
+                  { to: "/admin/allergies", label: "Allergies" },
+                  { to: "/admin/chronic-diseases", label: "Chronic Diseases" },
+                  { to: "/admin/majors", label: "Majors" },
+                  { to: "/admin/complaints", label: "Complaints" },
+                ],
+              },
+              { to: "/aboutus", label: "About Us" },
+            ]
+          : [
+              { to: "/", label: "Home" },
+              { to: "/medicalprovider/services", label: "Services" },
+              { to: "/medicalprovider/searchdoctors", label: "Doctors" },
+              { to: "/aboutus", label: "About Us" },
+            ];
 
   /* ── popup account links per role ── */
   const accountLinks =
@@ -203,33 +234,61 @@ export default function Navbar() {
               label: "Support / Help",
             },
           ]
-        : [
-            {
-              to: "/medicalprovider/profile",
-              icon: <IoPersonSharp className="w-4 h-4" />,
-              label: "Profile",
-            },
-            {
-              to: "/medicalprovider/referredpatients",
-              icon: <FaUsers className="w-4 h-4" />,
-              label: "Orders",
-            },
-            {
-              to: "/medicalprovider/ourdeals",
-              icon: <FaHandsHelping className="w-4 h-4" />,
-              label: "Our Deals",
-            },
-            {
-              to: "/medicalprovider/sponsoreddoctors",
-              icon: <FaUserDoctor className="w-4 h-4" />,
-              label: "Our Doctors",
-            },
-            {
-              to: "/support",
-              icon: <IoIosHeartEmpty className="w-4 h-4" />,
-              label: "Support / Help",
-            },
-          ];
+        : role === "Admin"
+          ? [
+              {
+                to: "/admin/dashboard",
+                icon: <MdDashboard className="w-4 h-4" />,
+                label: "Dashboard",
+              },
+              {
+                to: "/admin/doctors",
+                icon: <FaUserDoctor className="w-4 h-4" />,
+                label: "Doctors",
+              },
+              {
+                to: "/admin/patients",
+                icon: <FaUsers className="w-4 h-4" />,
+                label: "Patients",
+              },
+              {
+                to: "/admin/complaints",
+                icon: <MdReport className="w-4 h-4" />,
+                label: "Complaints",
+              },
+              {
+                to: "/support",
+                icon: <IoIosHeartEmpty className="w-4 h-4" />,
+                label: "Support / Help",
+              },
+            ]
+          : [
+              {
+                to: "/medicalprovider/profile",
+                icon: <IoPersonSharp className="w-4 h-4" />,
+                label: "Profile",
+              },
+              {
+                to: "/medicalprovider/referredpatients",
+                icon: <FaUsers className="w-4 h-4" />,
+                label: "Orders",
+              },
+              {
+                to: "/medicalprovider/ourdeals",
+                icon: <FaHandsHelping className="w-4 h-4" />,
+                label: "Our Deals",
+              },
+              {
+                to: "/medicalprovider/sponsoreddoctors",
+                icon: <FaUserDoctor className="w-4 h-4" />,
+                label: "Our Doctors",
+              },
+              {
+                to: "/support",
+                icon: <IoIosHeartEmpty className="w-4 h-4" />,
+                label: "Support / Help",
+              },
+            ];
 
   /* ─────────────────────────────────────────
      Shared active-underline style helper
@@ -386,7 +445,6 @@ export default function Navbar() {
               <AvatarIcon
                 user={user}
                 showLabel={false}
-                // user={{ imageUrl: user?.profileImageUrl }}
                 ref={avatarRef}
                 handle={() => {
                   setPopup((p) => !p);
@@ -515,6 +573,7 @@ export default function Navbar() {
           />
         )}
       </AnimatePresence>
+
       {/* sidenav */}
       <motion.aside
         ref={sidenavRef}
@@ -562,7 +621,9 @@ export default function Navbar() {
                 ? "/myprofile"
                 : role === "Patient"
                   ? "/myprofile"
-                  : "/medicalprovider/profile"
+                  : role === "Admin"
+                    ? "/admin/dashboard"
+                    : "/medicalprovider/profile"
             }
             onClick={() => setSidenav(false)}
             className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 hover:bg-gray-50 transition-colors shrink-0"
