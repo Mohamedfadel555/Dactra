@@ -372,6 +372,32 @@ export default function PharmacyFinderPage() {
 
   const prescription = MOCK_PRESCRIPTION;
 
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+        );
+        const data = await res.json();
+
+        const address = {
+          Street: data.address.road,
+          BuildingNo: data.address.house_number ?? "1",
+          City: data.address.city || data.address.town,
+          Governorate: data.address.state,
+          Country: data.address.country,
+        };
+
+        console.log("User Address:", address);
+      },
+      (error) => {
+        console.error("Location error:", error.message);
+      },
+    );
+  }, []);
+
   function startSearch() {
     setPhase("searching");
     setSearchStep(0);

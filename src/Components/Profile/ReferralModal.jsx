@@ -344,8 +344,6 @@ export default function ReferralModal({ patientId, onClose }) {
                       {services.map((sv) => {
                         const checked = selectedServices.includes(sv.id);
                         return (
-                          // FIX: div بدل label — بيمنع double-fire على موبايل
-                          // FIX: شيلنا whileHover — بيسبب layout shift أثناء scroll
                           <motion.div
                             key={sv.id}
                             variants={itemV}
