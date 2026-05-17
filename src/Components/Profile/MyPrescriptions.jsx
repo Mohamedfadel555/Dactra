@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GiMedicines } from "react-icons/gi";
 import { IoCloseSharp, IoChevronDownSharp } from "react-icons/io5";
 import { FaUserMd, FaCalendarAlt, FaClock } from "react-icons/fa";
+import { FiSearch } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 import { useAxios } from "../../hooks/useAxios";
-
-// ─── UTC "HH:mm:ss" → local "HH:mm" ─────────────────────────────────────────
+import { useNavigate } from "react-router-dom";
 
 function utcTimeToLocal(utcTime) {
   if (!utcTime) return "";
@@ -20,7 +20,7 @@ function utcTimeToLocal(utcTime) {
   });
 }
 
-// ─── animation variants (same as MyProfile) ───────────────────────────────────
+// ─── animation variants ───────────────────────────────────────────────────────
 
 const popupVariants = {
   hidden: { opacity: 0, scale: 0.92, y: 20 },
@@ -133,7 +133,7 @@ function MedicineRow({ med }) {
   );
 }
 
-// ─── prescription card (collapsed list item) ──────────────────────────────────
+// ─── prescription card ────────────────────────────────────────────────────────
 
 function PrescriptionCard({ rx, onClick }) {
   const date = rx.createdAt?.split("T")[0];
@@ -173,7 +173,24 @@ function PrescriptionCard({ rx, onClick }) {
 // ─── detail modal ─────────────────────────────────────────────────────────────
 
 function PrescriptionModal({ rx, onClose }) {
+  const navigate = useNavigate();
   const date = rx.createdAt?.split("T")[0];
+
+  // بناء بيانات الروشتة عشان نبعتها للـ pharmacy finder
+  function handleFindPharmacy() {
+    const prescriptionData = {
+      id: rx.id,
+      doctor: `Dr. ${rx.doctor.fullName}`,
+      date: date,
+      diagnosis: rx.diagnosis,
+      medications: rx.medicines.map((med) => ({
+        name: med.dose ? `${med.name} ${med.dose}mg` : med.name,
+        qty: med.durationDisplay ?? "",
+      })),
+    };
+
+    navigate("/pharmacyfinder", { state: { prescription: prescriptionData } });
+  }
 
   return (
     <AnimatePresence>
@@ -231,6 +248,20 @@ function PrescriptionModal({ rx, onClose }) {
               ))}
             </div>
           </div>
+
+          {/* divider */}
+          <div className="h-px bg-gray-100" />
+
+          {/* Find Pharmacy Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleFindPharmacy}
+            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[14px] flex items-center justify-center gap-2 transition-colors shadow-md shadow-blue-100"
+          >
+            <FiSearch className="text-[15px]" />
+            Find Nearby Pharmacy
+          </motion.button>
         </motion.div>
       </>
     </AnimatePresence>
@@ -253,14 +284,11 @@ export default function MyPrescriptions() {
 
   return (
     <>
-      {/* detail modal */}
       {selected && (
         <PrescriptionModal rx={selected} onClose={() => setSelected(null)} />
       )}
 
-      {/* card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        {/* header */}
         <div className="flex items-center gap-2 mb-4">
           <GiMedicines className="text-blue-600 text-[18px]" />
           <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
@@ -268,7 +296,6 @@ export default function MyPrescriptions() {
           </p>
         </div>
 
-        {/* body */}
         {isLoading ? (
           <div className="flex flex-col gap-2">
             {[1, 2].map((i) => (

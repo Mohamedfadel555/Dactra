@@ -24,5 +24,38 @@ export const usePerceptionAPI = () => {
     return res.data; // string[]
   };
 
-  return { savePerception, getPrescriptionByAppointment, searchMedicines };
+  // ── Pharmacy Integration ───────────────────────────────────────────────────
+  // POST /api/PharmacyIntegration/pharmacy
+  // params: { prescriptionId, street, city, BuildingNo, country, governorate }
+  const getNearbyPharmacies = async ({
+    prescriptionId,
+    street,
+    city,
+    BuildingNo,
+    country,
+    governorate,
+  }) => {
+    const res = await axiosInstance.post(
+      "PharmacyIntegration/pharmacy",
+      null, // no request body — كل الباراميترز query params
+      {
+        params: {
+          prescriptionId,
+          street,
+          city,
+          BuildingNo,
+          country,
+          governorate,
+        },
+      },
+    );
+    return res.data;
+  };
+
+  return {
+    savePerception,
+    getPrescriptionByAppointment,
+    searchMedicines,
+    getNearbyPharmacies,
+  };
 };

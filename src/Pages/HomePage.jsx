@@ -773,7 +773,7 @@ We recommend your center to patients looking for X-ray, MRI, CT, or ultrasound n
                   </p>
 
                   <div className="flex justify-center items-center md:block">
-                    <Link to="/service-providers">
+                    <Link to="/pharmacyfinder">
                       <button
                         type="button"
                         className="bg-[#316BE8] text-white text-[20px] sm:text-[24px] font-bold w-[200px] h-[60px] rounded-xl"
