@@ -99,7 +99,7 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute right-0 top-[calc(100%+8px)] z-[60] w-[min(100vw-24px,360px)] max-h-[min(70vh,420px)] overflow-hidden flex flex-col bg-white rounded-2xl border border-slate-100 shadow-[0_4px_6px_rgba(0,0,0,0.05),0_20px_50px_rgba(0,0,0,0.12)]"
+            className="fixed inset-x-4 top-[72px] sm:absolute sm:inset-auto sm:right-0 sm:top-[calc(100%+8px)] z-[60] sm:w-[360px] max-h-[min(70vh,420px)] overflow-hidden flex flex-col bg-white rounded-2xl border border-slate-100 shadow-[0_4px_6px_rgba(0,0,0,0.05),0_20px_50px_rgba(0,0,0,0.12)]"
           >
             <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
