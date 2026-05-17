@@ -3,7 +3,7 @@ import { useAxios } from "./useAxios";
 
 /**
  * Report API (Swagger): POST /api/Report
- * { type, title, content, relatedEntityId } — type: 0 Post, 1 Comment, 2 Question
+ * { type, title, content, relatedEntityId } — 0 Post, 1 Comment, 2 Question, 3 Doctor, 4 Patient
  */
 export function useReportApi() {
   const axios = useAxios();

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   MdVisibility,
   MdDelete,
@@ -13,24 +12,126 @@ export default function AdminTable({
   isLoading = false,
   onView,
   onApprove,
+  onDisapprove,
   onDelete,
   onBlock,
   showMore,
   onShowMore,
   hasMore = false,
   showViewForRow,
+  showApproveForRow,
+  showDisapproveForRow,
+  showBlockForRow,
+  noHorizontalScroll = false,
 }) {
-  const hasActions = Boolean(onView || onApprove || onDelete || onBlock);
+  const hasActions = Boolean(
+    onView || onApprove || onDisapprove || onDelete || onBlock,
+  );
   const canShowView = (row) =>
     showViewForRow == null || showViewForRow(row) !== false;
+  const canShowApprove = (row) =>
+    onApprove && (showApproveForRow == null || showApproveForRow(row));
+  const canShowDisapprove = (row) =>
+    onDisapprove && (showDisapproveForRow == null || showDisapproveForRow(row));
+  const canShowBlock = (row) =>
+    onBlock && (showBlockForRow == null || showBlockForRow(row));
 
-  const [expandedRow, setExpandedRow] = useState(null);
-  // Show loading state
+  const cellClass = (col) => {
+    const base = "px-3 sm:px-4 lg:px-6 py-3 sm:py-4 align-top";
+    if (col?.wrap) return `${base} whitespace-normal break-words`;
+    if (noHorizontalScroll) return `${base} whitespace-nowrap`;
+    return `${base} whitespace-nowrap`;
+  };
+
+  const thClass = (col) =>
+    [
+      "px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider",
+      col?.width || "",
+      col?.wrap ? "whitespace-normal" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+  const renderActions = (row) => (
+    <div className="flex items-center gap-1 flex-wrap">
+      {onView && canShowView(row) && (
+        <button
+          type="button"
+          onClick={() => onView(row)}
+          className="text-blue-600 hover:text-blue-800 p-1 transition-all duration-200 hover:scale-110"
+          title="View"
+        >
+          <MdVisibility className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      )}
+      {canShowApprove(row) && (
+        <button
+          type="button"
+          onClick={() => onApprove(row)}
+          className={`p-1 transition-all duration-200 ${
+            row.isApproved
+              ? "text-red-600 hover:text-red-800 hover:scale-110"
+              : "text-green-600 hover:text-green-800 hover:scale-110"
+          }`}
+          title={row.isApproved ? "Disapprove" : "Approve"}
+        >
+          {row.isApproved ? (
+            <MdCancel className="w-4 h-4 sm:w-5 sm:h-5" />
+          ) : (
+            <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+          )}
+        </button>
+      )}
+      {canShowDisapprove(row) && (
+        <button
+          type="button"
+          onClick={() => onDisapprove(row)}
+          className="text-red-600 hover:text-red-800 p-1 transition-all duration-200 hover:scale-110"
+          title="Disapprove doctor"
+        >
+          <MdCancel className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      )}
+      {canShowBlock(row) && (
+        <button
+          type="button"
+          onClick={() => onBlock(row)}
+          className={`p-1 ${
+            row.isDeleted ||
+            row.statusType === "Blocked" ||
+            row.isBlocked
+              ? "text-green-600 hover:text-green-800"
+              : "text-orange-600 hover:text-orange-800"
+          }`}
+          title={
+            row.isDeleted ||
+            row.statusType === "Blocked" ||
+            row.isBlocked
+              ? "Unblock"
+              : "Block"
+          }
+        >
+          <MdBlock className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          onClick={() => onDelete(row)}
+          className="text-red-600 hover:text-red-800 p-1"
+          title="Delete"
+        >
+          <MdDelete className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      )}
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 sm:p-8 animate-pulse">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-4 h-4 border-2 border-[#316BE8] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-4 h-4 border-2 border-[#316BE8] border-t-transparent rounded-full animate-spin" />
           <p className="text-center text-sm sm:text-base text-gray-500">
             Loading...
           </p>
@@ -39,26 +140,32 @@ export default function AdminTable({
     );
   }
 
-  // Always show table structure, even if no data
   const tableData = data || [];
   const isEmpty = tableData.length === 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
-      <div className="overflow-x-auto -mx-3 sm:mx-0">
-        <table className="w-full min-w-[640px] text-left">
+      <div
+        className={
+          noHorizontalScroll ? "w-full" : "overflow-x-auto -mx-3 sm:mx-0"
+        }
+      >
+        <table
+          className={`w-full text-left ${noHorizontalScroll ? "table-fixed" : "min-w-[640px]"}`}
+        >
           <thead className="bg-gray-50/80">
             <tr>
               {columns.map((col, index) => (
-                <th
-                  key={index}
-                  className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th key={index} className={thClass(col)}>
                   {col.label}
                 </th>
               ))}
               {hasActions && (
-                <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                    noHorizontalScroll ? "w-[88px]" : "min-w-[120px]"
+                  }`}
+                >
                   Actions
                 </th>
               )}
@@ -66,90 +173,32 @@ export default function AdminTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
             {isEmpty ? (
-              // Empty state row
               <tr>
                 <td
-                  colSpan={columns.length + 1}
+                  colSpan={columns.length + (hasActions ? 1 : 0)}
                   className="px-3 sm:px-4 lg:px-6 py-8 text-center text-sm text-gray-500"
                 >
                   No data available
                 </td>
               </tr>
             ) : (
-              // Data rows
               tableData.map((row, rowIndex) => (
                 <tr
-                  key={rowIndex}
-                  className="hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                  key={row.id ?? row.Id ?? rowIndex}
+                  className="hover:bg-gray-50 transition-all duration-200"
                 >
                   {columns.map((col, colIndex) => (
-                    <td
-                      key={colIndex}
-                      className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap"
-                    >
+                    <td key={colIndex} className={cellClass(col)}>
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
                   {hasActions && (
-                    <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        {onView && canShowView(row) && (
-                          <button
-                            onClick={() => onView(row)}
-                            className="text-blue-600 hover:text-blue-800 p-1 transition-all duration-200 hover:scale-110"
-                            title="View"
-                          >
-                            <MdVisibility className="w-4 h-4 sm:w-5 sm:h-5" />
-                          </button>
-                        )}
-                        {onApprove && (
-                          <button
-                            onClick={() => onApprove(row)}
-                            className={`p-1 transition-all duration-200 ${
-                              row.isApproved
-                                ? "text-red-600 hover:text-red-800 hover:scale-110"
-                                : "text-green-600 hover:text-green-800 hover:scale-110"
-                            }`}
-                            title={row.isApproved ? "Disapprove" : "Approve"}
-                          >
-                            {row.isApproved ? (
-                              <MdCancel className="w-4 h-4 sm:w-5 sm:h-5" />
-                            ) : (
-                              <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                            )}
-                          </button>
-                        )}
-                        {onBlock && (
-                          <button
-                            onClick={() => onBlock(row)}
-                            className={`p-1 ${
-                              row.isDeleted ||
-                              row.statusType === "Blocked" ||
-                              row.isBlocked
-                                ? "text-green-600 hover:text-green-800"
-                                : "text-orange-600 hover:text-orange-800"
-                            }`}
-                            title={
-                              row.isDeleted ||
-                              row.statusType === "Blocked" ||
-                              row.isBlocked
-                                ? "Unblock"
-                                : "Block"
-                            }
-                          >
-                            <MdBlock className="w-4 h-4 sm:w-5 sm:h-5" />
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={() => onDelete(row)}
-                            className="text-red-600 hover:text-red-800 p-1"
-                            title="Delete"
-                          >
-                            <MdDelete className="w-4 h-4 sm:w-5 sm:h-5" />
-                          </button>
-                        )}
-                      </div>
+                    <td
+                      className={`px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap align-top ${
+                        noHorizontalScroll ? "w-[88px]" : "min-w-[120px]"
+                      }`}
+                    >
+                      {renderActions(row)}
                     </td>
                   )}
                 </tr>
@@ -161,6 +210,7 @@ export default function AdminTable({
       {showMore && hasMore && !isEmpty && (
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200">
           <button
+            type="button"
             onClick={onShowMore}
             className="w-full py-2 text-center text-sm sm:text-base text-[#316BE8] hover:text-[#274fb3] font-medium transition-all duration-200 hover:bg-blue-50 rounded-lg"
           >

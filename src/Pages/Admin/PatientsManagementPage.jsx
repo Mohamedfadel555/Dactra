@@ -3,14 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
+import AdminNameCell from "../../Components/Admin/AdminNameCell";
 import { MdSearch } from "react-icons/md";
 import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
+import { useUserAPI } from "../../api/userAPI";
+import { enrichWithProfileImages } from "../../utils/adminEntityHelpers";
 
 export default function PatientsManagementPage() {
   const navigate = useNavigate();
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
+  const { getPatientProfile } = useUserAPI();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -28,7 +32,8 @@ export default function PatientsManagementPage() {
         pageSize,
         searchQuery || null,
       );
-      return res.data; // Array of patient objects (paginated from backend, filtered by search if provided)
+      const list = Array.isArray(res.data) ? res.data : [];
+      return enrichWithProfileImages(list, getPatientProfile);
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 2,
@@ -82,18 +87,7 @@ export default function PatientsManagementPage() {
     {
       label: "Name",
       key: "name",
-      render: (patient) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-500 text-sm">
-              {patient.fullName?.[0]?.toUpperCase() || "P"}
-            </span>
-          </div>
-          <span className="text-sm font-medium text-gray-900">
-            {patient.fullName || "N/A"}
-          </span>
-        </div>
-      ),
+      render: (patient) => <AdminNameCell entity={patient} fallback="P" />,
     },
     {
       label: "Email",

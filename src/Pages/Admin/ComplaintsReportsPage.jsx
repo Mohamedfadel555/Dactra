@@ -6,20 +6,42 @@ import { MdSearch } from "react-icons/md";
 import { toast } from "react-toastify";
 import { useReportApi } from "../../hooks/useReportApi";
 import { useComplaintsApi } from "../../hooks/useComplaintsApi";
+import { useAdminAPI } from "../../api/adminAPI";
 import {
-  complaintTargetLabel,
   normalizeReportKind,
   parseReportThreadMeta,
+  reportTypeLabel,
   stripReportMetaPrefix,
 } from "../../utils/reportConstants";
 
-function reportTypeLabel(row) {
-  const k = normalizeReportKind(row);
-  if (k === "post") return "Post (Article)";
-  if (k === "comment") return "Comment";
-  if (k === "question") return "Question";
-  const raw = row?.type ?? row?.Type ?? row?.reportType ?? row?.ReportType;
-  return raw != null ? String(raw) : "—";
+function normalizeProviderList(res) {
+  const raw = res?.data;
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.items)) return raw.items;
+  if (Array.isArray(raw?.data)) return raw.data;
+  if (Array.isArray(raw?.$values)) return raw.$values;
+  return [];
+}
+
+function doctorIsApproved(doctor) {
+  if (!doctor) return false;
+  const approvalStatus =
+    typeof doctor.approvalStatus === "number" ? doctor.approvalStatus : null;
+  return (
+    approvalStatus === 1 ||
+    doctor.isApproved === true ||
+    doctor.status === "Approved" ||
+    doctor.statusType === "Approved"
+  );
+}
+
+function patientIsBlocked(patient) {
+  if (!patient) return false;
+  return (
+    patient.isDeleted ||
+    patient.statusType === "Blocked" ||
+    patient.isBlocked
+  );
 }
 
 function normalizeList(res) {
@@ -52,6 +74,7 @@ export default function ComplaintsReportsPage() {
   const { getAllReports, deleteReport } = useReportApi();
   const { getAllComplaints, getComplaintById, updateComplaint } =
     useComplaintsApi();
+  const adminAPI = useAdminAPI();
 
   const reportsQ = useQuery({
     queryKey: ["admin-reports"],
@@ -63,8 +86,44 @@ export default function ComplaintsReportsPage() {
     queryFn: () => getAllComplaints().then((r) => normalizeList(r)),
   });
 
+  const doctorsLookupQ = useQuery({
+    queryKey: ["admin-doctors-lookup"],
+    queryFn: () =>
+      adminAPI
+        .getAllDoctorsInfo(1, 500, null, null)
+        .then((r) => normalizeProviderList(r)),
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const patientsLookupQ = useQuery({
+    queryKey: ["admin-patients-lookup"],
+    queryFn: () =>
+      adminAPI
+        .getAllPatientInfo(1, 500, null)
+        .then((r) => normalizeProviderList(r)),
+    staleTime: 1000 * 60 * 2,
+  });
+
   const reports = reportsQ.data ?? [];
   const complaints = complaintsQ.data ?? [];
+
+  const doctorByProfileId = useMemo(() => {
+    const map = new Map();
+    for (const d of doctorsLookupQ.data ?? []) {
+      const pid = d.profileId ?? d.id;
+      if (pid != null) map.set(String(pid), d);
+    }
+    return map;
+  }, [doctorsLookupQ.data]);
+
+  const patientByProfileId = useMemo(() => {
+    const map = new Map();
+    for (const p of patientsLookupQ.data ?? []) {
+      const pid = p.profileId ?? p.id;
+      if (pid != null) map.set(String(pid), p);
+    }
+    return map;
+  }, [patientsLookupQ.data]);
 
   const delMutation = useMutation({
     mutationFn: (id) => deleteReport(id),
@@ -157,6 +216,24 @@ export default function ComplaintsReportsPage() {
         );
         return;
       }
+      if (kind === "doctor") {
+        if (id == null) {
+          toast.info("No doctor id on this report.", { position: "top-center" });
+          return;
+        }
+        navigate(`/doctor/profile/${id}`);
+        return;
+      }
+      if (kind === "patient") {
+        if (id == null) {
+          toast.info("No patient id on this report.", {
+            position: "top-center",
+          });
+          return;
+        }
+        navigate(`/patient/profile/${id}`);
+        return;
+      }
       toast.warning(
         `Unknown report type (raw: ${String(row?.type ?? row?.Type ?? "—")}). Check API field names.`,
         { position: "top-center" },
@@ -178,6 +255,86 @@ export default function ComplaintsReportsPage() {
     delMutation.mutate(id);
   };
 
+  const refreshReportLookups = () => {
+    doctorsLookupQ.refetch();
+    patientsLookupQ.refetch();
+  };
+
+  const handleApproveDoctorReport = async (row) => {
+    const doctor =
+      row._doctor ??
+      doctorByProfileId.get(
+        String(row?.relatedEntityId ?? row?.RelatedEntityId ?? ""),
+      );
+    const providerId =
+      doctor?.profileId ?? row?.relatedEntityId ?? row?.RelatedEntityId;
+    if (!providerId) {
+      toast.error("Doctor id not found on this report.", {
+        position: "top-center",
+      });
+      return;
+    }
+
+    const isCurrentlyApproved = row.isApproved ?? doctorIsApproved(doctor);
+
+    try {
+      if (isCurrentlyApproved) {
+        await adminAPI.disapproveProvider(0, providerId);
+        toast.success("Doctor disapproved successfully.", {
+          position: "top-center",
+        });
+      } else {
+        await adminAPI.approveProvider(0, providerId);
+        toast.success("Doctor approved successfully.", {
+          position: "top-center",
+        });
+      }
+      refreshReportLookups();
+    } catch {
+      toast.error(
+        isCurrentlyApproved
+          ? "Failed to disapprove doctor."
+          : "Failed to approve doctor.",
+        { position: "top-center" },
+      );
+    }
+  };
+
+  const handleBlockPatientReport = async (row) => {
+    const patient =
+      row._patient ??
+      patientByProfileId.get(
+        String(row?.relatedEntityId ?? row?.RelatedEntityId ?? ""),
+      );
+    const userId = patient?.id;
+    if (!userId) {
+      toast.error("Patient user id not found on this report.", {
+        position: "top-center",
+      });
+      return;
+    }
+
+    const isBlocked = patientIsBlocked(patient);
+    const actionText = isBlocked ? "unblock" : "block";
+    if (!window.confirm(`Are you sure you want to ${actionText} this patient?`)) {
+      return;
+    }
+
+    try {
+      await adminAPI.deleteAppUser(userId);
+      toast.success(
+        isBlocked ? "Patient unblocked successfully." : "Patient blocked successfully.",
+        { position: "top-center" },
+      );
+      refreshReportLookups();
+    } catch {
+      toast.error(
+        isBlocked ? "Failed to unblock patient." : "Failed to block patient.",
+        { position: "top-center" },
+      );
+    }
+  };
+
   const handleResolve = (complaint) => {
     const id = complaint?.id ?? complaint?.Id;
     if (id == null) return;
@@ -186,22 +343,11 @@ export default function ComplaintsReportsPage() {
 
   const complaintsColumns = [
     {
-      label: "Against",
-      key: "against",
-      render: (c) => (
-        <span className="text-sm font-medium text-gray-900">
-          {complaintTargetLabel(c?.against ?? c?.Against) ||
-            c?.against ||
-            c?.Against ||
-            "N/A"}
-        </span>
-      ),
-    },
-    {
       label: "From",
       key: "userEmail",
+      width: "w-[20%]",
       render: (c) => (
-        <span className="text-sm text-gray-600 max-w-[200px] truncate block">
+        <span className="text-sm text-gray-700 truncate block">
           {c?.userEmail ?? c?.UserEmail ?? "—"}
         </span>
       ),
@@ -209,8 +355,9 @@ export default function ComplaintsReportsPage() {
     {
       label: "Title",
       key: "title",
+      width: "w-[16%]",
       render: (c) => (
-        <span className="text-sm text-gray-700 max-w-[200px] line-clamp-1">
+        <span className="text-sm text-gray-700 line-clamp-2">
           {c?.title || c?.Title || "N/A"}
         </span>
       ),
@@ -218,19 +365,22 @@ export default function ComplaintsReportsPage() {
     {
       label: "Description",
       key: "content",
+      width: "w-[34%]",
+      wrap: true,
       render: (c) => (
-        <span className="text-sm text-gray-600 max-w-[320px] line-clamp-2">
+        <span className="text-sm text-gray-600 max-w-[280px] line-clamp-3 break-words block">
           {c?.content || c?.Content || "N/A"}
         </span>
       ),
     },
     {
-      label: "Created At",
+      label: "Created",
       key: "createdAt",
+      width: "w-[16%]",
       render: (c) => {
         const raw = c?.createdAt ?? c?.CreatedAt;
         return (
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-500">
             {raw ? new Date(raw).toLocaleString() : "N/A"}
           </span>
         );
@@ -239,19 +389,18 @@ export default function ComplaintsReportsPage() {
     {
       label: "Status",
       key: "status",
+      width: "w-[10%]",
       render: (c) => {
         const ok = complaintIsResolved(c);
-        const code = c?.status ?? c?.Status ?? 0;
         return (
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
+            className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${
               ok
                 ? "bg-green-100 text-green-800"
                 : "bg-yellow-100 text-yellow-800"
             }`}
           >
-            {ok ? "Resolved" : "Open"}{" "}
-           
+            {ok ? "Resolved" : "Open"}
           </span>
         );
       },
@@ -263,10 +412,32 @@ export default function ComplaintsReportsPage() {
       label: "Type",
       key: "type",
       render: (r) => (
-        <span className="text-sm font-medium text-gray-900">
+        <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#316BE8]">
           {reportTypeLabel(r)}
         </span>
       ),
+    },
+    {
+      label: "Reporter",
+      key: "userEmail",
+      render: (r) => (
+        <span className="text-sm text-gray-700 max-w-[180px] truncate block">
+          {r?.userEmail ?? r?.UserEmail ?? "—"}
+        </span>
+      ),
+    },
+    {
+      label: "Reported",
+      key: "relatedEntityId",
+      render: (r) => {
+        const entityId = r?.relatedEntityId ?? r?.RelatedEntityId;
+        const label = reportTypeLabel(r);
+        return (
+          <span className="text-sm font-medium text-gray-900">
+            {entityId != null ? `${label} #${entityId}` : label}
+          </span>
+        );
+      },
     },
     {
       label: "Reason",
@@ -284,28 +455,19 @@ export default function ComplaintsReportsPage() {
         const raw = r?.content || r?.Content || "";
         const shown = stripReportMetaPrefix(raw) || raw || "—";
         return (
-          <span className="text-sm text-gray-600 max-w-[320px] line-clamp-2">
+          <span className="text-sm text-gray-600 max-w-[280px] line-clamp-2">
             {shown}
           </span>
         );
       },
     },
     {
-      label: "Entity id",
-      key: "relatedEntityId",
-      render: (r) => (
-        <span className="text-sm text-gray-800">
-          {r?.relatedEntityId ?? r?.RelatedEntityId ?? "—"}
-        </span>
-      ),
-    },
-    {
-      label: "Created At",
+      label: "Created",
       key: "createdAt",
       render: (r) => {
         const raw = r?.createdAt ?? r?.CreatedAt;
         return (
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-500">
             {raw ? new Date(raw).toLocaleString() : "N/A"}
           </span>
         );
@@ -323,6 +485,8 @@ export default function ComplaintsReportsPage() {
         report?.Title,
         report?.content,
         report?.Content,
+        report?.userEmail,
+        report?.UserEmail,
         String(report?.relatedEntityId ?? report?.RelatedEntityId),
       ]
         .filter(Boolean)
@@ -337,7 +501,6 @@ export default function ComplaintsReportsPage() {
     if (!query) return complaints;
     return complaints.filter((item) => {
       const haystack = [
-        String(item?.against ?? item?.Against),
         item?.title,
         item?.Title,
         item?.content,
@@ -361,24 +524,69 @@ export default function ComplaintsReportsPage() {
     return mainTab === "complaints" ? filteredComplaints : filteredReports;
   };
 
-  const getApproveMeta = (item) => {
-    if (mainTab !== "complaints") return item;
-    return { ...item, isApproved: complaintIsResolved(item) };
+  const enrichRow = (item) => {
+    if (mainTab === "complaints") {
+      return { ...item, isApproved: complaintIsResolved(item) };
+    }
+
+    const kind = normalizeReportKind(item);
+    const entityId = String(
+      item?.relatedEntityId ?? item?.RelatedEntityId ?? "",
+    );
+
+    if (kind === "doctor") {
+      const doctor = doctorByProfileId.get(entityId);
+      return {
+        ...item,
+        _doctor: doctor,
+        isApproved: doctorIsApproved(doctor),
+      };
+    }
+
+    if (kind === "patient") {
+      const patient = patientByProfileId.get(entityId);
+      const blocked = patientIsBlocked(patient);
+      return {
+        ...item,
+        _patient: patient,
+        isBlocked: blocked,
+        isDeleted: patient?.isDeleted,
+        statusType: patient?.statusType,
+      };
+    }
+
+    return item;
   };
 
-  const mappedData = getCurrentData().map(getApproveMeta);
+  const mappedData = getCurrentData().map(enrichRow);
   const isLoading = mainTab === "complaints" ? complaintsQ.isLoading : reportsQ.isLoading;
+
+  const showReportView = (row) => {
+    const kind = normalizeReportKind(row);
+    if (kind === "comment") {
+      const content = row?.content ?? row?.Content ?? "";
+      return (
+        parseReportThreadMeta(
+          typeof content === "string" ? content.trim() : "",
+        ).qid != null
+      );
+    }
+    return ["post", "question", "doctor", "patient"].includes(kind);
+  };
+
+  const showDoctorApprove = (row) => normalizeReportKind(row) === "doctor";
+  const showPatientBlock = (row) => normalizeReportKind(row) === "patient";
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Complaints / Reports
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#06172E]">
+            Moderation
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Reports are flags only — use View to open the post or question. Delete
-            removes the report record from the list.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
+            System complaints are platform issues. Reports flag community content,
+            doctors, or patients — use View to open the target profile or post.
           </p>
         </div>
         <div className="w-full sm:flex-1 sm:max-w-md sm:ml-4">
@@ -395,17 +603,17 @@ export default function ComplaintsReportsPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => {
             setMainTab("complaints");
             setSearchQuery("");
           }}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
             mainTab === "complaints"
-              ? "text-[#316BE8] border-b-2 border-[#316BE8]"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-[#316BE8] text-white shadow-md shadow-blue-900/20"
+              : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
           }`}
         >
           Complaints ({complaints.length})
@@ -416,21 +624,15 @@ export default function ComplaintsReportsPage() {
             setMainTab("reports");
             setSearchQuery("");
           }}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
             mainTab === "reports"
-              ? "text-[#316BE8] border-b-2 border-[#316BE8]"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-[#316BE8] text-white shadow-md shadow-blue-900/20"
+              : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
           }`}
         >
           Reports ({reports.length})
         </button>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="ml-auto text-sm text-[#316BE8] hover:underline"
-        >
-          Refresh
-        </button>
+        
       </div>
 
       <AdminTable
@@ -438,7 +640,21 @@ export default function ComplaintsReportsPage() {
         data={mappedData}
         isLoading={isLoading}
         onView={mainTab === "reports" ? handleOpenReportedEntity : undefined}
-        onApprove={mainTab === "complaints" ? handleResolve : undefined}
+        showViewForRow={mainTab === "reports" ? showReportView : undefined}
+        onApprove={
+          mainTab === "complaints"
+            ? handleResolve
+            : mainTab === "reports"
+              ? handleApproveDoctorReport
+              : undefined
+        }
+        showApproveForRow={
+          mainTab === "reports" ? showDoctorApprove : undefined
+        }
+        onBlock={
+          mainTab === "reports" ? handleBlockPatientReport : undefined
+        }
+        showBlockForRow={mainTab === "reports" ? showPatientBlock : undefined}
         onDelete={mainTab === "reports" ? handleDeleteReportRow : undefined}
       />
     </div>

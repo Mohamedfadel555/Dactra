@@ -3,9 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
+import AdminNameCell from "../../Components/Admin/AdminNameCell";
 import { MdSearch } from "react-icons/md";
 import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
+import { useProviderAPI } from "../../api/providerAPI";
+import { enrichWithProfileImages } from "../../utils/adminEntityHelpers";
 
 export default function LabsManagementPage() {
   const navigate = useNavigate();
@@ -13,6 +16,7 @@ export default function LabsManagementPage() {
   const isNewRoute = location.pathname.endsWith("/new");
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
+  const { getMedicalTestsProviderById } = useProviderAPI();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState(isNewRoute ? "0" : ""); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
   const pageSize = 100;
@@ -33,12 +37,13 @@ export default function LabsManagementPage() {
       );
       const raw = res.data;
 
-      if (Array.isArray(raw)) return raw;
-      if (Array.isArray(raw?.items)) return raw.items;
-      if (Array.isArray(raw?.data)) return raw.data;
-      if (Array.isArray(raw?.$values)) return raw.$values;
+      let list = [];
+      if (Array.isArray(raw)) list = raw;
+      else if (Array.isArray(raw?.items)) list = raw.items;
+      else if (Array.isArray(raw?.data)) list = raw.data;
+      else if (Array.isArray(raw?.$values)) list = raw.$values;
 
-      return [];
+      return enrichWithProfileImages(list, getMedicalTestsProviderById);
     },
   });
 
@@ -72,11 +77,7 @@ export default function LabsManagementPage() {
     {
       label: "Name",
       key: "name",
-      render: (lab) => (
-        <span className="text-sm font-medium text-gray-900">
-          {lab.name || "N/A"}
-        </span>
-      ),
+      render: (lab) => <AdminNameCell entity={lab} fallback="L" />,
     },
     {
       label: "Phone",

@@ -17,7 +17,10 @@ import { useGetDoctorProfile } from "../../hooks/useGetDoctorProfile";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetPatientProfile } from "../../hooks/useGetPatientProfile";
 import Schedule from "../../Components/Profile/Schedule";
-import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import ReportModal from "../../Components/Common/ReportModal";
+import { useReportApi } from "../../hooks/useReportApi";
+import { REPORT_TYPE } from "../../utils/reportConstants";
 import { useAuth } from "../../Context/AuthContext";
 import { useGetUser } from "../../hooks/useGetUser";
 import { useGetSlotsById } from "../../hooks/useGetSlotsById";
@@ -111,6 +114,9 @@ const itemFade = {
 export default function Profile({ role }) {
   const [grouped, setGrouped] = useState([]);
   const [showReferral, setShowReferral] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const { createReport } = useReportApi();
 
   const { id } = useParams();
   const { accessToken, role: authRole } = useAuth();
@@ -151,6 +157,31 @@ export default function Profile({ role }) {
   );
   const canRefer =
     accessToken && authRole === "Doctor" && role === "Patient" && !isOwnProfile;
+
+  const handleSubmitProfileReport = async ({ reason, details }) => {
+    const relatedEntityId = Number(id);
+    if (!relatedEntityId || Number.isNaN(relatedEntityId)) {
+      toast.error("Profile id not found.", { position: "top-center" });
+      return;
+    }
+    const reportType =
+      role === "Doctor" ? REPORT_TYPE.DOCTOR : REPORT_TYPE.PATIENT;
+    setReportSubmitting(true);
+    try {
+      await createReport({
+        type: reportType,
+        title: reason,
+        content: (details || "").trim(),
+        relatedEntityId,
+      });
+      setReportOpen(false);
+      toast.success("Report submitted.", { position: "top-center" });
+    } catch {
+      toast.error("Could not submit report.", { position: "top-center" });
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
 
   // vitals transform
   useEffect(() => {
@@ -279,18 +310,18 @@ export default function Profile({ role }) {
             <rect width="100%" height="100%" fill="url(#dots)" />
           </svg>
 
-          {/* report / complaint btn */}
+          {/* report profile */}
           {accessToken && !isOwnProfile && (
-            <Link
-              to="/complaints/submit"
-              state={{ against: role === "Doctor" ? "Doctor" : "Patient" }}
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
               className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5
                          rounded-full bg-white/15 backdrop-blur-sm border border-white/25
                          text-white text-[12px] font-medium hover:bg-white/25 transition-colors"
             >
               <IoWarning className="size-[14px]" />
               Report
-            </Link>
+            </button>
           )}
         </div>
 
@@ -577,6 +608,14 @@ export default function Profile({ role }) {
           />
         )}
       </AnimatePresence>
+
+      <ReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={handleSubmitProfileReport}
+        isSubmitting={reportSubmitting}
+        contentLabel={role === "Doctor" ? "doctor" : "patient"}
+      />
     </>
   );
 }

@@ -9,6 +9,8 @@ import { USER_TYPE_IMAGES } from "../../constants/authConstants";
 import { getCompleteSignupValidationSchema } from "../../utils/validationSchemas";
 import { getCompleteSignupInitialValues } from "../../utils/formInitialValues";
 import { useCompleteSignup } from "../../hooks/useCompleteSignup";
+import { useNotificationsApi } from "../../hooks/useNotificationsApi";
+
 import {
   MdPerson,
   MdPersonOutline,
