@@ -1,20 +1,12 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../../Context/AuthContext";
-import { useLocation } from "react-router-dom";
 import { COMPLAINT_AGAINST } from "../../utils/reportConstants";
 import { useComplaintsApi } from "../../hooks/useComplaintsApi";
 
-const complaintTargets = ["Doctor", "Patient", "System"];
-
 export default function SubmitComplaintPage() {
   const { accessToken } = useAuth();
-  const location = useLocation();
   const { createComplaint } = useComplaintsApi();
-  const defaultAgainst = complaintTargets.includes(location.state?.against)
-    ? location.state.against
-    : complaintTargets[0];
-  const [against, setAgainst] = useState(defaultAgainst);
   const [reason, setReason] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,11 +27,10 @@ export default function SubmitComplaintPage() {
     }
     setIsSubmitting(true);
     try {
-      const againstNum = COMPLAINT_AGAINST[against] ?? 0;
       await createComplaint({
         title: reason.trim(),
         content: description.trim(),
-        against: againstNum,
+        against: COMPLAINT_AGAINST.System,
       });
       toast.success("Complaint submitted successfully.", {
         position: "top-center",
@@ -57,29 +48,13 @@ export default function SubmitComplaintPage() {
     <div className="pt-[80px] pb-10 px-4 min-h-screen bg-slate-50">
       <div className="max-w-2xl mx-auto bg-white border border-slate-100 rounded-2xl shadow-sm">
         <div className="px-6 py-5 border-b border-slate-100">
-          <h1 className="text-2xl font-bold text-slate-800">Submit Complaint</h1>
+          <h1 className="text-2xl font-bold text-slate-800">System Complaint</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Send a complaint to admin for review.
+            Report bugs, booking issues, or platform problems. To report a doctor
+            or patient, use the Report button on their profile.
           </p>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">
-              Against
-            </label>
-            <select
-              value={against}
-              onChange={(e) => setAgainst(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
-            >
-              {complaintTargets.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">
               Reason

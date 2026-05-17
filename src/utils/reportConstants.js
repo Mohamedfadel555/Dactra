@@ -6,16 +6,42 @@ export const reportReasons = [
   "Other",
 ];
 
-/** Backend Report API: 0 = Post, 1 = Comment, 2 = Question */
+/** Backend Report API: 0 Post, 1 Comment, 2 Question, 3 Doctor, 4 Patient */
 export const REPORT_TYPE = {
   POST: 0,
   COMMENT: 1,
   QUESTION: 2,
+  DOCTOR: 3,
+  PATIENT: 4,
+};
+
+const REPORT_KIND_BY_NUM = {
+  [REPORT_TYPE.POST]: "post",
+  [REPORT_TYPE.COMMENT]: "comment",
+  [REPORT_TYPE.QUESTION]: "question",
+  [REPORT_TYPE.DOCTOR]: "doctor",
+  [REPORT_TYPE.PATIENT]: "patient",
+};
+
+const REPORT_KIND_ALIASES = {
+  "0": "post",
+  "1": "comment",
+  "2": "question",
+  "3": "doctor",
+  "4": "patient",
+  post: "post",
+  article: "post",
+  artical: "post",
+  comment: "comment",
+  answer: "comment",
+  question: "question",
+  doctor: "doctor",
+  patient: "patient",
 };
 
 /**
- * Normalize API `type` (number, string, or alternate property names) to
- * "post" | "comment" | "question" for admin navigation.
+ * Normalize API `type` to
+ * "post" | "comment" | "question" | "doctor" | "patient" for navigation.
  */
 export function normalizeReportKind(row) {
   const raw =
@@ -32,33 +58,29 @@ export function normalizeReportKind(row) {
     return null;
   }
 
-  if (typeof raw === "number") {
-    if (raw === REPORT_TYPE.POST) return "post";
-    if (raw === REPORT_TYPE.COMMENT) return "comment";
-    if (raw === REPORT_TYPE.QUESTION) return "question";
-    return null;
+  if (typeof raw === "number" && REPORT_KIND_BY_NUM[raw]) {
+    return REPORT_KIND_BY_NUM[raw];
   }
 
   const s = String(raw).trim().toLowerCase();
-  const map = {
-    "0": "post",
-    "1": "comment",
-    "2": "question",
-    post: "post",
-    article: "post",
-    artical: "post",
-    comment: "comment",
-    answer: "comment",
-    question: "question",
-  };
-  if (map[s]) return map[s];
+  if (REPORT_KIND_ALIASES[s]) return REPORT_KIND_ALIASES[s];
+
   const n = Number(s);
-  if (!Number.isNaN(n)) {
-    if (n === REPORT_TYPE.POST) return "post";
-    if (n === REPORT_TYPE.COMMENT) return "comment";
-    if (n === REPORT_TYPE.QUESTION) return "question";
-  }
+  if (!Number.isNaN(n) && REPORT_KIND_BY_NUM[n]) return REPORT_KIND_BY_NUM[n];
+
   return null;
+}
+
+/** Human-readable label for admin tables */
+export function reportTypeLabel(row) {
+  const k = normalizeReportKind(row);
+  if (k === "post") return "Post (Article)";
+  if (k === "comment") return "Comment";
+  if (k === "question") return "Question";
+  if (k === "doctor") return "Doctor";
+  if (k === "patient") return "Patient";
+  const raw = row?.type ?? row?.Type ?? row?.reportType ?? row?.ReportType;
+  return raw != null ? String(raw) : "—";
 }
 
 /** Complaints API: `against` enum (aligned with form order) */

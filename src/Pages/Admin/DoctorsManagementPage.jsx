@@ -3,9 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
+import AdminNameCell from "../../Components/Admin/AdminNameCell";
 import { MdSearch } from "react-icons/md";
 import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
+import { useUserAPI } from "../../api/userAPI";
+import { enrichWithProfileImages } from "../../utils/adminEntityHelpers";
 
 export default function DoctorsManagementPage() {
   const navigate = useNavigate();
@@ -13,6 +16,7 @@ export default function DoctorsManagementPage() {
   const isNewRoute = location.pathname.endsWith("/new");
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
+  const { getDoctorProfile } = useUserAPI();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState(isNewRoute ? "0" : ""); // "" => all, 0 => new/pending, 1 => approved, 2 => rejected
   const pageSize = 100; // نجيب لحد 100 في الصفحة الواحدة ونلغى الـ pagination المعقد
@@ -33,13 +37,13 @@ export default function DoctorsManagementPage() {
       );
       const raw = res.data;
 
-      // Handle different possible shapes from backend (array, {items}, {$values}, etc.)
-      if (Array.isArray(raw)) return raw;
-      if (Array.isArray(raw?.items)) return raw.items;
-      if (Array.isArray(raw?.data)) return raw.data;
-      if (Array.isArray(raw?.$values)) return raw.$values;
+      let list = [];
+      if (Array.isArray(raw)) list = raw;
+      else if (Array.isArray(raw?.items)) list = raw.items;
+      else if (Array.isArray(raw?.data)) list = raw.data;
+      else if (Array.isArray(raw?.$values)) list = raw.$values;
 
-      return [];
+      return enrichWithProfileImages(list, getDoctorProfile);
     },
   });
 
@@ -74,19 +78,7 @@ export default function DoctorsManagementPage() {
     {
       label: "Name",
       key: "name",
-      render: (doctor) => {
-        const initial = doctor.name?.trim()?.[0]?.toUpperCase() || "D";
-        return (
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500 text-sm">{initial}</span>
-            </div>
-            <span className="text-sm font-medium text-gray-900">
-              {doctor.name || "N/A"}
-            </span>
-          </div>
-        );
-      },
+      render: (doctor) => <AdminNameCell entity={doctor} fallback="D" />,
     },
     {
       label: "Email",
