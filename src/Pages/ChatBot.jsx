@@ -826,12 +826,12 @@ export default function DactraChat() {
         backgroundSize: "22px 22px",
       }}
     >
-      <Sidebar
+      {/* <Sidebar
         activeNav={activeNav}
         setActive={setActiveNav}
         open={sideOpen}
         setOpen={setSideOpen}
-      />
+      /> */}
       <div className="flex-1 flex flex-col overflow-hidden bg-white/70 backdrop-blur-sm">
         <Topbar
           activeNav={activeNav}

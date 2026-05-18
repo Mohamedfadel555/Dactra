@@ -14,22 +14,22 @@ const SUGGESTION_CARDS = [
     prompt: "What does persistent headache with dizziness mean?",
     nav: null,
   },
-  {
-    icon: <TbHeartRateMonitor size={22} className="text-emerald-500" />,
-    color: "bg-emerald-50",
-    title: "Analyze lab results",
-    desc: "Upload your blood test and get a simple explanation.",
-    prompt: null,
-    nav: "analysis",
-  },
-  {
-    icon: <HiOutlineDocumentText size={20} className="text-violet-500" />,
-    color: "bg-violet-50",
-    title: "Analyze a scan",
-    desc: "Upload an X-ray or scan image for observations.",
-    prompt: null,
-    nav: "analysis",
-  },
+  // {
+  //   icon: <TbHeartRateMonitor size={22} className="text-emerald-500" />,
+  //   color: "bg-emerald-50",
+  //   title: "Analyze lab results",
+  //   desc: "Upload your blood test and get a simple explanation.",
+  //   prompt: null,
+  //   nav: "analysis",
+  // },
+  // {
+  //   icon: <HiOutlineDocumentText size={20} className="text-violet-500" />,
+  //   color: "bg-violet-50",
+  //   title: "Analyze a scan",
+  //   desc: "Upload an X-ray or scan image for observations.",
+  //   prompt: null,
+  //   nav: "analysis",
+  // },
   {
     icon: <FaRegQuestionCircle size={18} className="text-amber-500" />,
     color: "bg-amber-50",
@@ -95,7 +95,7 @@ export default function WelcomeScreen({ onQuickAsk, setActiveNav }) {
         variants={stagger}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl"
+        className="items-center justify-center flex gap-[10px] "
       >
         {SUGGESTION_CARDS.map((c) => (
           <motion.button
@@ -116,7 +116,7 @@ export default function WelcomeScreen({ onQuickAsk, setActiveNav }) {
             }}
             whileTap={{ scale: 0.97 }}
             onClick={() => (c.nav ? setActiveNav(c.nav) : onQuickAsk(c.prompt))}
-            className="bg-white border border-blue-100 rounded-2xl p-3.5 text-left cursor-pointer transition-colors"
+            className="bg-white border h-[150px] border-blue-100 rounded-2xl p-3.5 flex-wrap text-left flex-1 cursor-pointer transition-colors"
           >
             <div
               className={`w-9 h-9 rounded-xl ${c.color} flex items-center justify-center mb-2.5`}
