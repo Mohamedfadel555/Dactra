@@ -250,7 +250,6 @@ export const useUserAPI = () => {
     return [];
   };
 
-  // ← الجديد: جلب تقارير مريض معين (للدكتور)
   const getPatientReports = async (patientId) => {
     const res = await axiosInstance.get(`MedicalReport/patient/${patientId}`);
     const data = res.data;

@@ -10,6 +10,7 @@ import { useFilterPosts } from "../../hooks/useFilterPosts";
 import { useGetTrendingTags } from "../../hooks/useGetTrendingTags";
 import Sidebar from "../../Components/Community/Sidebar";
 import FeedTabs from "../../Components/Community/FeedTabs";
+import { useUserImage } from "../../hooks/useUserImage";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -132,6 +133,8 @@ export default function CommunityContainer({ type }) {
             : 3,
     type,
   );
+
+  const { data: user } = useUserImage();
 
   const {
     data: PostsDetails,
@@ -291,7 +294,10 @@ export default function CommunityContainer({ type }) {
               className="bg-white rounded-2xl p-4 border"
             >
               <div className="flex gap-3 items-start">
-                <AvatarIcon />
+                <AvatarIcon
+                  user={{ imageUrl: user.imageUrl }}
+                  showLabel={false}
+                />
                 <div className="flex-1 min-w-0">
                   <motion.textarea
                     value={text}

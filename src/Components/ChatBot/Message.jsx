@@ -8,6 +8,7 @@ import {
   HiSignal,
 } from "react-icons/hi2";
 import ErrorCard from "./ErrorCard";
+import { useUserImage } from "../../hooks/useUserImage";
 
 function renderMarkdown(text) {
   if (!text) return "";
@@ -91,6 +92,9 @@ export default function Message({ msg, lang }) {
   const isRtl = msgLang === "ar";
   const dir = isRtl ? "rtl" : "ltr";
 
+  const { data: imageUrl } = useUserImage();
+  console.log(imageUrl);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
@@ -99,7 +103,7 @@ export default function Message({ msg, lang }) {
       className={`flex items-end gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}
     >
       {isUser ? (
-        <AvatarIcon />
+        <AvatarIcon user={{ imageUrl: imageUrl?.imageUrl }} showLabel={false} />
       ) : isError ? (
         <HiExclamationTriangle className="size-7 text-red-600" />
       ) : (

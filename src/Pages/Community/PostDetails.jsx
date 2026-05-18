@@ -38,6 +38,7 @@ import { avatarUserFromAuthor } from "../../utils/communityAvatars";
 import { FiZoomIn, FiX } from "react-icons/fi";
 import { useQuestionHub } from "../../hooks/useQuestionHub";
 import { useDeletePost } from "../../hooks/useDeletePost";
+import { useUserImage } from "../../hooks/useUserImage";
 
 function handleTime(create) {
   const diff = Date.now() - new Date(create).getTime();
@@ -66,6 +67,8 @@ export default function PostDetailPage() {
 
   const { data: post } = useGetQuestionById(param.id);
   const { role, accessToken } = useAuth();
+
+  const { data: user } = useUserImage();
 
   const userEmail = useMemo(() => {
     if (!accessToken) return null;
@@ -456,7 +459,10 @@ export default function PostDetailPage() {
                     transition={{ delay: 0.2 }}
                     className="flex gap-3 items-end"
                   >
-                    <AvatarIcon />
+                    <AvatarIcon
+                      user={{ imageUrl: user?.imageUrl }}
+                      showLabel={false}
+                    />
                     <div className="flex-1 relative">
                       <textarea
                         value={newComment}
