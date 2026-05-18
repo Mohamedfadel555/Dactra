@@ -2,35 +2,88 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../Context/AuthContext";
 import { useNotificationsApi } from "./useNotificationsApi";
 
-function normalizeNotificationList(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.Items)) return data.Items;
-  if (Array.isArray(data?.notifications)) return data.notifications;
-  if (Array.isArray(data?.Notifications)) return data.Notifications;
+// ─── Query Keys ───────────────────────────────────────────────────────────────
+
+export const NOTIFICATION_KEYS = {
+  all: ["notifications"],
+  list: () => [...NOTIFICATION_KEYS.all, "my"],
+  unreadCount: () => [...NOTIFICATION_KEYS.all, "unread-count"],
+};
+
+// ─── Normalizers ──────────────────────────────────────────────────────────────
+
+/**
+ * Coerces any API response shape into a plain notification array.
+ */
+function normalizeList(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw == null || typeof raw !== "object") return [];
+
+  const candidates = [
+    raw.items,
+    raw.Items,
+    raw.notifications,
+    raw.Notifications,
+    raw.data,
+    raw.Data,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+  }
+
   return [];
 }
 
-function parseCount(payload) {
-  if (payload == null) return 0;
-  if (typeof payload === "number") return payload;
-  if (typeof payload === "string") {
-    const n = Number(payload);
-    return Number.isNaN(n) ? 0 : n;
-  }
-  const c =
-    payload.count ??
-    payload.Count ??
-    payload.unreadCount ??
-    payload.UnreadCount;
-  if (typeof c === "number") return c;
-  if (typeof c === "string") {
-    const n = Number(c);
-    return Number.isNaN(n) ? 0 : n;
-  }
-  return 0;
+/**
+ * Coerces any API response shape into a plain integer count.
+ */
+function normalizeCount(raw) {
+  if (raw == null) return 0;
+  if (typeof raw === "number") return raw;
+  if (typeof raw === "string") return Number(raw) || 0;
+
+  const value =
+    raw.count ?? raw.Count ?? raw.unreadCount ?? raw.UnreadCount ?? 0;
+
+  return typeof value === "number" ? value : Number(value) || 0;
 }
 
+/**
+ * Safely parses an API response that might arrive as a JSON string.
+ */
+function safeParseResponse(raw) {
+  if (typeof raw !== "string") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/** Extracts a human-readable error message from a React Query error object. */
+function extractErrorMessage(error, fallback) {
+  if (!error) return null;
+  return error?.response?.data?.message ?? error?.message ?? fallback;
+}
+
+// ─── Hook ────────────────────────────────────────────────────────────────────
+
+/**
+ * Unified notification inbox hook.
+ *
+ * Provides:
+ *  - items          — sorted notification list (newest first)
+ *  - unreadCount    — integer badge count
+ *  - isLoading      — true on the very first fetch
+ *  - isFetching     — true on any background refetch
+ *  - isError        — true if any query failed
+ *  - listError      — human-readable list error message
+ *  - countError     — human-readable count error message
+ *  - refetch()      — manually refresh both queries
+ *  - markRead(id)   — optimistically marks a notification as read
+ *  - isMarkingRead  — true while markRead is in-flight
+ */
 export function useNotificationInbox() {
   const { accessToken } = useAuth();
   const { getMyNotifications, getUnreadCount, markAsRead } =
@@ -39,98 +92,97 @@ export function useNotificationInbox() {
 
   const enabled = Boolean(accessToken);
 
-  const listQ = useQuery({
-    queryKey: ["notifications", "my"],
+  // ── Notification list ──────────────────────────────────────────────────────
+  const listQuery = useQuery({
+    queryKey: NOTIFICATION_KEYS.list(),
     queryFn: async () => {
       const res = await getMyNotifications();
-      let raw = res?.data;
-      if (typeof raw === "string") {
-        try {
-          raw = JSON.parse(raw);
-        } catch {
-          raw = null;
-        }
-      }
-      return normalizeNotificationList(raw);
+      const raw = safeParseResponse(res?.data);
+      return normalizeList(raw);
     },
     enabled,
     refetchInterval: 25_000,
     refetchOnWindowFocus: true,
     retry: 1,
+    staleTime: 10_000,
   });
 
-  const countQ = useQuery({
-    queryKey: ["notifications", "unread-count"],
+  // ── Unread count ───────────────────────────────────────────────────────────
+  const countQuery = useQuery({
+    queryKey: NOTIFICATION_KEYS.unreadCount(),
     queryFn: async () => {
       const res = await getUnreadCount();
-      let raw = res?.data;
-      if (typeof raw === "string") {
-        try {
-          raw = JSON.parse(raw);
-        } catch {
-          raw = {};
-        }
-      }
-      return parseCount(raw);
+      const raw = safeParseResponse(res?.data);
+      return normalizeCount(raw);
     },
     enabled,
     refetchInterval: 20_000,
     refetchOnWindowFocus: true,
     retry: 1,
+    staleTime: 10_000,
   });
 
+  // ── Mark as read ───────────────────────────────────────────────────────────
   const readMutation = useMutation({
     mutationFn: (id) => markAsRead(id),
+
     onMutate: async (id) => {
-      // Optimistic update — mark item as read immediately in cache
-      await queryClient.cancelQueries({ queryKey: ["notifications", "my"] });
-      const previous = queryClient.getQueryData(["notifications", "my"]);
-      queryClient.setQueryData(["notifications", "my"], (old = []) =>
+      // Cancel any in-flight refetch so it doesn't overwrite our optimistic update.
+      await queryClient.cancelQueries({ queryKey: NOTIFICATION_KEYS.list() });
+
+      const previous = queryClient.getQueryData(NOTIFICATION_KEYS.list());
+
+      queryClient.setQueryData(NOTIFICATION_KEYS.list(), (old = []) =>
         old.map((n) => {
           const nId = n?.id ?? n?.Id;
-          if (String(nId) === String(id)) {
-            return { ...n, isRead: true, IsRead: true };
-          }
-          return n;
+          return String(nId) === String(id)
+            ? { ...n, isRead: true, IsRead: true }
+            : n;
         }),
       );
+
       return { previous };
     },
+
     onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["notifications", "my"], ctx.previous);
+      // Roll back the optimistic update on failure.
+      if (ctx?.previous !== undefined) {
+        queryClient.setQueryData(NOTIFICATION_KEYS.list(), ctx.previous);
       }
     },
+
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications", "my"] });
+      queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.list() });
       queryClient.invalidateQueries({
-        queryKey: ["notifications", "unread-count"],
+        queryKey: NOTIFICATION_KEYS.unreadCount(),
       });
     },
   });
 
-  const listError =
-    listQ.error?.response?.data?.message ||
-    listQ.error?.message ||
-    (listQ.isError ? "Could not load notifications." : null);
-
-  const countError =
-    countQ.error?.response?.data?.message ||
-    countQ.error?.message ||
-    (countQ.isError ? "Could not load unread count." : null);
+  // ── Derived state ──────────────────────────────────────────────────────────
 
   return {
-    items: listQ.data ?? [],
-    unreadCount: countQ.data ?? 0,
-    isLoading: listQ.isLoading || countQ.isLoading,
-    isFetching: listQ.isFetching || countQ.isFetching,
-    isError: listQ.isError || countQ.isError,
-    listError,
-    countError,
+    items: listQuery.data ?? [],
+    unreadCount: countQuery.data ?? 0,
+
+    isLoading: listQuery.isLoading || countQuery.isLoading,
+    isFetching: listQuery.isFetching || countQuery.isFetching,
+    isError: listQuery.isError || countQuery.isError,
+
+    listError: extractErrorMessage(
+      listQuery.error,
+      "Could not load notifications.",
+    ),
+    countError: extractErrorMessage(
+      countQuery.error,
+      "Could not load unread count.",
+    ),
+
     refetch: () => {
-      listQ.refetch();
-      countQ.refetch();
+      listQuery.refetch();
+      countQuery.refetch();
     },
+
     markRead: readMutation.mutateAsync,
     isMarkingRead: readMutation.isPending,
   };

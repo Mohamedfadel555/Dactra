@@ -62,7 +62,7 @@ export default function ReplyItem({
   const isOwner = reply.email === userEmail;
 
   const likeMutation = useLikeComment();
-  const answerMutation = usePostAnswer();
+  const answerMutation = usePostAnswer(questionId);
   const deleteReplyMutation = useDeleteComment(type);
   const editCommentMutation = useEditComment(reply.parentAnswerId, "reply");
 

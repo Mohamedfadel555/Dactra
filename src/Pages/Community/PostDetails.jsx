@@ -102,7 +102,7 @@ export default function PostDetailPage() {
   }, [post]);
 
   const loadMoreRef = useRef(null);
-  const answerMutation = usePostAnswer();
+  const answerMutation = usePostAnswer(param.id);
   const editQuestionMutation = useEditQuestion();
   const editPostMutation = useEditPost();
   const editMutation =

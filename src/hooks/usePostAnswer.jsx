@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCommunityAPI } from "../api/CommunityAPI";
 import { toast } from "react-toastify";
+import { useNotificationsApi } from "./useNotificationsApi";
 
-export const usePostAnswer = () => {
+export const usePostAnswer = (id) => {
   const { postAnswer } = useCommunityAPI();
+  const { notifyInterestedUsers } = useNotificationsApi();
 
   const queryClient = useQueryClient();
   return useMutation({
@@ -15,6 +17,7 @@ export const usePostAnswer = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["comment"] });
       queryClient.invalidateQueries({ queryKey: ["replies"] });
+      notifyInterestedUsers(id);
     },
     onError: (err) => {
       console.log(err);
