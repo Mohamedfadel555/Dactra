@@ -167,7 +167,7 @@ export const route = createBrowserRouter([
         path: "Community/Posts",
         element: (
           <ProtectedRoutes>
-            <CommunityContainer type={"Artical"} />
+            <CommunityContainer key={"Artical"} type={"Artical"} />
           </ProtectedRoutes>
         ),
       },
@@ -175,7 +175,7 @@ export const route = createBrowserRouter([
         path: "Community/Questions",
         element: (
           <ProtectedRoutes>
-            <CommunityContainer type={"Question"} />
+            <CommunityContainer key={"Question"} type={"Question"} />
           </ProtectedRoutes>
         ),
       },

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAxios } from "../../hooks/useAxios";
 import AdminTable from "../../Components/Admin/AdminTable";
@@ -8,13 +8,14 @@ import { MdSearch } from "react-icons/md";
 import { toast } from "react-toastify";
 import { useAdminAPI } from "../../api/adminAPI";
 import { useUserAPI } from "../../api/userAPI";
-import { enrichWithProfileImages } from "../../utils/adminEntityHelpers";
 
 export default function PatientsManagementPage() {
   const navigate = useNavigate();
   const axiosInstance = useAxios();
   const adminAPI = useAdminAPI();
   const { getPatientProfile } = useUserAPI();
+  const queryClient = useQueryClient();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -24,6 +25,7 @@ export default function PatientsManagementPage() {
     data: patientsData,
     isLoading,
     refetch,
+    isFetching,
   } = useQuery({
     queryKey: ["admin-patients-info", page, pageSize, searchQuery],
     queryFn: async () => {
@@ -32,14 +34,11 @@ export default function PatientsManagementPage() {
         pageSize,
         searchQuery || null,
       );
-      // const list = Array.isArray(res.data) ? res.data : [];
       return res.data;
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 0, // ← لا cache عشان يجيب أحدث بيانات دايماً بعد الـ block
     retry: 2,
   });
-
-  console.log(patientsData);
 
   // Backend pagination - accumulate all loaded patients for "show more"
   const [allLoadedPatients, setAllLoadedPatients] = useState([]);
@@ -58,20 +57,16 @@ export default function PatientsManagementPage() {
       patientsData.length > 0
     ) {
       setAllLoadedPatients((prev) => {
-        // Check if this page is already loaded
         const existingPageStart = (page - 1) * pageSize;
         const hasPage =
           prev.length > existingPageStart &&
           prev[existingPageStart] !== undefined;
 
         if (!hasPage) {
-          // Add new patients to the list
           const newList = [...prev];
-          // Fill gaps with undefined if needed
           while (newList.length < existingPageStart) {
             newList.push(undefined);
           }
-          // Add new patients
           patientsData.forEach((patient) => {
             newList.push(patient);
           });
@@ -83,7 +78,7 @@ export default function PatientsManagementPage() {
   }, [patientsData, page, pageSize]);
 
   // Use accumulated patients for display (show all loaded pages)
-  const allPatients = allLoadedPatients.filter(Boolean); // Remove undefined entries
+  const allPatients = allLoadedPatients.filter(Boolean);
 
   const columns = [
     {
@@ -102,9 +97,6 @@ export default function PatientsManagementPage() {
       label: "Status",
       key: "status",
       render: (patient) => {
-        // Status يتغير حسب الـ id - الباك يتحقق من الـ id ويحدد الحالة
-        // إذا كان blocked يكون Blocked، وإلا Active
-        // isDeleted يعني Blocked في الباك
         const isBlocked =
           patient.isDeleted ||
           patient.statusType === "Blocked" ||
@@ -138,40 +130,39 @@ export default function PatientsManagementPage() {
   };
 
   const handleBlock = async (patient) => {
-    // تحديد الحالة الحالية: isDeleted أو statusType === "Blocked" يعني Blocked
-    console.log(patient);
     const isBlocked =
       patient.isDeleted ||
       patient.statusType === "Blocked" ||
       patient.isBlocked;
-    const action = isBlocked ? "unblock" : "block";
-    const actionText = isBlocked ? "Unblock " : "Block";
+    const actionText = isBlocked ? "Unblock" : "Block";
 
-    if (!window.confirm(`Are you sure you want to${actionText}  this user?`))
+    if (!window.confirm(`Are you sure you want to ${actionText} this user?`))
       return;
 
     try {
       await adminAPI.deleteAppUser(patient.id);
-      if (isBlocked) {
-        toast.success("User unblocked successfully!");
-      } else {
-        toast.success("User blocked successfully!");
-      }
+
+      toast.success(
+        isBlocked
+          ? "User unblocked successfully!"
+          : "User blocked successfully!",
+      );
+
+      // ✅ الحل: امسح كل الـ cache للـ query دي وابدأ من أول
+      queryClient.removeQueries({ queryKey: ["admin-patients-info"] });
+
+      // ✅ ارجع للـ page 1 وامسح الـ accumulated list
       setPage(1);
       setAllLoadedPatients([]);
     } catch (error) {
       console.log(error);
-      // Toast error يتغير حسب الحالة
-      if (isBlocked) {
-        toast.error("Failed to unblock user");
-      } else {
-        toast.error("Failed to block user");
-      }
+      toast.error(
+        isBlocked ? "Failed to unblock user" : "Failed to block user",
+      );
     }
   };
 
   // Check if there are more pages to load
-  // Since backend pagination, we check if current page has full pageSize
   const hasMore = patientsData && patientsData.length === pageSize;
 
   return (
@@ -201,7 +192,7 @@ export default function PatientsManagementPage() {
       <AdminTable
         columns={columns}
         data={allPatients}
-        isLoading={isLoading}
+        isLoading={isLoading || isFetching}
         onView={handleView}
         onBlock={handleBlock}
         showMore={true}

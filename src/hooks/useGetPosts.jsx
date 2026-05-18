@@ -15,5 +15,7 @@ export const useGetPosts = (type) => {
 
     refetchOnWindowFocus: false,
     queryKey: [type === "Question" ? "questions" : "posts"],
+    staleTime: 0,
+    refetchOnMount: true,
   });
 };
