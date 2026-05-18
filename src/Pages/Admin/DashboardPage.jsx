@@ -37,7 +37,7 @@ export default function DashboardPage() {
     queryKey: ["admin-weekly-summary"],
     queryFn: async () => {
       const res = await adminAPI.getWeeklySummary();
-      return res.data; // { Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday }
+      return res.data; // { dailyCounts: {...}, onlineCount, offlineCount, totalCount }
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 2,
@@ -53,37 +53,20 @@ export default function DashboardPage() {
     "Friday",
   ].map((day) => ({
     day,
-    appointments: weeklyData ? weeklyData[day] || 0 : 0,
+    appointments: weeklyData?.dailyCounts ? weeklyData.dailyCounts[day] || 0 : 0,
   }));
 
   // Calculate max value for chart (round up to nearest 10)
-  const maxValue = weeklyData
-    ? Math.max(
-        weeklyData.Saturday || 0,
-        weeklyData.Sunday || 0,
-        weeklyData.Monday || 0,
-        weeklyData.Tuesday || 0,
-        weeklyData.Wednesday || 0,
-        weeklyData.Thursday || 0,
-        weeklyData.Friday || 0
-      )
+  const maxValue = weeklyData?.dailyCounts
+    ? Math.max(...Object.values(weeklyData.dailyCounts))
     : 80;
   const chartMax = maxValue > 0 ? Math.ceil(maxValue / 10) * 10 : 80;
 
-  const totalAppointments = weeklyChartData.reduce(
-    (sum, item) => sum + (item.appointments || 0),
-    0
-  );
+  const totalAppointments = weeklyData?.totalCount || 0;
 
-  const onlineAppointments = weeklyChartData
-    .filter((d) =>
-      ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"].includes(d.day)
-    )
-    .reduce((sum, d) => sum + (d.appointments || 0), 0);
+  const onlineAppointments = weeklyData?.onlineCount || 0;
 
-  const offlineAppointments = weeklyChartData
-    .filter((d) => ["Friday", "Saturday"].includes(d.day))
-    .reduce((sum, d) => sum + (d.appointments || 0), 0);
+  const offlineAppointments = weeklyData?.offlineCount || 0;
 
   const onlinePercentage = totalAppointments > 0 
     ? Math.round((onlineAppointments / totalAppointments) * 100) 
