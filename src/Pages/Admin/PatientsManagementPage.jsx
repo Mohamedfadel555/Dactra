@@ -32,12 +32,14 @@ export default function PatientsManagementPage() {
         pageSize,
         searchQuery || null,
       );
-      const list = Array.isArray(res.data) ? res.data : [];
-      return enrichWithProfileImages(list, getPatientProfile);
+      // const list = Array.isArray(res.data) ? res.data : [];
+      return res.data;
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 2,
   });
+
+  console.log(patientsData);
 
   // Backend pagination - accumulate all loaded patients for "show more"
   const [allLoadedPatients, setAllLoadedPatients] = useState([]);
@@ -137,6 +139,7 @@ export default function PatientsManagementPage() {
 
   const handleBlock = async (patient) => {
     // تحديد الحالة الحالية: isDeleted أو statusType === "Blocked" يعني Blocked
+    console.log(patient);
     const isBlocked =
       patient.isDeleted ||
       patient.statusType === "Blocked" ||
@@ -149,17 +152,15 @@ export default function PatientsManagementPage() {
 
     try {
       await adminAPI.deleteAppUser(patient.id);
-      // Toast message يتغير حسب الحالة
       if (isBlocked) {
         toast.success("User unblocked successfully!");
       } else {
         toast.success("User blocked successfully!");
       }
-      // Reset to page 1 and refetch to get updated status
       setPage(1);
-      setAllLoadedPatients([]); // Reset accumulated patients
-      refetch(); // Refresh the list
+      setAllLoadedPatients([]);
     } catch (error) {
+      console.log(error);
       // Toast error يتغير حسب الحالة
       if (isBlocked) {
         toast.error("Failed to unblock user");

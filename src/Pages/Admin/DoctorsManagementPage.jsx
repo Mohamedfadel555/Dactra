@@ -35,15 +35,16 @@ export default function DoctorsManagementPage() {
         searchQuery || null,
         statusFilter === "" ? null : Number(statusFilter),
       );
-      const raw = res.data;
+      return res.data;
+      // const raw = res.data;
 
-      let list = [];
-      if (Array.isArray(raw)) list = raw;
-      else if (Array.isArray(raw?.items)) list = raw.items;
-      else if (Array.isArray(raw?.data)) list = raw.data;
-      else if (Array.isArray(raw?.$values)) list = raw.$values;
+      // let list = [];
+      // if (Array.isArray(raw)) list = raw;
+      // else if (Array.isArray(raw?.items)) list = raw.items;
+      // else if (Array.isArray(raw?.data)) list = raw.data;
+      // else if (Array.isArray(raw?.$values)) list = raw.$values;
 
-      return enrichWithProfileImages(list, getDoctorProfile);
+      // return enrichWithProfileImages(list, getDoctorProfile);
     },
   });
 
@@ -92,7 +93,10 @@ export default function DoctorsManagementPage() {
       key: "licenceNo",
       render: (doctor) => (
         <span className="text-sm text-gray-600">
-          {doctor.licenceNo || doctor.licenseNo || doctor.licenseNumber || "N/A"}
+          {doctor.licenceNo ||
+            doctor.licenseNo ||
+            doctor.licenseNumber ||
+            "N/A"}
         </span>
       ),
     },
