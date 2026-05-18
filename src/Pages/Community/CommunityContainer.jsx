@@ -295,7 +295,7 @@ export default function CommunityContainer({ type }) {
             >
               <div className="flex gap-3 items-start">
                 <AvatarIcon
-                  user={{ imageUrl: user.imageUrl }}
+                  user={{ imageUrl: user?.imageUrl }}
                   showLabel={false}
                 />
                 <div className="flex-1 min-w-0">
