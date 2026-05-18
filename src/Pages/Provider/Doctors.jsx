@@ -7,7 +7,7 @@ import {
   FiChevronRight,
   FiExternalLink,
 } from "react-icons/fi";
-import { MdOutlineLocalHospital } from "react-icons/md";
+import { MdLocationOn, MdOutlineLocalHospital } from "react-icons/md";
 import { HiOutlineUserGroup } from "react-icons/hi2";
 import { RiStethoscopeLine } from "react-icons/ri";
 
@@ -15,7 +15,8 @@ import { RiStethoscopeLine } from "react-icons/ri";
 import { useDoctors } from "../../hooks/useDoctors";
 import { Deal } from "../../Components/Provider/Deal";
 import AvatarIcon from "../../Components/Common/AvatarIcon1";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useSearchDoctors } from "../../hooks/useSearchDoctors";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SPEC_COLORS = {
@@ -102,6 +103,7 @@ const cardVariants = {
 function DoctorCard({ doctor, index, onDeal }) {
   const spec = getSpec(doctor.specialization);
   const rating = doctor.averageRating ?? 0;
+  const navigate = useNavigate();
 
   return (
     <motion.div
@@ -134,6 +136,8 @@ function DoctorCard({ doctor, index, onDeal }) {
               className="opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0"
             />
           </Link>
+
+          {/* Specialization Badge */}
           <div className="flex items-center gap-1.5 mt-2">
             <span
               className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${spec.bg} ${spec.text}`}
@@ -142,6 +146,14 @@ function DoctorCard({ doctor, index, onDeal }) {
               {doctor.specialization}
             </span>
           </div>
+
+          {/* Address */}
+          {doctor.address && (
+            <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+              <MdLocationOn size={13} className="text-blue-400 flex-shrink-0" />
+              <span className="truncate">{doctor.address}</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -170,14 +182,24 @@ function DoctorCard({ doctor, index, onDeal }) {
       </div>
 
       {/* action */}
-      <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={() => onDeal(doctor)}
-        className="w-full mt-auto py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold tracking-wide shadow-sm shadow-blue-200 hover:shadow-md hover:shadow-blue-300 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 flex items-center justify-center gap-2"
-      >
-        <RiStethoscopeLine size={16} />
-        Make a deal
-      </motion.button>
+      {!doctor.isSponsored ? (
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onDeal(doctor)}
+          className="w-full mt-auto py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold tracking-wide shadow-sm shadow-blue-200 hover:shadow-md hover:shadow-blue-300 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <RiStethoscopeLine size={16} />
+          Make a deal
+        </motion.button>
+      ) : (
+        <div
+          onClick={() => navigate("/medicalprovider/sponsoreddoctors")}
+          className="w-full mt-auto cursor-pointer py-2.5 rounded-2xl border border-amber-200 bg-amber-50 text-amber-500 text-sm font-medium flex items-center justify-center gap-2"
+        >
+          <FiExternalLink size={15} />
+          Sponsored
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -263,11 +285,11 @@ export default function Doctors() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
-  const { data: doctorsResponse, isLoading } = useDoctors(
-    currentPage,
-    9,
+  const { data: doctorsResponse, isLoading } = useSearchDoctors({
+    pageNumber: currentPage,
+    pageSize: 9,
     searchTerm,
-  );
+  });
 
   const doctors = doctorsResponse?.doctors ?? [];
   const totalPages = doctorsResponse?.totalPages ?? 1;

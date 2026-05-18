@@ -49,6 +49,7 @@ export default function ProviderServicesPage({ type }) {
     queryKey: ["providerOfferings", providerId],
     queryFn: () => portal.getProviderOfferings(providerId),
     enabled: providerId != null,
+    throwOnError: (err) => console.log(err),
   });
 
   const { data: catalogRaw = [], isLoading: loadingCatalog } = useQuery({
@@ -67,6 +68,25 @@ export default function ProviderServicesPage({ type }) {
   const [createDesc, setCreateDesc] = useState("");
   const [createPrice, setCreatePrice] = useState("");
   const [createDurationMin, setCreateDurationMin] = useState("60");
+
+  // Validation for "Add from catalog" — all fields required
+  const isCatalogValid =
+    newServiceId !== "" &&
+    newPrice !== "" &&
+    !Number.isNaN(Number(newPrice)) &&
+    Number(newPrice) >= 0 &&
+    newDurationMin !== "" &&
+    Number(newDurationMin) >= 5;
+
+  // Validation for "Create New Service" — all fields required
+  const isCreateValid =
+    createName.trim() !== "" &&
+    createDesc.trim() !== "" &&
+    createPrice !== "" &&
+    !Number.isNaN(Number(createPrice)) &&
+    Number(createPrice) >= 0 &&
+    createDurationMin !== "" &&
+    Number(createDurationMin) >= 5;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["providerOfferings"] });
@@ -95,8 +115,7 @@ export default function ProviderServicesPage({ type }) {
       invalidate();
       toast.success("Offering updated.", { position: "top-center" });
     },
-    onError: () =>
-      toast.error("Update failed.", { position: "top-center" }),
+    onError: () => toast.error("Update failed.", { position: "top-center" }),
   });
 
   const deleteOfferingMut = useMutation({
@@ -105,8 +124,16 @@ export default function ProviderServicesPage({ type }) {
       invalidate();
       toast.success("Offering removed.", { position: "top-center" });
     },
-    onError: () =>
-      toast.error("Delete failed.", { position: "top-center" }),
+    onError: (err) =>
+      err.status === 409
+        ? toast.error("You can not delete services that patient order it", {
+            position: "top-center",
+            closeOnClick: true,
+          })
+        : toast.error("something went wrong ,try again later", {
+            position: "top-center",
+            closeOnClick: true,
+          }),
   });
 
   const createTestServiceMut = useMutation({
@@ -226,8 +253,6 @@ export default function ProviderServicesPage({ type }) {
         <h1 className="text-2xl font-bold text-gray-900">
           {isLab ? "Lab tests" : "Scan services"}
         </h1>
-       
-      
       </div>
 
       {/* Add from global catalog */}
@@ -238,7 +263,7 @@ export default function ProviderServicesPage({ type }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Test service
+              Test service <span className="text-red-500">*</span>
             </label>
             <select
               value={newServiceId}
@@ -255,7 +280,7 @@ export default function ProviderServicesPage({ type }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Price (EGP)
+              Price (EGP) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -268,7 +293,7 @@ export default function ProviderServicesPage({ type }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-            Duration
+              Duration <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -278,14 +303,13 @@ export default function ProviderServicesPage({ type }) {
               onChange={(e) => setNewDurationMin(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
             />
-            
           </div>
         </div>
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || !isCatalogValid}
           onClick={handleAddFromCatalog}
-          className="px-4 py-2 rounded-xl bg-[#316BE8] text-white text-sm font-semibold hover:bg-[#2552c1] disabled:opacity-60"
+          className="px-4 py-2 rounded-xl bg-[#316BE8] text-white text-sm font-semibold hover:bg-[#2552c1] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Add service
         </button>
@@ -294,13 +318,13 @@ export default function ProviderServicesPage({ type }) {
       {/* Create new test service + offering */}
       <section className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5 space-y-4 shadow-sm">
         <h2 className="text-base font-semibold text-gray-800">
-         Create New service
+          Create New service
         </h2>
-       
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Name
+              Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -312,7 +336,7 @@ export default function ProviderServicesPage({ type }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Price (EGP)
+              Price (EGP) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -325,7 +349,7 @@ export default function ProviderServicesPage({ type }) {
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Description
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
               value={createDesc}
@@ -335,7 +359,7 @@ export default function ProviderServicesPage({ type }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-            Duration  
+              Duration (minutes) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -349,9 +373,9 @@ export default function ProviderServicesPage({ type }) {
         </div>
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || !isCreateValid}
           onClick={handleCreateAndAdd}
-          className="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 disabled:opacity-60"
+          className="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Create &amp; link
         </button>
@@ -392,18 +416,31 @@ function OfferingCard({ off, onSave, onDelete, saving }) {
   const ts = off.testService || {};
   const name = pick(ts, "name", "Name") || `Service #${off.testServiceId}`;
   const desc = pick(ts, "description", "Description") || "";
+
+  const [isEditing, setIsEditing] = useState(false);
   const [price, setPrice] = useState(String(off.price ?? ""));
-  const [mins, setMins] = useState(
-    String(durationSpanToMinutes(off.duration)),
-  );
+  const [mins, setMins] = useState(String(durationSpanToMinutes(off.duration)));
 
   useEffect(() => {
     setPrice(String(off.price ?? ""));
     setMins(String(durationSpanToMinutes(off.duration)));
+    setIsEditing(false);
   }, [off.id, off.price, off.duration]);
+
+  const handleSave = () => {
+    onSave({ ...off, _editPrice: price, _editMins: mins });
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setPrice(String(off.price ?? ""));
+    setMins(String(durationSpanToMinutes(off.duration)));
+    setIsEditing(false);
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+      {/* Header */}
       <div className="flex justify-between gap-2">
         <h3 className="font-semibold text-gray-900 text-sm">{name}</h3>
         <button
@@ -414,51 +451,80 @@ function OfferingCard({ off, onSave, onDelete, saving }) {
           Remove
         </button>
       </div>
-      {desc && (
-        <p className="text-xs text-gray-600 line-clamp-3">{desc}</p>
-      )}
+
+      {desc && <p className="text-xs text-gray-600 line-clamp-3">{desc}</p>}
+
+      {/* Fields */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-[10px] text-gray-500 uppercase mb-0.5">
             Price (EGP)
           </label>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-          />
+          {isEditing ? (
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#316BE8]"
+            />
+          ) : (
+            <p className="px-2 py-1.5 text-sm text-gray-800 bg-gray-50 rounded-lg border border-transparent">
+              {price} EGP
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-[10px] text-gray-500 uppercase mb-0.5">
             Minutes
           </label>
-          <input
-            type="number"
-            min={5}
-            step={5}
-            value={mins}
-            onChange={(e) => setMins(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-          />
+          {isEditing ? (
+            <input
+              type="number"
+              min={5}
+              step={5}
+              value={mins}
+              onChange={(e) => setMins(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#316BE8]"
+            />
+          ) : (
+            <p className="px-2 py-1.5 text-sm text-gray-800 bg-gray-50 rounded-lg border border-transparent">
+              {mins} min
+            </p>
+          )}
         </div>
       </div>
-      <button
-        type="button"
-        disabled={saving}
-        onClick={() =>
-          onSave({
-            ...off,
-            _editPrice: price,
-            _editMins: mins,
-          })
-        }
-        className="w-full py-2 rounded-lg bg-[#316BE8] text-white text-sm font-medium hover:bg-[#2552c1] disabled:opacity-60"
-      >
-        Save
-      </button>
+
+      {/* Actions */}
+      {isEditing ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleSave}
+            className="flex-1 py-2 rounded-lg bg-[#316BE8] text-white text-sm font-medium hover:bg-[#2552c1] disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleCancel}
+            className="flex-1 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsEditing(true)}
+          className="w-full py-2 rounded-lg border border-[#316BE8] text-[#316BE8] text-sm font-medium hover:bg-blue-50 transition-colors"
+        >
+          Edit
+        </button>
+      )}
     </div>
   );
 }

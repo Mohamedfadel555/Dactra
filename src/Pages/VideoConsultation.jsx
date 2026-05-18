@@ -915,6 +915,8 @@ export default function VideoConsultation() {
     refetchInterval: 6000,
   });
 
+  console.log(statusData);
+
   // ── End session ──────────────────────────────────────────────────
   const endSessionMutation = useMutation({
     mutationFn: () => createVideoCallApi(axios).end(appointmentId),

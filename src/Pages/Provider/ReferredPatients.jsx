@@ -32,7 +32,6 @@ const fmt = (d) =>
       })
     : null;
 
-// status: 0 = pending, 1 = received
 const TABS = [
   { key: 0, label: "Pending" },
   { key: 1, label: "Received" },
@@ -66,18 +65,7 @@ function SkeletonCard() {
         <div className="h-5 w-16 bg-gray-100 rounded-full" />
       </div>
       <div className="h-2.5 bg-gray-100 rounded w-40" />
-      <div className="rounded-xl overflow-hidden border border-gray-100">
-        <div className="h-7 bg-gray-100" />
-        {[1, 2].map((i) => (
-          <div
-            key={i}
-            className="flex justify-between px-3 py-2.5 border-t border-gray-100"
-          >
-            <div className="h-2.5 bg-gray-100 rounded w-20" />
-            <div className="h-2.5 bg-gray-100 rounded w-16" />
-          </div>
-        ))}
-      </div>
+      <div className="h-10 bg-gray-100 rounded-xl" />
       <div className="h-8 bg-gray-100 rounded-xl" />
       <div className="h-9 bg-gray-100 rounded-xl" />
     </div>
@@ -197,10 +185,7 @@ function ConfirmModal({ referral, onClose }) {
                   {[
                     { icon: MdPhone, val: referral.patientPhone },
                     { icon: MdEmail, val: referral.patientEmail },
-                    {
-                      icon: FaUserDoctor,
-                      val: referral.doctorName,
-                    },
+                    { icon: FaUserDoctor, val: referral.doctorName },
                     {
                       icon: MdCalendarToday,
                       val: `Referred: ${fmt(referral.referredAtUtc)}`,
@@ -239,90 +224,44 @@ function ConfirmModal({ referral, onClose }) {
                       key={s.providerOfferingId}
                       className="flex items-center justify-between px-4 py-2.5 gap-3"
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
                         <span
                           className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                           style={{ background: BLUE }}
                         >
                           {i + 1}
                         </span>
-                        <span className="text-sm font-semibold text-gray-800">
-                          {s.serviceName}
-                        </span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-semibold text-gray-800">
+                            {s.serviceName}
+                          </span>
+                          {s.serviceDescription && (
+                            <span className="text-xs text-gray-400">
+                              {s.serviceDescription}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-gray-400 line-through">
-                          {s.priceBeforeDiscount}
-                        </span>
-                        <span className="text-sm font-bold text-green-700">
-                          {s.priceAfterDiscount} EGP
-                        </span>
-                      </div>
+                      <span className="text-sm font-bold text-gray-700 shrink-0">
+                        {s.priceBeforeDiscount} EGP
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* total */}
-              <div className="rounded-xl border border-green-200 overflow-hidden">
-                <div className="px-4 py-2.5 bg-green-600 flex items-center">
+              {/* total */}
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-4 py-2.5 bg-gray-700 flex items-center">
                   <p className="text-[11px] text-white uppercase tracking-wider font-medium">
                     Total
                   </p>
-                  <span className="ml-auto bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {referral.discountPercentage}% off
-                  </span>
                 </div>
-                <div className="bg-white px-4 py-3 flex items-center justify-between gap-2">
-                  {[
-                    {
-                      label: "Before",
-                      value: referral.totalBeforeDiscount,
-                      color: "text-gray-400",
-                      strike: true,
-                    },
-                    {
-                      label: "After",
-                      value: referral.totalAfterDiscount,
-                      color: "text-green-700",
-                      labelColor: "text-green-500",
-                      big: true,
-                    },
-                    {
-                      label: "Saving",
-                      value: referral.totalSaved,
-                      color: "",
-                      labelColor: "",
-                    },
-                  ].map(
-                    (
-                      { label, value, color, labelColor, strike, big },
-                      i,
-                      arr,
-                    ) => (
-                      <>
-                        <div
-                          key={label}
-                          className="flex flex-col items-center flex-1"
-                        >
-                          <span
-                            className={`text-[10px] uppercase tracking-wider mb-1 ${labelColor || "text-gray-400"}`}
-                          >
-                            {label}
-                          </span>
-                          <span
-                            className={`font-black ${big ? "text-2xl text-green-700" : "text-lg"} ${color} ${strike ? "line-through" : ""}`}
-                            style={label === "Saving" ? { color: BLUE } : {}}
-                          >
-                            {value} EGP
-                          </span>
-                        </div>
-                        {i < arr.length - 1 && (
-                          <div className="w-px h-10 bg-gray-100" />
-                        )}
-                      </>
-                    ),
-                  )}
+                <div className="bg-white px-4 py-3 flex items-center justify-center">
+                  <span className="text-2xl font-black text-gray-800">
+                    {referral.totalBeforeDiscount} EGP
+                  </span>
                 </div>
               </div>
             </div>
@@ -372,34 +311,37 @@ function PatientCard({ referral, index, onConfirm }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
-      className={`rounded-2xl border p-3.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3 overflow-hidden transition-shadow h-[420px]
+      className={`rounded-2xl border p-3.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3 overflow-hidden transition-shadow
         ${isReceived ? "bg-green-50 border-green-200" : "bg-white border-gray-200 hover:shadow-md"}`}
     >
       {/* top row */}
-      <div className="flex items-start justify-between gap-2 shrink-0">
+      <div className="flex items-start justify-between gap-2">
         <AvatarIcon
           url={referral.patientImageUrl}
           user={{ firstName, lastName }}
           size="40"
           className="gap-2.5 min-w-0 flex-1"
         />
-        <div
-          className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border
-          ${isReceived ? "bg-green-100 border-green-200 text-green-700" : "bg-blue-50 text-blue-700"}`}
-          style={!isReceived ? { borderColor: "#C7D8F9" } : {}}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isReceived ? "bg-green-500" : "bg-blue-400"}`}
-            style={!isReceived ? { background: BLUE } : {}}
-          />
-          <span className="whitespace-nowrap">
-            {isReceived ? "Received" : "Pending"}
-          </span>
+        {/* status badge only */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border
+              ${isReceived ? "bg-green-100 border-green-200 text-green-700" : "bg-blue-50 text-blue-700"}`}
+            style={!isReceived ? { borderColor: "#C7D8F9" } : {}}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${isReceived ? "bg-green-500" : "bg-blue-400"}`}
+              style={!isReceived ? { background: BLUE } : {}}
+            />
+            <span className="whitespace-nowrap">
+              {isReceived ? "Received" : "Pending"}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* contact + doctor */}
-      <div className="flex flex-col gap-1 shrink-0">
+      <div className="flex flex-col gap-1">
         <div
           className="flex items-center gap-1.5 text-xs font-medium"
           style={{ color: BLUE }}
@@ -415,12 +357,27 @@ function PatientCard({ referral, index, onConfirm }) {
         </div>
       </div>
 
-      {/* services — scrollable, takes remaining space */}
+      {/* discount % + sponsorship description — outside the table */}
+      <div className="flex items-start gap-2">
+        <span
+          className="text-[11px] font-bold px-2.5 py-1 rounded-full text-white shrink-0"
+          style={{ background: BLUE }}
+        >
+          {referral.discountPercentage}% off
+        </span>
+        {referral.sponsorshipDescription && (
+          <span className="text-xs text-gray-500 leading-relaxed">
+            {referral.sponsorshipDescription}
+          </span>
+        )}
+      </div>
+
+      {/* services table */}
       <div
-        className="rounded-xl overflow-hidden border flex flex-col min-h-0 flex-1"
+        className="rounded-xl overflow-hidden border flex flex-col"
         style={{ borderColor: "#C7D8F9" }}
       >
-        {/* sticky header */}
+        {/* table header */}
         <div
           className="px-3 py-1.5 flex items-center gap-1.5 shrink-0"
           style={{ background: BLUE }}
@@ -433,9 +390,8 @@ function PatientCard({ referral, index, onConfirm }) {
             {referral.services.length}
           </span>
         </div>
-
-        {/* scrollable rows */}
-        <div className="bg-white divide-y divide-gray-100 overflow-y-auto">
+        {/* rows */}
+        <div className="bg-white divide-y divide-gray-100 max-h-[114px] overflow-y-auto">
           {referral.services.map((s, i) => (
             <div
               key={s.providerOfferingId}
@@ -452,38 +408,23 @@ function PatientCard({ referral, index, onConfirm }) {
                   {s.serviceName}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[11px] text-gray-400 line-through">
-                  {s.priceBeforeDiscount}
-                </span>
-                <span className="text-xs font-bold text-green-700">
-                  {s.priceAfterDiscount} EGP
-                </span>
-              </div>
+              <span className="text-xs font-bold text-gray-700 shrink-0">
+                {s.priceBeforeDiscount} EGP
+              </span>
             </div>
           ))}
         </div>
       </div>
 
       {/* total row */}
-      <div className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-200 px-3 py-2 shrink-0">
-        <span className="text-xs text-gray-400 line-through shrink-0">
+      <div className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-200 px-3 py-2">
+        <span className="text-sm font-black text-gray-700 shrink-0">
           {referral.totalBeforeDiscount} EGP
-        </span>
-        <span className="text-gray-300">→</span>
-        <span className="text-sm font-black text-green-700 shrink-0">
-          {referral.totalAfterDiscount} EGP
-        </span>
-        <span
-          className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 text-white"
-          style={{ background: BLUE }}
-        >
-          {referral.discountPercentage}% off
         </span>
       </div>
 
       {/* dates */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 shrink-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
         <span className="flex items-center gap-1">
           <MdCalendarToday size={10} />
           Referred: {fmt(referral.referredAtUtc)}
@@ -518,9 +459,10 @@ function PatientCard({ referral, index, onConfirm }) {
     </motion.div>
   );
 }
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ReferredPatients() {
-  const [tab, setTab] = useState(0); // 0 = pending, 1 = received
+  const [tab, setTab] = useState(0);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [confirmReferral, setConfirmReferral] = useState(null);
@@ -533,26 +475,23 @@ export default function ReferredPatients() {
   });
 
   const items = data?.items ?? [];
-  console.log(items);
   const totalCount = data?.totalCount ?? 0;
   const hasNext = data?.hasNextPage ?? false;
   const hasPrev = data?.hasPreviousPage ?? false;
 
-  // Client-side search filter on top of server data
   const filtered = items.filter((r) =>
     `${r.patientName} ${r.doctorName} ${r.services.map((s) => s.serviceName).join(" ")}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
 
-  // Reset page when tab changes
   const handleTabChange = (key) => {
     setTab(key);
     setPage(1);
     setSearch("");
   };
 
-  const handleConfirmClose = (result) => {
+  const handleConfirmClose = () => {
     setConfirmReferral(null);
   };
 

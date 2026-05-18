@@ -141,7 +141,11 @@ export const route = createBrowserRouter([
       },
       {
         path: "pharmacyfinder",
-        element: <PharmacyFinderPage />,
+        element: (
+          <ProtectedRoutes>
+            <PharmacyFinderPage />,
+          </ProtectedRoutes>
+        ),
       },
       {
         path: "Community/Question/tag/:tagId/:tagName",
