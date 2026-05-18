@@ -53,7 +53,7 @@ export default function AdminTable({
       .join(" ");
 
   const renderActions = (row) => (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex items-center gap-1 flex-nowrap">
       {onView && canShowView(row) && (
         <button
           type="button"

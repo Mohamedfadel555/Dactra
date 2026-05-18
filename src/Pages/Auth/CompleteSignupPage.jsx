@@ -62,6 +62,7 @@ export default function CompleteSignupPage() {
     normalizeSignupUserTypeKey(initialUserType),
   );
   const completeSignupMutation = useCompleteSignup(userType);
+  const { notifyNewUser } = useNotificationsApi();
   // const [majors, setMajors] = useState([]);
   // const [majorsLoading, setMajorsLoading] = useState(false);
   // const [majorsError, setMajorsError] = useState("");
@@ -93,7 +94,15 @@ export default function CompleteSignupPage() {
       values,
     });
     try {
-      await completeSignupMutation.mutateAsync(payload);
+      const res = await completeSignupMutation.mutateAsync(payload);
+      
+      try {
+        const userId = res?.data?.id || res?.data?.userId || email;
+        await notifyNewUser(userId, userType);
+      } catch (err) {
+        console.warn("Failed to send new user notification to admin:", err);
+      }
+      
       localStorage.removeItem("pendingSignupUserType");
       navigate("/auth/Login");
     } catch (error) {

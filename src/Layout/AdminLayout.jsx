@@ -17,6 +17,7 @@ import { RiArrowRightSLine, RiArrowLeftLine } from "react-icons/ri";
 import Icon from "../assets/images/icons/dactraIcon.webp";
 import { useLogout } from "../hooks/useLogout";
 import { useScrollToTop } from "../hooks/useScrollToTop";
+import NotificationBell from "../Components/Common/NotificationBell";
 
 function NavItem({ to, label, icon, end = false, onNavigate }) {
   return (
@@ -351,7 +352,8 @@ export default function AdminLayout() {
             </p>
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="hidden sm:block text-right">
+            <NotificationBell />
+            <div className="hidden sm:block text-right ml-2">
               <p className="text-sm font-semibold text-gray-800 leading-none">
                 {adminName}
               </p>
