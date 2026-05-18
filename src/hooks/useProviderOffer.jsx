@@ -1,11 +1,14 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSponsorshipAPI } from "../api/sponsorshipAPI";
 import { toast } from "react-toastify";
 
 export const useProviderOffer = () => {
   const { providerOffer } = useSponsorshipAPI();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: providerOffer,
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["sponsorship-doctors"] }),
 
     onError: (err) => {
       err.status === 409

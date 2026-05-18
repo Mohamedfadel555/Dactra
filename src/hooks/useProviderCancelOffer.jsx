@@ -13,6 +13,7 @@ export const useProviderCancelOffer = () => {
       // invalidate كل حاجة متعلقة بعد الكانسل
       queryClient.invalidateQueries({ queryKey: ["deals"] });
       queryClient.invalidateQueries({ queryKey: ["offers-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["sponsorship-doctors"] });
     },
     onError: () =>
       toast.error("something went wrong, try again later", {

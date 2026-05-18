@@ -192,12 +192,10 @@ function DoctorCard({ doctor, index, onDeal }) {
           Make a deal
         </motion.button>
       ) : (
-        <div
-          onClick={() => navigate("/medicalprovider/sponsoreddoctors")}
-          className="w-full mt-auto cursor-pointer py-2.5 rounded-2xl border border-amber-200 bg-amber-50 text-amber-500 text-sm font-medium flex items-center justify-center gap-2"
-        >
-          <FiExternalLink size={15} />
-          Sponsored
+        // ✅ بعد
+        <div className="w-full mt-auto py-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 text-sm font-medium flex items-center justify-center gap-2">
+          <RiStethoscopeLine size={15} />
+          Already have a deal
         </div>
       )}
     </motion.div>
