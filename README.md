@@ -13,6 +13,9 @@ _Connecting Patients, Doctors & Medical Providers — All in One Place_
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white)](https://tanstack.com/query)
+[![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
+[![SignalR](https://img.shields.io/badge/SignalR-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/apps/aspnet/signalr)
 [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white)](https://jwt.io/)
 
@@ -28,9 +31,10 @@ _Connecting Patients, Doctors & Medical Providers — All in One Place_
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
 - [Getting Started](#-getting-started)
+- [Test Accounts](#-test-accounts)
 - [Project Structure](#-project-structure)
 - [User Roles](#-user-roles)
-- [Screenshots](#-screenshots)
+- [Key Flows](#-key-flows)
 - [Team](#-team)
 
 ---
@@ -63,7 +67,7 @@ _Connecting Patients, Doctors & Medical Providers — All in One Place_
 ### 👨‍⚕️ For Doctors
 
 | Feature                       | Description                                                         |
-| ----------------------------- | ------------------------------------------------------------------- |
+| ------------------------------ | -------------------------------------------------------------------- |
 | 📝 **Community Publishing**   | Write medical articles and answer patient questions                 |
 | 👥 **Patients Under Care**    | View and manage profiles of patients who booked with you            |
 | 🤝 **Deals Dashboard**        | Accept, reject, or counter partnership deals from medical providers |
@@ -73,7 +77,7 @@ _Connecting Patients, Doctors & Medical Providers — All in One Place_
 ### 🏥 For Medical Providers (Labs & Scan Centers)
 
 | Feature                   | Description                                                      |
-| ------------------------- | ---------------------------------------------------------------- |
+| ------------------------- | ------------------------------------------------------------------ |
 | 🛠️ **Service Management** | List services with prices, descriptions & estimated duration     |
 | 🤝 **Deals System**       | Send, negotiate, accept or reject partnership deals with doctors |
 | 🕐 **Working Hours**      | Set and update availability schedule                             |
@@ -82,7 +86,7 @@ _Connecting Patients, Doctors & Medical Providers — All in One Place_
 ### 🔐 For Admins
 
 | Feature                       | Description                                           |
-| ----------------------------- | ----------------------------------------------------- |
+| ------------------------------ | -------------------------------------------------------- |
 | ✅ **User Approvals**         | Approve doctors & providers before they go live       |
 | 🚫 **User Blocking**          | Block policy-violating users                          |
 | 🗂️ **Static Data Management** | Manage specialties, allergies & chronic disease lists |
@@ -93,12 +97,16 @@ _Connecting Patients, Doctors & Medical Providers — All in One Place_
 ## 🛠 Tech Stack
 
 ```
-Frontend       →   React.js + Vite + Tailwind CSS
-Authentication →   JWT (JSON Web Tokens)
-Notifications  →   Firebase Cloud Messaging (FCM)
-AI Chatbot     →   AI-powered medical assistant
-File Uploads   →   PDF & Image support for medical reports
-Routing        →   React Router v6
+Frontend         →   React 18 + Vite + Tailwind CSS
+Form Validation  →   Formik + Yup
+Server State     →   TanStack Query (custom mutation hooks)
+Animations       →   Framer Motion
+Real-time        →   SignalR (live appointments & notifications)
+Authentication   →   JWT (JSON Web Tokens)
+Push Notifications →  Firebase Cloud Messaging (FCM)
+AI Chatbot       →   AI-powered medical assistant
+File Uploads     →   PDF & Image support for medical reports
+Routing          →   React Router v6
 ```
 
 ---
@@ -114,10 +122,10 @@ Routing        →   React Router v6
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/dactra.git
+git clone https://github.com/your-username/dactara.git
 
 # 2. Navigate to the project directory
-cd dactra
+cd dactara
 
 # 3. Install dependencies
 npm install
@@ -140,10 +148,24 @@ npm run build
 
 ---
 
+## 🔑 Test Accounts
+
+Use the following accounts to explore each role on the live demo. Registration for new accounts requires admin approval, so these are provided for quick testing.
+
+| Role        | Email                        | Password           |
+| ----------- | ----------------------------- | ------------------- |
+| **Patient** | `mtito7335@gmail.com`         | `12345678mM#`       |
+| **Doctor**  | `sosokaram862@gmail.com`      | `Soso#ana1234`      |
+| **Admin**   | `rashadmostafa84@gmail.com`   | `123^Datra&123`     |
+
+> ⚠️ These are demo accounts seeded with sample data only. No real patient information is stored on them.
+
+---
+
 ## 📁 Project Structure
 
 ```
-dactra/
+dactara/
 ├── public/                  # Static public assets
 ├── src/
 │   ├── assets/              # Images, icons, fonts
@@ -173,7 +195,7 @@ Dactra supports **4 roles**, each with a completely different experience:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        DACTRA ROLES                         │
+│                        DACTARA ROLES                         │
 ├──────────────┬──────────────┬───────────────┬───────────────┤
 │   PATIENT    │    DOCTOR    │   PROVIDER    │    ADMIN      │
 │              │              │  (Lab/Scan)   │               │
@@ -241,5 +263,4 @@ The **home page and navigation dynamically adapt** based on the logged-in user's
 4. When a doctor replies, the patient receives a **Firebase push notification**
 
 </details>
-
 </div>
