@@ -152,11 +152,12 @@ npm run build
 
 Use the following accounts to explore each role on the live demo. Registration for new accounts requires admin approval, so these are provided for quick testing.
 
-| Role        | Email                        | Password           |
-| ----------- | ----------------------------- | ------------------- |
-| **Patient** | `mtito7335@gmail.com`         | `12345678mM#`       |
-| **Doctor**  | `sosokaram862@gmail.com`      | `Soso#ana1234`      |
-| **Admin**   | `rashadmostafa84@gmail.com`   | `123^Dactra&123`     |
+| Role            | Email                        | Password           |
+| --------------- | ----------------------------- | ------------------- |
+| **Patient**     | `mtito7335@gmail.com`         | `12345678mM#`       |
+| **Doctor**      | `sosokaram862@gmail.com`      | `Soso#ana1234`      |
+| **Lab Center**  | `alphalab@gmail.com`          | `Alpha@dactra123`   |
+| **Admin**       | `rashadmostafa84@gmail.com`   | `123^Dactra&123`     |
 
 > ⚠️ These are demo accounts seeded with sample data only. No real patient information is stored on them.
 
